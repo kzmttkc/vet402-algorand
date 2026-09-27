@@ -599,7 +599,7 @@ const TRY_JS = String.raw`
     var b=el('a');b.href=cfg.wallet?'#wallet':'/#developers';b.appendChild(el('b',null,'Try another seller or your own input'));b.appendChild(document.createTextNode('Your first purchase with your own wallet has no vet402 fee →'));
     if(cfg.wallet)b.addEventListener('click',function(e){e.preventDefault();openWallet()});
     var d=el('a');d.href='https://github.com/kzmttkc/vet402-algorand/tree/main/mcp';d.rel='noopener';d.appendChild(el('b',null,'Add it to your agent in one line'));d.appendChild(document.createTextNode('The MCP server, or /v1/verdict for 0.001 USDC before each purchase →'));
-    var s=el('a');s.href='/cert/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('Get a delivery certificate for your endpoint →'));
+    var s=el('a');s.href='/seller/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('See your seller page and get a delivery certificate →'));
     box.appendChild(b);box.appendChild(d);box.appendChild(s);outRun.appendChild(box);
   }
   function nameForm(rec){

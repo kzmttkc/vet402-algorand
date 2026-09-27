@@ -689,3 +689,10 @@ test("/activity: an audit paid between a first purchase at cost and its seller p
   assert.equal(byTx.CAROL1.sellerTx, "OUT1");
   assert.deepEqual(byTx.EVEAUDIT.sellerPayments, []);
 });
+
+test("/try next steps: sellers are sent to /seller/<host> (where the certificate is offered), not a /cert/<host> path", async () => {
+  const { app } = setup();
+  const page = await (await app.request("/try")).text();
+  assert.match(page, /'\/seller\/'\+encodeURIComponent\(c\.h/);
+  assert.doesNotMatch(page, /\/cert\//);
+});

@@ -29,7 +29,8 @@
  *     payment pairs with it and (payment - fee) >= that seller payment. A small deposit with no
  *     such seller payment is listed as below_price, so it cannot inflate the customer count.
  * When several customer payments could take a seller payment: first a purchase whose
- * (payment - fee) is exactly that seller payment, then a check or an audit, then a purchase it only fits.
+ * (payment - fee) is exactly that seller payment (or, for a first purchase at cost, the payment itself is),
+ * then a check or an audit, then a purchase it only fits.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
 import type { BaseCustomerRead, BaseNotCounted } from "./base.js";
