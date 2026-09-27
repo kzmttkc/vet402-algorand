@@ -178,6 +178,38 @@ export interface SellerOption {
   t: boolean;
   /** Why not, in plain words (only when t is false), e.g. "own wallet only: this seller needs a POST". */
   w?: string;
+  /** What it does, in a few plain words (sellerName). Seller-controlled text: the page shows it with textContent only. */
+  n: string;
+}
+
+/** Most characters of a seller's plain-words name. */
+export const SELLER_NAME_MAX = 44;
+const GENERIC_SEGMENT = /^(api|v\d+|x402|algo|algorand)$/i;
+
+/**
+ * What a seller does, in a few plain words, from what vet402 already holds: the first clause of the Bazaar description
+ * it recorded ("Crypto news — …" → "Crypto news"), else the last one or two words of the path ("/email/verify" →
+ * "Email verify"), else the description cut short. Control characters and extra spaces are removed. It stays
+ * seller-controlled text: the page puts it in with textContent only.
+ */
+export function sellerName(r: Pick<BoardRow, "url" | "declared">): string {
+  const clean = (s: string) => s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
+  const desc = clean(r.declared?.description ?? "");
+  const first = desc.split(/\s[\u2014\u2013-]\s|:\s|;\s|(?<!\b[A-Z])\.\s|\?\s?|!\s|\s\(|,\s/)[0].trim().replace(/[.:;,]+$/, "");
+  if (first && first.length <= SELLER_NAME_MAX) return first;
+  let fromPath = "";
+  try {
+    const words = new URL(r.url).pathname
+      .split("/")
+      .filter((s) => s && !GENERIC_SEGMENT.test(s) && /^[a-z][a-z0-9_-]{1,30}$/i.test(s) && !/\d{3,}/.test(s))
+      .slice(-2);
+    const t = words.join(" ").replace(/[-_]+/g, " ").trim();
+    fromPath = t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+  } catch {
+    fromPath = "";
+  }
+  if (fromPath) return fromPath;
+  return first.length > SELLER_NAME_MAX ? `${first.slice(0, SELLER_NAME_MAX - 1).replace(/\s+\S*$/, "")}…` : first;
 }
 
 /** Local TestNet targets (ALLOW_PRIVATE_TARGETS only): exempt from the free try's list. */
@@ -245,7 +277,7 @@ export function sellerOptions(files: (BoardFile | null)[], o: { trialMaxAtomic?:
             : overCap(r.priceUsdc)
               ? "own wallet only: its price is above what the free try pays"
               : undefined;
-      return { u: r.url, m: r.method, h: hostOf(r), c, p: r.priceUsdc ? short(r.priceUsdc) : "", t: !w, ...(w ? { w } : {}) };
+      return { u: r.url, m: r.method, h: hostOf(r), c, p: r.priceUsdc ? short(r.priceUsdc) : "", t: !w, ...(w ? { w } : {}), n: sellerName(r) };
     })
     .sort((a, b) => Number(b.t) - Number(a.t) || CLASS_ORDER[a.c] - CLASS_ORDER[b.c] || price(a.p) - price(b.p) || a.h.localeCompare(b.h) || a.u.localeCompare(b.u));
 }
@@ -591,7 +623,16 @@ const TRY_CSS = `
 main{max-width:760px;margin:0 auto;padding:4px 16px 24px}
 h1{font-size:clamp(24px,5vw,34px);line-height:1.2;margin:8px 0 10px}
 .lead{color:#cbd5e1;font-size:17px;margin:0 0 6px}
-.people{color:var(--mut);font-size:14px;margin:0 0 20px;min-height:1.4em}
+.people{color:var(--mut);font-size:14px;margin:0 0 20px}
+.people[hidden]{display:none}
+.one{margin:4px 0 14px}
+.btn.big{display:block;width:100%;font-size:19px;padding:16px 18px;border-radius:12px}
+.onehint{color:var(--mut);font-size:14px;margin:8px 0 0}
+.onehint b{color:var(--fg);font-weight:600}
+.prog{display:flex;gap:10px;align-items:center}
+.spin{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--acc);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
 .card[hidden]{display:none}
 .card h2{font-size:17px;margin:0 0 10px;display:flex;gap:10px;align-items:center}
@@ -605,7 +646,9 @@ input:focus{outline:2px solid var(--acc);outline-offset:1px}
 #list li{padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:8px;align-items:baseline;justify-content:space-between}
 #list li:last-child{border-bottom:0}
 #list li:hover,#list li:focus{background:#172033;outline:none}
-#list .u{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+#list .l{min-width:0;flex:1 1 0;display:flex;flex-direction:column;gap:2px}
+#list .nm{font-size:15px;font-weight:600;line-height:1.3}
+#list .u{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--mut)}
 #list .m{flex:none;font-size:12px;color:var(--mut);white-space:nowrap}
 #list li{flex-wrap:wrap}#list .w{flex-basis:100%;font-size:12px;color:var(--mut)}
 .chip{font-size:11px;font-weight:700;letter-spacing:.03em;padding:1px 6px;border-radius:999px;border:1px solid currentColor;margin-right:6px}
@@ -630,14 +673,43 @@ h3.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--
 #firstList li{margin:3px 0}
 `;
 
+/**
+ * The page's pure helpers (no DOM), kept apart so tests can run them: new Function(TRY_PURE_JS + "return {…}").
+ *   peopleParts(stats)  the "Today (UTC)" parts worth showing: only counts of 1 or more (an empty list hides the line)
+ *   oneTapPick(sellers, logEntries, perSeller, today)  the seller "Try one now" buys: the first free-try seller
+ *                       (sellers.json order: DELIVERED first, cheapest first) whose host has not used its free tries
+ *                       today in the public log; if the log says every one has, the first free-try seller anyway
+ *                       (the server then refuses with its plain message). null when there is none.
+ */
+export const TRY_PURE_JS = String.raw`
+function peopleParts(j){
+  var parts=[];if(!j)return parts;
+  if(typeof j.triedToday==='number'&&j.triedToday>=1)parts.push(j.triedToday+(j.triedToday===1?' person':' people')+' tried vet402 free');
+  if(typeof j.paidToday==='number'&&j.paidToday>=1)parts.push(j.paidToday+' paid through vet402 with their own wallet');
+  return parts;
+}
+function oneTapPick(sellers,entries,perSeller,today){
+  var used={};
+  (entries||[]).forEach(function(e){if(e&&typeof e.at==='string'&&typeof e.host==='string'&&e.at.slice(0,10)===today)used[e.host]=(used[e.host]||0)+1});
+  var free=(sellers||[]).filter(function(s){return s&&s.t===true&&typeof s.u==='string'});
+  var open=free.filter(function(s){return (used[s.h]||0)<perSeller});
+  var pool=open.length?open:free;
+  for(var i=0;i<pool.length;i++)if(pool[i].c==='DELIVERED')return pool[i];
+  return pool[0]||null;
+}
+`;
+
 /** Client script: no interpolation inside (String.raw); all seller text goes through textContent. */
-const TRY_JS = String.raw`
-(function(){
+const TRY_JS =
+  "(function(){\n" +
+  TRY_PURE_JS +
+  String.raw`
   var cfg=JSON.parse(document.getElementById('cfg').textContent||'{}');
   function $(id){return document.getElementById(id)}
   var q=$('q'),list=$('list'),hint=$('hint'),bPrev=$('preview'),bRun=$('run'),outPrev=$('outPreview'),outRun=$('outRun'),addr=$('addr');
   var wCard=$('wallet'),wOut=$('wOut'),wQuote=$('wQuote'),wWho=$('wWho');
-  var sellers=[],picked=null,walletMod=null;
+  var bOne=$('one'),outOne=$('outOne'),oneHint=$('oneHint');
+  var sellers=[],picked=null,walletMod=null,running=false;
   var from=(new URLSearchParams(location.search).get('from')||'');if(!/^[A-Za-z0-9-]{1,20}$/.test(from))from='';
   var CLS={DELIVERED:'delivered',MISMATCH:'mismatch',UNREACHABLE:'unreach',UNCLEAR:'unclear'};
   function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
@@ -650,8 +722,9 @@ const TRY_JS = String.raw`
     list.textContent='';
     items.slice(0,40).forEach(function(s){
       var li=el('li');li.setAttribute('role','option');li.tabIndex=0;
+      var l=el('span','l');l.appendChild(el('span','nm',s.n||s.h));
       var u=el('span','u');u.appendChild(el('span','chip '+CLS[s.c],s.c));u.appendChild(document.createTextNode(s.u.replace(/^https?:\/\//,'')));
-      li.appendChild(u);li.appendChild(el('span','m',(s.t&&cfg.trial?'free try · ':'')+(s.m!=='GET'?s.m+' · ':'')+(s.p?s.p+' USDC':'')));
+      l.appendChild(u);li.appendChild(l);li.appendChild(el('span','m',(s.t&&cfg.trial?'free try · ':'')+(s.m!=='GET'?s.m+' · ':'')+(s.p?s.p+' USDC':'')));
       if(cfg.trial&&s.w)li.appendChild(el('span','w',s.w));
       li.addEventListener('click',function(){pick(s)});
       li.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();pick(s)}});
@@ -662,22 +735,33 @@ const TRY_JS = String.raw`
     var v=q.value.trim().toLowerCase();picked=null;
     if(isUrl(v)){list.textContent='';hint.textContent='Using the URL you pasted.';sync();return}
     var words=v.split(/\s+/).filter(Boolean);
-    var hits=sellers.filter(function(s){var t=(s.u+' '+s.c).toLowerCase();return words.every(function(w){return t.indexOf(w)>=0})});
+    var hits=sellers.filter(function(s){var t=((s.n||'')+' '+s.u+' '+s.c).toLowerCase();return words.every(function(w){return t.indexOf(w)>=0})});
     render(hits);
     hint.textContent=sellers.length?(hits.length+' of '+sellers.length+' listings match. '+(cfg.trial?'The ones the free try can buy come first; the rest you can buy with your own wallet.':'Sellers that delivered come first, cheapest first.')):'Loading the list…';
     sync();
   }
-  function pick(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'')+(cfg.trial&&s.w?' · '+s.w:'');outPrev.textContent='';outRun.textContent='';wReset();sync()}
-  function sync(){var c=current();bPrev.disabled=!c;if(bRun)bRun.disabled=!c}
+  function pick(s){select(s);outPrev.textContent='';if(outRun)outRun.textContent='';if(outOne)outOne.textContent='';wReset();sync()}
+  function select(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=(s.n?s.n+' — ':'')+s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'')+(cfg.trial&&s.w?' · '+s.w:'')}
+  function sync(){var c=current();bPrev.disabled=running||!c;if(bRun)bRun.disabled=running||!c;if(bOne)bOne.disabled=running}
   q.addEventListener('input',function(){filter();wReset()});
   q.addEventListener('focus',function(){if(!q.value)filter()});
-  fetch('/try/sellers.json').then(function(r){return r.json()}).then(function(j){sellers=j.sellers||[];filter()}).catch(function(){hint.textContent='The list could not be loaded. You can still paste a URL.'});
+  var sellersP=fetch('/try/sellers.json').then(function(r){return r.json()}).then(function(j){sellers=j.sellers||[];filter();return true}).catch(function(){hint.textContent='The list could not be loaded. You can still paste a URL.';return false});
+  /* The public log of free tries: "Try one now" skips a seller that has used today's free tries; firstPeople() lists names. */
+  var logP=cfg.trial?fetch('/try/log.json').then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null);
+  function today(){return new Date().toISOString().slice(0,10)}
+  function oneChoice(){return logP.then(function(lg){return oneTapPick(sellers,lg&&lg.entries,cfg.perSeller||3,today())})}
+  if(bOne)Promise.all([sellersP,logP]).then(function(){
+    return oneChoice().then(function(s){
+      if(!s){oneHint.textContent='No seller is open for a free try right now. You can still pick one below and buy it with your own wallet.';return}
+      oneHint.textContent='';oneHint.appendChild(document.createTextNode('Picked for you: '));oneHint.appendChild(el('b',null,s.n||s.h));
+      oneHint.appendChild(document.createTextNode((s.p?' · '+s.p+' USDC':'')+', a seller that delivered last time. vet402 pays with its own wallet and shows you what came back. Or pick another one below.'));
+    });
+  }).catch(function(){});
   fetch('/try/stats.json').then(function(r){return r.ok?r.json():null}).then(function(j){
-    if(!j)return;var parts=[];
-    if(j.triedToday!=null)parts.push(j.triedToday+(j.triedToday===1?' person':' people')+' tried vet402 free');
-    if(j.paidToday!=null)parts.push(j.paidToday+' paid through vet402 with their own wallet');
-    if(!parts.length)return;var e=$('people');e.textContent='Today (UTC): '+parts.join(' · ')+(cfg.trial?' · ':'');
+    var parts=peopleParts(j);if(!parts.length)return;
+    var e=$('people');e.textContent='Today (UTC): '+parts.join(' · ')+(cfg.trial?' · ':'');
     if(cfg.trial)e.appendChild(link('/try/log','every free try'));
+    e.hidden=false;
   }).catch(function(){});
 
   function lastSentence(l){
@@ -712,47 +796,64 @@ const TRY_JS = String.raw`
     }).catch(function(e){outPrev.textContent='';p(outPrev,'err',['Could not check: '+e.message])}).then(function(){sync()});
   });
 
-  if(bRun)bRun.addEventListener('click',function(){
-    var c=current();if(!c)return;
-    bRun.disabled=true;bPrev.disabled=true;outRun.textContent='';p(outRun,'sub',['vet402 is buying it now with its trial wallet. This takes about 10 seconds…']);
+  if(bRun)bRun.addEventListener('click',function(){var c=current();if(c)runTry(c,outRun)});
+  if(bOne)bOne.addEventListener('click',function(){
+    if(running)return;running=true;sync();outOne.textContent='';outRun.textContent='';outPrev.textContent='';
+    p(outOne,'sub',['Picking a seller…']);
+    Promise.all([sellersP,logP]).then(oneChoice).then(function(s){
+      running=false;
+      if(!s){outOne.textContent='';p(outOne,'err',['No seller is open for a free try right now. You can still pick one below and buy it with your own wallet.']);sync();return}
+      select(s);wReset();runTry(s,outOne);
+    }).catch(function(e){running=false;outOne.textContent='';p(outOne,'err',['Something went wrong: '+(e&&e.message||e)]);sync()});
+  });
+  /** Where the answer lands: brought into view if the visitor would have to scroll to it. */
+  function reveal(node){var r=node.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*0.6)node.scrollIntoView({behavior:'smooth',block:'start'})}
+  function runTry(c,out){
+    if(running)return;running=true;sync();out.textContent='';
+    var prog=el('p','sub prog');prog.appendChild(el('span','spin'));
+    var txt=el('span',null,'vet402 is paying the seller from its trial wallet… then checking what came back against the listing.');prog.appendChild(txt);
+    var secs=el('p','hint','');out.appendChild(prog);out.appendChild(secs);
+    var t0=Date.now(),tick=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);secs.textContent=s+' s · it usually takes about 10 seconds';if(s>=4)txt.textContent='Checking what came back against what the seller promised…'},1000);
+    reveal(out);
     var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;if(from)body.from=from;
     fetch('/try/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
-      outRun.textContent='';var j=x.j;
-      if(x.s!==200&&j.error==='already_tried'&&j.headline){p(outRun,'err big',[j.headline]);if(j.next)walletNext(j.next);return}
-      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='daily_cap_reached')nextSteps(c);return}
+      clearInterval(tick);out.textContent='';var j=x.j;
+      if(x.s!==200&&j.error==='already_tried'&&j.headline){p(out,'err big',[j.headline]);if(j.next)walletNext(j.next,out);reveal(out);return}
+      if(x.s!==200){p(out,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='daily_cap_reached')nextSteps(c,out);reveal(out);return}
       var price=j.price?usd(j.price.usdc)+' USDC':'the price';
-      p(outRun,'big '+(CLS[j.class]||''),[{DELIVERED:'Delivered.',MISMATCH:'Paid, and it did not match the listing.',UNREACHABLE:'Nothing to buy here.',UNCLEAR:'No clear answer this time.'}[j.class]||j.class]);
+      p(out,'big '+(CLS[j.class]||''),[{DELIVERED:'Delivered.',MISMATCH:'Paid, and it did not match the listing.',UNREACHABLE:'Nothing to buy here.',UNCLEAR:'No clear answer this time.'}[j.class]||j.class]);
       var d=j.declared||{};
       var promised=[];if(d.description)promised.push(d.description);
       if(d.expectedKeys&&d.expectedKeys.length)promised.push('Required fields: '+d.expectedKeys.join(', '));
       else if(d.exampleKeys&&d.exampleKeys.length)promised.push('Example fields: '+d.exampleKeys.join(', '));
-      outRun.appendChild(el('h3','lbl','The listing promised'));
-      p(outRun,null,[promised.length?promised.join(' · '):'Nothing specific (no description or output schema).']);
-      outRun.appendChild(el('h3','lbl','What actually came back'+(j.price?' (vet402 paid '+price+')':'')));
+      out.appendChild(el('h3','lbl','The listing promised'));
+      p(out,null,[promised.length?promised.join(' · '):'Nothing specific (no description or output schema).']);
+      out.appendChild(el('h3','lbl','What actually came back'+(j.price?' (vet402 paid '+price+')':'')));
       if(j.delivery){
-        if(j.delivery.text!=null){var pre=el('pre');pre.textContent=j.delivery.text+(j.delivery.truncated?'\n…(truncated, '+j.delivery.bytes+' bytes)':'');outRun.appendChild(pre)}
-        p(outRun,'sub',[(j.delivery.contentType||'no content-type')+' · '+j.delivery.bytes+' bytes · HTTP '+j.delivery.status]);
-      }else p(outRun,null,['Nothing: the seller was not paid.']);
-      outRun.appendChild(el('h3','lbl','So vet402 says'));
-      p(outRun,null,[j.verdict+' because '+j.because+'.']);
-      if(j.sellerTxUrl)p(outRun,'sub',['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
-      nextSteps(c);
-      if(j.record)nameForm(j.record);
-    }).catch(function(e){outRun.textContent='';p(outRun,'err',['Something went wrong: '+e.message])}).then(function(){sync()});
-  });
-  function walletNext(text){
-    if(!cfg.wallet){p(outRun,null,[text]);return}
-    var a=el('a',null,text+' →');a.href='#wallet';a.addEventListener('click',function(e){e.preventDefault();openWallet()});p(outRun,null,[a]);
+        if(j.delivery.text!=null){var pre=el('pre');pre.textContent=j.delivery.text+(j.delivery.truncated?'\n…(truncated, '+j.delivery.bytes+' bytes)':'');out.appendChild(pre)}
+        p(out,'sub',[(j.delivery.contentType||'no content-type')+' · '+j.delivery.bytes+' bytes · HTTP '+j.delivery.status]);
+      }else p(out,null,['Nothing: the seller was not paid.']);
+      out.appendChild(el('h3','lbl','So vet402 says'));
+      p(out,null,[j.verdict+' because '+j.because+'.']);
+      if(j.sellerTxUrl)p(out,'sub',['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
+      nextSteps(c,out);
+      if(j.record)nameForm(j.record,out);
+      reveal(out);
+    }).catch(function(e){clearInterval(tick);out.textContent='';p(out,'err',['Something went wrong: '+e.message])}).then(function(){clearInterval(tick);running=false;sync()});
   }
-  function nextSteps(c){
+  function walletNext(text,out){
+    if(!cfg.wallet){p(out,null,[text]);return}
+    var a=el('a',null,text+' →');a.href='#wallet';a.addEventListener('click',function(e){e.preventDefault();openWallet()});p(out,null,[a]);
+  }
+  function nextSteps(c,out){
     var box=el('div','roles');
     var b=el('a');b.href=cfg.wallet?'#wallet':'/#developers';b.appendChild(el('b',null,'Try another seller or your own input'));b.appendChild(document.createTextNode('Your first purchase with your own wallet has no vet402 fee →'));
     if(cfg.wallet)b.addEventListener('click',function(e){e.preventDefault();openWallet()});
     var d=el('a');d.href='https://github.com/kzmttkc/vet402-algorand/tree/main/mcp';d.rel='noopener';d.appendChild(el('b',null,'Add it to your agent in one line'));d.appendChild(document.createTextNode('The MCP server, or a 0.001 USDC verdict lookup before each purchase →'));
     var s=el('a');s.href='/seller/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('See your seller page and get a delivery certificate →'));
-    box.appendChild(b);box.appendChild(d);box.appendChild(s);outRun.appendChild(box);
+    box.appendChild(b);box.appendChild(d);box.appendChild(s);out.appendChild(box);
   }
-  function nameForm(rec){
+  function nameForm(rec,out){
     var box=el('div','card2');box.appendChild(el('h3','lbl','First people to try vet402 on Algorand'));
     p(box,'sub',['Want your X handle on the list, next to this try? Optional.']);
     var r=el('div','row');var inp=el('input');inp.type='text';inp.placeholder='@yourhandle';inp.maxLength=16;inp.autocomplete='off';inp.setAttribute('aria-label','X handle');
@@ -762,14 +863,14 @@ const TRY_JS = String.raw`
       var h=inp.value.trim();if(!/^@?[A-Za-z0-9_]{1,15}$/.test(h)){msg.textContent='Letters, digits and _ only, up to 15.';return}
       b.disabled=true;
       fetch('/try/handle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({record:rec.id,token:rec.token,handle:h})}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
-        msg.textContent=x.s===200?('Added '+x.j.handle+'. Thank you for trying vet402.'):(x.j.detail||x.j.error||('HTTP '+x.s));if(x.s!==200)b.disabled=false;else firstPeople();
+        msg.textContent=x.s===200?('Added '+x.j.handle+'. Thank you for trying vet402.'):(x.j.detail||x.j.error||('HTTP '+x.s));if(x.s!==200)b.disabled=false;else firstPeople(true);
       }).catch(function(e){msg.textContent='Not added: '+e.message;b.disabled=false});
     });
-    outRun.appendChild(box);
+    out.appendChild(box);
   }
-  function firstPeople(){
+  function firstPeople(fresh){
     var list=$('firstList');if(!list)return;
-    fetch('/try/log.json').then(function(r){return r.ok?r.json():null}).then(function(j){
+    (fresh?fetch('/try/log.json').then(function(r){return r.ok?r.json():null}):logP).then(function(j){
       if(!j)return;var named=j.entries.filter(function(e){return e.handle&&!e.operatorTest}).reverse().slice(0,30);
       list.textContent='';$('first').hidden=!named.length;
       named.forEach(function(e){var li=el('li');var a=link('https://x.com/'+e.handle.slice(1),e.handle);a.rel='noopener nofollow';li.appendChild(a);
@@ -831,6 +932,7 @@ const TRY_JS = String.raw`
 export function tryHtml(o: { networkName: string; buyFeeUsdc: string; trial: { address: string; maxUsdc: string } | null; walletJs?: string }): string {
   const cfgJson = JSON.stringify({
     trial: !!o.trial,
+    perSeller: TRY_PER_SELLER_PER_DAY,
     wallet: !!o.walletJs,
     walletJs: o.walletJs ?? "",
     fee: short(o.buyFeeUsdc),
@@ -867,8 +969,15 @@ export function tryHtml(o: { networkName: string; buyFeeUsdc: string; trial: { a
 ${topNav()}
 <main>
 <h1>${o.trial ? "Watch vet402 buy from a real seller. Free, once per person." : "See what a paid API delivered before you pay it."}</h1>
+${
+  o.trial
+    ? `<div class="one"><button class="btn big" id="one">Try one now — free</button>
+<p class="onehint" id="oneHint">vet402 picks a seller that delivered last time, buys it with its own wallet, and shows you what came back. Or pick another one below.</p>
+<div class="out" id="outOne" aria-live="polite"></div></div>`
+    : ""
+}
 <p class="lead">${o.trial ? "No wallet and no USDC needed. vet402 pays with its own wallet, checks what came back against the listing, and shows you the receipt." : "Pick a seller and see, for free, what vet402 got when it paid it with its own wallet."}</p>
-<p class="people" id="people"></p>
+<p class="people" id="people" hidden></p>
 <div class="card"><h2><span class="num">1</span>Pick a seller</h2>
 <label for="q">Search the sellers vet402 has paid, or paste the URL of a paid API</label>
 <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. weather, news, https://…" aria-controls="list">

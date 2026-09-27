@@ -1078,7 +1078,7 @@ test("#7 the /try page shows no path names (/v1/...): not in its text, not in an
   }
   // The page turns the next step into a link that opens the wallet card.
   assert.match(page, /j\.error==='already_tried'&&j\.headline/);
-  assert.match(page, /function walletNext\(text\)\{[\s\S]*?openWallet\(\)/);
+  assert.match(page, /function walletNext\(text(,out)?\)\{[\s\S]*?openWallet\(\)/);
 });
 
 test("trial: below 0.5 ALGO for fees, or when the balance cannot be read, trials pause and nothing is claimed or paid", async () => {
@@ -1104,4 +1104,93 @@ test("trial: at most 60 free tries a UTC day in total, whatever the IP or seller
   assert.equal(r.status, 503);
   assert.equal(((await r.json()) as { error: string }).error, "daily_cap_reached");
   assert.equal(seen.trialPaid.length, 0);
+});
+
+/* ---------- One tap from the first screen: plain-words names, the count line only at 1+, "Try one now" ---------- */
+
+import { TRY_PURE_JS, sellerName, tryHtml, SELLER_NAME_MAX } from "../src/try.js";
+
+type Pick1 = { u: string; h: string; c: string; t: boolean; p?: string; n?: string };
+const pure = new Function(`${TRY_PURE_JS}; return { peopleParts: peopleParts, oneTapPick: oneTapPick };`)() as {
+  peopleParts(j: unknown): string[];
+  oneTapPick(sellers: Pick1[], entries: { at: string; host: string }[] | null, perSeller: number, today: string): Pick1 | null;
+};
+
+test("sellerName: the first clause of the Bazaar description, else the last words of the path; control characters removed", () => {
+  assert.equal(sellerName({ url: "https://algorand.ottoai.services/crypto-news", declared: { description: "Crypto news — importance-ranked headlines" } }), "Crypto news");
+  assert.equal(sellerName({ url: "https://x.example/a", declared: { description: "Algorand account lookup: balance, status" } }), "Algorand account lookup");
+  assert.equal(sellerName({ url: "https://x.example/b", declared: { description: "Latest hourly U.S. grid mix" } }), "Latest hourly U.S. grid mix");
+  // Description too long for a name: the path says it better.
+  assert.equal(
+    sellerName({ url: "https://algorand.ottoai.services/crypto-news", declared: { description: "Importance-ranked crypto headlines with per-article source links and publish times" } }),
+    "Crypto news",
+  );
+  assert.equal(sellerName({ url: "https://algo.netintel.dev/email/verify?email=a", declared: {} }), "Email verify");
+  assert.equal(sellerName({ url: "https://h.example/api/v2/accounts/X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWB", declared: {} }), "Accounts");
+  // Nothing word-like in the path and a long description: cut short on a word.
+  const long = sellerName({ url: "https://h.example/", declared: { description: "a ".repeat(10) + "verylongwordthatkeepsgoing ".repeat(4) } });
+  assert.ok(long.length <= SELLER_NAME_MAX && long.endsWith("…"), long);
+  assert.equal(sellerName({ url: "https://h.example/", declared: { description: "Evil\u0000‮ name\n\tlines — rest" } }), "Evil name lines");
+  assert.equal(sellerName({ url: "https://h.example/", declared: {} }), "");
+});
+
+test("/try/sellers.json: every row carries its plain-words name n, raw (JSON), next to the URL", async () => {
+  const { app } = setup({ census: [row(`${HOST}/honest`, { declared: { description: "Tokyo forecast — the weather" } }), row(`${HOST}/weather-now`)] });
+  const j = (await (await app.request("/try/sellers.json")).json()) as { sellers: { u: string; n: string }[] };
+  assert.deepEqual(
+    j.sellers.map((s) => [s.u, s.n]),
+    [
+      [`${HOST}/honest`, "Tokyo forecast"],
+      [`${HOST}/weather-now`, "Weather now"],
+    ],
+  );
+});
+
+test("the count line: hidden at 0 (and when unknown), shown at 1 or more", () => {
+  assert.deepEqual(pure.peopleParts({ triedToday: 0, paidToday: 0 }), []);
+  assert.deepEqual(pure.peopleParts({ triedToday: null, paidToday: null }), []);
+  assert.deepEqual(pure.peopleParts(null), []);
+  assert.deepEqual(pure.peopleParts({ triedToday: 1, paidToday: 0 }), ["1 person tried vet402 free"]);
+  assert.deepEqual(pure.peopleParts({ triedToday: 3, paidToday: 2 }), ["3 people tried vet402 free", "2 paid through vet402 with their own wallet"]);
+  const html = tryHtml({ networkName: "mainnet", buyFeeUsdc: "0.001", trial: { address: TRIAL, maxUsdc: "0.05" } });
+  assert.match(html, /<p class="people" id="people" hidden><\/p>/, "the line starts hidden: nothing says 0 before the numbers arrive");
+});
+
+test("Try one now: picks the first free-try seller (DELIVERED, cheapest), skips a seller that used today's free tries, never an own-wallet-only one", () => {
+  const list = sellerOptions(
+    [
+      board([
+        row("https://post.example/x", { method: "POST", priceUsdc: "0.00001" }),
+        row("https://pricey.example/x", { priceUsdc: "0.20" }),
+        row("https://mid.example/x", { priceUsdc: "0.02" }),
+        row("https://cheap.example/x", { priceUsdc: "0.001" }),
+        row("https://mm.example/x", { verdict: "REFUSE", reason: "delivery_missing_keys", priceUsdc: "0.0001" }),
+      ]),
+    ],
+    { trialMaxAtomic: 50_000n },
+  );
+  const firstFree = list.find((s) => s.t)!;
+  assert.equal(firstFree.u, "https://cheap.example/x");
+  assert.equal(pure.oneTapPick(list, [], 3, "2026-09-28")!.u, firstFree.u, "with no tries today: the first t:true seller");
+  assert.equal(pure.oneTapPick(list, null, 3, "2026-09-28")!.u, firstFree.u, "log unreadable: the first t:true seller");
+  const full = [0, 1, 2].map((i) => ({ at: `2026-09-28T0${i}:00:00.000Z`, host: "cheap.example" }));
+  assert.equal(pure.oneTapPick(list, full, 3, "2026-09-28")!.u, "https://mid.example/x", "cheap.example used its 3 today: the next DELIVERED one");
+  assert.equal(pure.oneTapPick(list, full, 3, "2026-09-29")!.u, firstFree.u, "yesterday's tries do not count");
+  const allFull = ["cheap.example", "mid.example", "mm.example"].flatMap((h) => [0, 1, 2].map(() => ({ at: "2026-09-28T01:00:00.000Z", host: h })));
+  assert.equal(pure.oneTapPick(list, allFull, 3, "2026-09-28")!.u, firstFree.u, "every one full: the first anyway (the server refuses in plain words)");
+  assert.equal(pure.oneTapPick(list.filter((s) => !s.t), [], 3, "2026-09-28"), null);
+});
+
+test("/try: the one-tap button comes right under the headline (before step 1); seller text only ever goes in with textContent", async () => {
+  const { app } = setup();
+  const html = await (await app.request("/try")).text();
+  const one = html.indexOf('id="one"');
+  assert.ok(one > html.indexOf("<h1>") && one < html.indexOf('<span class="num">1</span>'), "button between the headline and step 1");
+  assert.match(html, /<button class="btn big" id="one">Try one now — free<\/button>/);
+  assert.doesNotMatch(html, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|\.html\(/);
+  // The list row: the name first, the URL small underneath, both as text nodes.
+  assert.match(html, /l\.appendChild\(el\('span','nm',s\.n\|\|s\.h\)\)/);
+  // Trials off: no button that cannot work.
+  const off = setup({ trial: false });
+  assert.doesNotMatch(await (await off.app.request("/try")).text(), /id="one"/);
 });
