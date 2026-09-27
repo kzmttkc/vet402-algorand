@@ -33,12 +33,14 @@ import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, shareInitialize, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
-import { registerBoard } from "./board.js";
+import { registerBoard, type BoardLoader } from "./board.js";
 import { registerSeller } from "./seller.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { registerBuy } from "./buy.js";
 import { BaseCustomerReader, withBase } from "./base.js";
+import { registerTry, type TrialDeps } from "./try.js";
+import { ChainTrialStore, loadTrialConfig } from "./trial.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 import { ALGOD_URLS, issueCertificate, makeCertAnchor, registerCert, type CertAnchor, type CertReaderOptions, type IssueOptions } from "./cert.js";
 
@@ -86,6 +88,10 @@ export interface AppDeps {
   catalog?: Catalog;
   /** Delivery certificates (cert.ts): anchor written after each paid audit, free GET /cert/:id. Omitted = off. */
   cert?: { anchor: CertAnchor; reader: CertReaderOptions; issue?: IssueOptions };
+  /** Free trials (/try/run) from a separate trial wallet. Omitted = trials off (the rest of /try still works). */
+  trial?: TrialDeps;
+  /** Tests: where /try reads the board files. Default: the shared board loader. */
+  tryBoard?: { load?: BoardLoader; file?: string };
 }
 
 /**
@@ -210,7 +216,10 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     },
   });
 
-  const ownAddresses = [...new Set([deps.payTo, ...(cfg.base ? [cfg.base.payTo] : []), ...(deps.probeDeps.ownAddresses ?? [])])];
+  if (deps.trial && (deps.trial.address === deps.payTo || deps.probeDeps.ownAddresses?.includes(deps.trial.address))) {
+    throw new Error("the trial wallet must be separate from vet402's payTo and payer wallets");
+  }
+  const ownAddresses = [...new Set([deps.payTo, ...(cfg.base ? [cfg.base.payTo] : []), ...(deps.probeDeps.ownAddresses ?? []), ...(deps.trial ? [deps.trial.address] : [])])];
   const probeDeps: ProbeDeps = { ...deps.probeDeps, ownAddresses };
 
   const catalog = deps.catalog ?? new BazaarCatalog(cfg.bazaarUrl);
@@ -279,7 +288,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
         caps,
       });
     }
-    return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps }));
+    return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps, buyFeeUsdc: atomicToUsdc(cfg.buyFeeAtomic), verdictPriceUsdc: VERDICT_PRICE_USDC, auditPriceUsdc: cfg.auditPriceUsdc, trial: !!deps.trial }));
   });
 
   // Public, free, read-only: mounted before the payment middleware so it is never charged.
@@ -302,6 +311,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       }
     });
   }
+  registerTry(app, cfg, { probeDeps, catalog, trial: deps.trial, load: deps.tryBoard?.load, boardFile: deps.tryBoard?.file }); // free: /try, /try/preview, /try/run (trial wallet), /try/log
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
   if (deps.cert) registerCert(app, deps.cert.reader); // free: GET /cert/:id, /cert/:id/badge.svg (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
@@ -416,6 +426,19 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     paidFetch: makePaidFetch(cfg, payer.secretKeyB64),
     ownAddresses: [payTo, payer.address],
   };
+  // Free trials: a separate wallet, its own caps (0.05 per try, TRY_MAX_PER_DAY_USDC per day, read from the chain).
+  const t = loadTrialConfig(env);
+  const trial: TrialDeps | undefined = t
+    ? {
+        address: t.address,
+        maxPerCallAtomic: t.maxPerCallAtomic,
+        maxPerDayAtomic: t.maxPerDayAtomic,
+        hashKey: t.hashKey,
+        store: new ChainTrialStore({ networkName: cfg.networkName, indexerUrl: cfg.indexerUrl, trial: t }),
+        guard: new IndexedSpendGuard(new SpendLedger(t.maxPerCallAtomic, t.maxPerDayAtomic), () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: t.address, asaId: cfg.usdcAsaId })),
+        paidFetch: makePaidFetch({ ...cfg, maxPerCallAtomic: t.maxPerCallAtomic, maxPerDayAtomic: t.maxPerDayAtomic }, t.secretKeyB64),
+      }
+    : undefined;
   // Public addresses only: the activity page never needs the payer's secret.
   const activity = new ActivityLedger({
     networkName: cfg.networkName,
@@ -429,6 +452,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc),
     auditMaxTargets: cfg.auditMaxTargets,
     ...(cfg.base ? { base: baseActivitySource(cfg.base) } : {}),
+    ...(trial ? { trialPayer: trial.address } : {}),
   });
   // Local TestNet only: the test sellers on localhost are not in the Bazaar, so list them by URL.
   const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -441,7 +465,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     // Below this ALGO balance the payer writes no certificate record (default 1 ALGO).
     issue: env.CERT_MIN_PAYER_ALGO ? { minPayerMicroAlgo: usdcToAtomic(env.CERT_MIN_PAYER_ALGO) } : {},
   };
-  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog, cert }) };
+  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog, cert, trial }) };
 }
 
 // Vercel entry (zero-config Hono): build lazily so importing this module has no side effects.

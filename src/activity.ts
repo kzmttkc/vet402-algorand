@@ -75,6 +75,8 @@ export interface ActivityOptions {
   timeoutMs?: number;
   /** BASE_ACCEPT=on: also count customers who paid on Base. Omitted = Algorand only (the report has no `base`). */
   base?: BaseActivitySource;
+  /** Free-trial wallet (/try/run). Its payments to sellers are counted as trials, never as customers or customer revenue. */
+  trialPayer?: string;
 }
 
 export interface SellerPayment {
@@ -142,6 +144,8 @@ export interface ActivityReport {
     sellerPayments: { payments: number; usdc: string; unmatched: number; unmatchedUsdc: string };
     /** Paying customers' audits (operator tests excluded): included in customers and sellerPayments above. */
     audits: { payments: number; sellerPayments: number; sellerUsdc: string };
+    /** Free trials: vet402 paid a seller from its trial wallet. Not customers, not in the totals above. */
+    trials?: { payments: number; usdc: string; wallet: string };
   };
   /** BASE_ACCEPT=on only. "not_counted": the Base explorer or RPC could not be read; Base payments are then missing from every total. */
   base?: BaseActivity;
@@ -293,16 +297,19 @@ export class ActivityLedger {
 
   private async build(): Promise<ActivityReport> {
     const { payTo, payer, asaId, indexerUrl } = this.o;
-    const own = new Set([payTo, payer]);
+    const trialPayer = this.o.trialPayer;
+    const own = new Set([payTo, payer, ...(trialPayer ? [trialPayer] : [])]);
     const base = { indexerUrl, asaId, timeoutMs: this.timeoutMs, f: this.f };
-    const [incoming, outgoing, baseRead] = await Promise.all([
+    const [incoming, outgoing, baseRead, trialOut] = await Promise.all([
       usdcTransfers({ ...base, address: payTo }),
       usdcTransfers({ ...base, address: payer }),
       this.o.base ? this.o.base.read().then((r) => ({ ok: true as const, r }), (e: unknown) => ({ ok: false as const, detail: String((e as Error).message ?? e).slice(0, 200) })) : undefined,
+      trialPayer ? usdcTransfers({ ...base, address: trialPayer }) : Promise.resolve([] as Transfer[]),
     ]);
     const b = this.o.base;
     const baseOwn = new Set(b ? [b.payTo.toLowerCase()] : []);
     const isOwn = (t: Transfer) => (t.chain === "base" ? baseOwn.has(t.sender.toLowerCase()) : own.has(t.sender));
+    const trials = trialOut.filter((t) => t.sender === trialPayer && !own.has(t.receiver) && t.amount > 0n);
 
     let customers: Transfer[] = [];
     const notCounted: NotCounted[] = [];
@@ -440,6 +447,7 @@ export class ActivityLedger {
         operatorTests: { payments: ops.length, usdc: sum(ops), sellerPayments: opPayouts.length, sellerUsdc: sum(opPayouts) },
         sellerPayments: { payments: matched.length, usdc: sum(matched), unmatched: unmatched.length, unmatchedUsdc: sum(unmatched) },
         audits: { payments: realAudits.length, sellerPayments: auditPayouts.length, sellerUsdc: sum(auditPayouts) },
+        ...(trialPayer ? { trials: { payments: trials.length, usdc: sum(trials), wallet: trialPayer } } : {}),
       },
       ...(baseSide ? { base: baseSide } : {}),
       rows,
@@ -457,6 +465,7 @@ export class ActivityLedger {
         "An audit is one customer payment and one row; its seller payments are listed under it. Customer counts never include them twice.",
         "A customer payment with no seller payment means vet402 refused before paying the seller (for example price over cap or payment failure at the seller).",
         ...baseMethod,
+        ...(trialPayer ? [`Free trials (/try) are paid from a separate trial wallet (${trialPayer}). They are listed as trials only: never as customers, customer payments or seller payments above.`] : []),
       ],
     };
   }
@@ -526,6 +535,7 @@ tr.op td{background:var(--op)}tr.sub td{border-bottom-style:dotted;font-size:14p
 <div><b>${t.sellerPayments.payments}</b>payments to sellers<br><small>${esc(t.sellerPayments.usdc)} USDC${t.audits.payments ? `; ${t.audits.sellerPayments} of them inside ${t.audits.payments} audit(s)` : ""}</small></div>
 <div><b>${t.operatorTests.payments}</b>operator tests<br><small>${esc(t.operatorTests.usdc)} USDC, not counted</small></div>
 ${r.base?.status === "counted" ? `<div><b>${r.base.customers.payments}</b>of them paid on Base<br><small>${esc(r.base.customers.usdc)} USDC to ${baseAddr(r.base.payTo)}</small></div>` : ""}
+${t.trials ? `<div><b>${t.trials.payments}</b>free trials<br><small>${esc(t.trials.usdc)} USDC paid by vet402 (<a href="/try/log">log</a>), not customers</small></div>` : ""}
 </div>
 ${r.base?.status === "not_counted" ? `<p><b>Base payments: not counted.</b> Customers may also pay vet402 in USDC on Base (${esc(r.base.network)}), but the Base explorer or RPC could not be read just now (${esc(r.base.detail)}), so those payments are missing from every number on this page. Payments to sellers made for them may show as unmatched.</p>` : ""}
 <div class="wrap"><table>
