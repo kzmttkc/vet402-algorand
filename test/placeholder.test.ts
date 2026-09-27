@@ -443,3 +443,9 @@ test("WARN-4: placeholder_unfillable counts as unclear in totals, not refuse (sw
   assert.equal(parsed.totals.refuse, 0);
   assert.equal(parsed.totals.unclear, 1);
 });
+
+test("a parent key that names a transaction or block keeps the placeholder (tx.hash, block.hash); files[0].hash is still filled", () => {
+  const r = fillPlaceholders({ tx: { hash: "<sha256-hex-64-chars>" }, block: { hash: "<hex-64>" }, files: [{ hash: "<sha256-hex-64-chars>" }] });
+  assert.deepEqual(r.filled, ["files[0].hash"]);
+  assert.deepEqual([...r.unfillable].sort(), ["block.hash", "tx.hash"]);
+});

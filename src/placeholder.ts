@@ -191,10 +191,9 @@ export interface FillResult<T> {
  * Replace every placeholder string in a JSON value (objects and arrays, any depth). Each placeholder
  * gets its own fresh value; everything else is returned unchanged.
  */
-/** "files[1].hash" → "hash"; "list[0]" → "list". */
-function lastKey(path: string): string {
-  const parts = path.replace(/\[\d+\]/g, "").split(".");
-  return parts[parts.length - 1] ?? "";
+/** Every key on the path, so a parent names the value too: "tx.hash" → "tx hash"; "files[1].hash" → "files hash". */
+function pathKeys(path: string): string {
+  return path.replace(/\[\d+\]/g, "").split(".").join(" ");
 }
 
 export function fillPlaceholders<T>(value: T, path = ""): FillResult<T> {
@@ -204,7 +203,7 @@ export function fillPlaceholders<T>(value: T, path = ""): FillResult<T> {
     if (typeof v === "string") {
       const hint = placeholderHint(v);
       if (hint === undefined) return v;
-      const f = fillPlaceholder(hint, {}, lastKey(p));
+      const f = fillPlaceholder(hint, {}, pathKeys(p));
       if (f.ok) {
         filled.push(p || "(body)");
         return f.value;
