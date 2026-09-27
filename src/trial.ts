@@ -108,6 +108,13 @@ export interface TrialLogEntry {
   handle?: string;
   /** Where the visitor came from (?from= on /try or /): a short campaign tag, never personal data. */
   from?: string;
+  /** Set by the /try views: the operator's own try (?from= "operator…"). Shown, never counted. */
+  operatorTest?: boolean;
+}
+
+/** The operator's own try: its ?from= tag starts with "operator" (e.g. "operator-test"). Listed, never counted as a visitor. */
+export function isOperatorTry(e: { from?: string }): boolean {
+  return typeof e.from === "string" && e.from.toLowerCase().startsWith("operator");
 }
 
 /** A ?from= tag: letters, digits and "-" only, up to 20. Anything else is dropped. */
@@ -120,6 +127,17 @@ export interface TrialLog {
   entries: TrialLogEntry[];
   /** Distinct visitors who used their trial (IP claims). */
   people: number;
+}
+
+/**
+ * What /try shows: operator tries stay in `entries` (marked operatorTest) but are left out of `people` and `trials`.
+ * Claims carry no ?from= tag, so each operator try (one IP claim each) is taken off the IP-claim count.
+ * The operator's one-per-person claim itself stays on the chain.
+ */
+export function countedLog(log: TrialLog): TrialLog & { trials: number } {
+  const entries = log.entries.map((e) => (isOperatorTry(e) ? { ...e, operatorTest: true } : e));
+  const operator = entries.filter((e) => e.operatorTest).length;
+  return { entries, people: Math.max(0, log.people - operator), trials: entries.length - operator };
 }
 
 export interface TrialStore {

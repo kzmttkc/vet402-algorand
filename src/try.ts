@@ -34,7 +34,7 @@ import type { Catalog } from "./bazaar.js";
 import type { SpendGuard } from "./spend.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
 import { BASE_CSS, topNav } from "./landing.js";
-import { claimKeys, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type TrialLog, type TrialStore } from "./trial.js";
+import { claimKeys, countedLog, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type TrialLog, type TrialStore } from "./trial.js";
 import { timingSafeEqual } from "node:crypto";
 import type { SettleFirstEnv } from "./settle-first.js";
 import type { ActivityReport } from "./activity.js";
@@ -302,9 +302,10 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
   });
 
   const hidden = new Set((trial?.hiddenHandles ?? []).map((h) => normalizeHandle(h)?.toLowerCase()).filter(Boolean));
-  const logOf = async (): Promise<TrialLog | null> => {
+  /** The public view: hidden handles dropped; operator tries marked and left out of people / trials (countedLog). */
+  const logOf = async (): Promise<ShownLog | null> => {
     if (!trial) return null;
-    const log = await trial.store.log();
+    const log = countedLog(await trial.store.log());
     return { ...log, entries: log.entries.map(({ handle, ...e }) => (handle && !hidden.has(handle.toLowerCase()) ? { ...e, handle } : e)) };
   };
   const handles = new QuoteLimiter(5, deps.now);
@@ -346,7 +347,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     const [log, act] = await Promise.all([logOf().catch(() => null), deps.activity ? deps.activity.get().catch(() => null) : Promise.resolve(null)]);
     const days = Array.from({ length: 14 }, (_, i) => new Date(now - i * 86_400_000).toISOString().slice(0, 10));
     const byDay = days.map((date) => {
-      const tries = log ? log.entries.filter((e) => e.at.slice(0, 10) === date) : null;
+      const tries = log ? log.entries.filter((e) => !e.operatorTest && e.at.slice(0, 10) === date) : null;
       const from: Record<string, number> = {};
       for (const e of tries ?? []) from[e.from ?? "direct"] = (from[e.from ?? "direct"] ?? 0) + 1;
       const paid = act ? new Set(act.rows.filter((r) => !r.operatorTest && r.time.slice(0, 10) === date).map((r) => r.customer)).size : null;
@@ -364,7 +365,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     if (!trial) return c.json({ error: "trials_off" }, 404);
     try {
       const log = (await logOf())!;
-      return c.json({ wallet: trial.address, network: cfg.network, people: log.people, trials: log.entries.length, entries: log.entries }, 200, { "cache-control": "public, max-age=60" });
+      return c.json({ wallet: trial.address, network: cfg.network, people: log.people, trials: log.trials, entries: log.entries }, 200, { "cache-control": "public, max-age=60" });
     } catch (e) {
       return c.json({ error: "indexer_unavailable", detail: String((e as Error).message ?? e).slice(0, 200) }, 503, { "cache-control": "no-store" });
     }
@@ -372,7 +373,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
 
   app.get("/try/log", async (c) => {
     if (!trial) return c.text("Free trials are not open on this deployment.", 404);
-    let log: TrialLog | null = null;
+    let log: ShownLog | null = null;
     try {
       log = await logOf();
     } catch {
@@ -669,7 +670,7 @@ const TRY_JS = String.raw`
   function firstPeople(){
     var list=$('firstList');if(!list)return;
     fetch('/try/log.json').then(function(r){return r.ok?r.json():null}).then(function(j){
-      if(!j)return;var named=j.entries.filter(function(e){return e.handle}).reverse().slice(0,30);
+      if(!j)return;var named=j.entries.filter(function(e){return e.handle&&!e.operatorTest}).reverse().slice(0,30);
       list.textContent='';$('first').hidden=!named.length;
       named.forEach(function(e){var li=el('li');var a=link('https://x.com/'+e.handle.slice(1),e.handle);a.rel='noopener nofollow';li.appendChild(a);
         li.appendChild(document.createTextNode(' · '+e.at.slice(0,10)+' · '+e.host+' · '));li.appendChild(el('span',CLS[e.class],e.class));list.appendChild(li)});
@@ -785,12 +786,15 @@ ${o.trial ? `<div class="card" id="first" hidden><h2>First people to try vet402 
 </body></html>`;
 }
 
-export function tryLogHtml(log: TrialLog | null, wallet: string, networkName: string): string {
+/** /try/log as shown: operator tries are in `entries` (operatorTest) but not in `people` or `trials`. */
+export type ShownLog = TrialLog & { trials: number };
+
+export function tryLogHtml(log: ShownLog | null, wallet: string, networkName: string): string {
   const cls: Record<string, string> = { DELIVERED: "delivered", MISMATCH: "mismatch", UNREACHABLE: "unreach", UNCLEAR: "unclear" };
   const rows = (log?.entries ?? [])
     .map((e) => {
       const tx = e.sellerTx ? txLink(e.sellerTx, networkName) : undefined;
-      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small></td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "—"}</td><td>${e.handle ? `<a href="https://x.com/${esc(e.handle.slice(1))}" rel="noopener nofollow">${esc(e.handle)}</a>` : ""}</td></tr>`;
+      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small>${e.operatorTest ? '<br><small class="op">operator test (not counted)</small>' : ""}</td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "—"}</td><td>${e.handle ? `<a href="https://x.com/${esc(e.handle.slice(1))}" rel="noopener nofollow">${esc(e.handle)}</a>` : ""}</td></tr>`;
     })
     .join("");
   const acct = networkName === "mainnet" ? `https://allo.info/account/${wallet}` : `https://lora.algokit.io/testnet/account/${wallet}`;
@@ -809,7 +813,7 @@ small{color:var(--mut)}
 ${topNav()}
 <main>
 <h1>Free tries</h1>
-${log ? `<p><b>${log.people}</b> ${log.people === 1 ? "person has" : "people have"} tried vet402 · <b>${log.entries.length}</b> ${log.entries.length === 1 ? "purchase" : "purchases"}. vet402 paid for these from its trial wallet <a href="${esc(acct)}" rel="noopener"><code>${esc(wallet)}</code></a>. They are not customer payments and are not counted as customers on <a href="/activity">/activity</a>.</p>` : `<p>The Algorand indexer cannot be read right now. Try again shortly.</p>`}
+${log ? `<p><b>${log.people}</b> ${log.people === 1 ? "person has" : "people have"} tried vet402 · <b>${log.trials}</b> ${log.trials === 1 ? "purchase" : "purchases"}${log.entries.length > log.trials ? ` (plus ${log.entries.length - log.trials} operator ${log.entries.length - log.trials === 1 ? "test" : "tests"}, not counted)` : ""}. vet402 paid for these from its trial wallet <a href="${esc(acct)}" rel="noopener"><code>${esc(wallet)}</code></a>. They are not customer payments and are not counted as customers on <a href="/activity">/activity</a>.</p>` : `<p>The Algorand indexer cannot be read right now. Try again shortly.</p>`}
 <div class="tw"><table><thead><tr><th>time (UTC)</th><th>seller</th><th>result</th><th>USDC</th><th>vet402 → seller tx</th><th>name</th></tr></thead>
 <tbody>${rows || '<tr><td colspan="6"><small>No tries yet.</small></td></tr>'}</tbody></table></div>
 <p><small>Read from the blockchain: each try is written as a note on a 0-ALGO transaction from the trial wallet to itself. No IP address or hash is shown here. A name appears only when that visitor added it; to have one removed, <a href="${BOARD_ISSUES_URL}" rel="noopener">open a GitHub issue</a>. <a href="/try/log.json">JSON</a> · <a href="/try">Try it</a></small></p>

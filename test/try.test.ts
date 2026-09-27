@@ -858,3 +858,36 @@ test("/activity with Base and trials: a Base customer pairs with the Algorand se
   assert.deepEqual(r.totals.trials, { payments: 1, usdc: "0.010000", wallet: TRIAL });
   assert.equal(r.base?.status === "counted" && r.base.customers.payments, 1);
 });
+
+/* ---------- W6: the operator's own tries are listed but never counted ---------- */
+
+test("W6: an operator-test try stays in the log (marked) but is not counted: one operator-test + one normal try = people 1, trials 1", async () => {
+  const { app } = setup();
+  assert.equal((await run(app, { url: `${HOST}/honest`, from: "operator-test" }, "203.0.113.40")).status, 200);
+  assert.equal((await run(app, { url: `${HOST}/honest`, from: "github" }, "203.0.113.41")).status, 200);
+  const log = (await (await app.request("/try/log.json")).json()) as { people: number; trials: number; entries: { from?: string; operatorTest?: boolean }[] };
+  assert.deepEqual([log.people, log.trials, log.entries.length], [1, 1, 2]);
+  assert.deepEqual(log.entries.filter((e) => e.operatorTest).map((e) => e.from), ["operator-test"]);
+  const st = (await (await app.request("/try/stats.json")).json()) as { triedToday: number; triedTotal: number; byDay: { from: Record<string, number> }[] };
+  assert.deepEqual([st.triedToday, st.triedTotal], [1, 1]);
+  assert.deepEqual(st.byDay[0].from, { github: 1 });
+  const html = await (await app.request("/try/log")).text();
+  assert.match(html, /<b>1<\/b> person has tried vet402 · <b>1<\/b> purchase \(plus 1 operator test, not counted\)/);
+  assert.match(html, /operator test \(not counted\)/);
+  // The operator's one-per-person claim for that IP stays.
+  assert.equal((await run(app, { url: `${HOST}/honest` }, "203.0.113.40")).status, 403);
+});
+
+test("W6: any ?from= starting with operator is an operator try; other tags are not", async () => {
+  const { isOperatorTry, countedLog } = await import("../src/trial.js");
+  assert.equal(isOperatorTry({ from: "operator-test" }), true);
+  assert.equal(isOperatorTry({ from: "operator" }), true);
+  assert.equal(isOperatorTry({ from: "op" }), false);
+  assert.equal(isOperatorTry({}), false);
+  const e = (from?: string) => ({ at: "2026-09-27T00:00:00Z", url: "u", host: "h", class: "DELIVERED" as const, reason: "delivered", ...(from ? { from } : {}) });
+  assert.deepEqual(
+    (({ people, trials }) => ({ people, trials }))(countedLog({ people: 3, entries: [e("operator-a"), e("operator-b"), e()] })),
+    { people: 1, trials: 1 },
+  );
+  assert.equal(countedLog({ people: 0, entries: [e("operator-test")] }).people, 0); // never below 0
+});
