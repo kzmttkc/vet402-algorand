@@ -306,3 +306,54 @@ test("audit: room is capped at auditMaxTargets; extra payouts are unmatched, nev
   assert.deepEqual(r.rows[0].sellerPayments.map((p) => p.tx), ["P0", "P1"]);
   assert.deepEqual(r.unmatchedPayouts.map((p) => p.tx), ["P2"]);
 });
+
+/* ---------- W3: "first purchase at cost" only on Algorand and only for the sender's first payment to payTo ---------- */
+
+const buyLedger = (f: typeof fetch, base?: ConstructorParameters<typeof ActivityLedger>[0]["base"]) =>
+  new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA, payTo: PAYTO, payer: PAYER, fetchImpl: f, priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: 1_000n, ...(base ? { base } : {}) });
+
+test("W3: a Base payment of exactly the seller's price never pairs at cost, so it cannot take a real Algorand purchase's seller payment", async () => {
+  const bob = x402("BOB1", BOB, PAYTO, 15_000, 140); // seller 0.01 + fee 0.005: a real purchase
+  const out = axfer("OUTBOB", PAYER, SELLER1, 10_000, 145);
+  const { f } = mockIndexer({ [PAYTO]: [bob.txn], [PAYER]: [out] }, { [bob.txn.group!]: bob.group });
+  const base = {
+    network: "eip155:8453", payTo: "0x1111111111111111111111111111111111111111", usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", explorerUrl: "https://basescan.org", signers: ["0x136008978ad053942dCDBE759A0903f5d84966fa"],
+    // Paid on Base after Bob and before the seller payment, exactly the seller's price (what an at-cost buy would pay).
+    read: async () => ({ payments: [{ tx: "0xbase1", block: 10, logIndex: 1, time: T0 + (143 - 100) * 3, customer: "0x2222222222222222222222222222222222222222", amount: 10_000n }], notCounted: [] }),
+  };
+  const r = await buyLedger(f, base).get();
+  const byTx = Object.fromEntries(r.rows.map((w) => [w.customerTx, w]));
+  assert.equal(byTx.BOB1?.kind, "buy");
+  assert.equal(byTx.BOB1?.sellerTx, "OUTBOB");
+  assert.equal(byTx["0xbase1"], undefined);
+  assert.ok(r.notCounted.some((n) => n.tx === "0xbase1" && n.reason === "below_price" && n.network === "eip155:8453"));
+  assert.ok(!r.notCounted.some((n) => n.tx === "BOB1"));
+  assert.equal(r.totals.sellerPayments.unmatched, 0);
+});
+
+test("W3: a sender's second payment of the seller's price is not a purchase at cost; the first one still is; a real purchase in between keeps its seller payment", async () => {
+  const alice1 = x402("ALICE1", ALICE, PAYTO, 10_000, 110); // first purchase at cost (no fee)
+  const out1 = axfer("OUTA1", PAYER, SELLER1, 10_000, 112);
+  const bob = x402("BOB1", BOB, PAYTO, 15_000, 140); // real purchase: 0.01 + 0.005 fee
+  const alice2 = x402("ALICE2", ALICE, PAYTO, 10_000, 142); // Alice again at the seller's price: not "at cost" any more
+  const out2 = axfer("OUTBOB", PAYER, SELLER1, 10_000, 145);
+  const all = [alice1, bob, alice2];
+  const { f } = mockIndexer({ [PAYTO]: all.map((x) => x.txn), [PAYER]: [out1, out2] }, Object.fromEntries(all.map((x) => [x.txn.group!, x.group])));
+  const r = await buyLedger(f).get();
+  const byTx = Object.fromEntries(r.rows.map((w) => [w.customerTx, w]));
+  assert.equal(byTx.ALICE1?.sellerTx, "OUTA1");
+  assert.equal(byTx.BOB1?.sellerTx, "OUTBOB");
+  assert.equal(byTx.ALICE2, undefined);
+  assert.deepEqual(r.notCounted.filter((n) => n.reason === "below_price").map((n) => n.tx), ["ALICE2"]);
+  assert.equal(r.totals.customers.payments, 2);
+});
+
+test("W3: a sender who paid payTo before (even a plain deposit) gets no purchase at cost afterwards", async () => {
+  const deposit = axfer("DEP", ALICE, PAYTO, 1_000_000, 100); // not x402, but Alice has now paid payTo
+  const alice = x402("ALICE1", ALICE, PAYTO, 10_000, 110);
+  const out = axfer("OUT1", PAYER, SELLER1, 10_000, 112);
+  const { f } = mockIndexer({ [PAYTO]: [deposit, alice.txn], [PAYER]: [out] }, { [alice.txn.group!]: alice.group });
+  const r = await buyLedger(f).get();
+  assert.deepEqual(r.rows, []);
+  assert.equal(r.totals.sellerPayments.unmatched, 1);
+});

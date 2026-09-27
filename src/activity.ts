@@ -31,6 +31,10 @@
  * When several customer payments could take a seller payment: first a purchase whose
  * (payment - fee) is exactly that seller payment (or, for a first purchase at cost, the payment itself is),
  * then a check or an audit, then a purchase it only fits.
+ * A first purchase at cost is recognised only where /v1/buy can sell one: on Algorand (the Base accept always
+ * carries the fee), and only for the sender's first USDC transfer to payTo (the same test as neverPaidVet402 in
+ * buy.ts). A Base payment or a later payment from the same sender never pairs "at cost", so it cannot take the
+ * seller payment of a real purchase and push that purchase into below_price.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
 import type { BaseCustomerRead, BaseNotCounted } from "./base.js";
@@ -341,6 +345,16 @@ export class ActivityLedger {
 
     customers.sort((a, b) => (before(a, b) ? -1 : 1));
     payouts.sort((a, b) => (before(a, b) ? -1 : 1));
+    // Each sender's first USDC transfer to payTo on Algorand (any transfer counts as "paid before", as in neverPaidVet402).
+    const firstToPayTo = new Set<string>();
+    {
+      const seen = new Set<string>();
+      for (const t of [...incoming].filter((t) => t.receiver === payTo && !t.inner).sort((a, b) => (before(a, b) ? -1 : 1))) {
+        if (seen.has(t.sender)) continue;
+        seen.add(t.sender);
+        firstToPayTo.add(t.tx);
+      }
+    }
     const kindOf = (c: Transfer): ActivityRow["kind"] => {
       if (this.o.priceAtomic !== undefined && c.amount < this.o.priceAtomic) return this.isVerdict(c) ? "verdict" : "buy";
       return this.o.auditPriceAtomic !== undefined && c.amount >= this.o.auditPriceAtomic ? "audit" : "check";
@@ -350,7 +364,8 @@ export class ActivityLedger {
     const windowOf = (c: Transfer) => (isAudit(c) ? this.auditWindowSec : this.windowSec);
     // A purchase below the check price paid the seller's price + fee: its seller payment is at most (payment - fee).
     // A first purchase at cost (no fee) paid exactly the seller's price: its seller payment equals the payment.
-    const atCost = (c: Transfer, p: Transfer) => this.o.buyFeeAtomic !== undefined && c.amount === p.amount;
+    // Only on Algorand and only the sender's first payment to payTo (see the file comment).
+    const atCost = (c: Transfer, p: Transfer) => this.o.buyFeeAtomic !== undefined && c.chain !== "base" && firstToPayTo.has(c.tx) && c.amount === p.amount;
     const fits = (c: Transfer, p: Transfer) => kindOf(c) !== "buy" || c.amount - (this.o.buyFeeAtomic ?? 0n) >= p.amount || atCost(c, p);
     // A payment of exactly the /v1/verdict price is a lookup, unless a seller payment of the same amount pairs with it:
     // then it was a first purchase at cost of a seller priced like a lookup.
@@ -464,7 +479,7 @@ export class ActivityLedger {
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
-        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee), or of exactly the payment (a first purchase at cost, no fee; this includes a payment of the /v1/verdict price that pairs with a seller payment of the same amount). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a purchase whose payment minus the fee equals the seller payment, or a purchase at cost whose payment equals it, comes first, then a check or an audit, then a purchase the seller payment merely fits (a /v1/verdict-priced payment at cost comes last).`,
+        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee), or of exactly the payment (a first purchase at cost, no fee: only on Algorand and only for the sender's first payment to payTo; this includes a payment of the /v1/verdict price that pairs with a seller payment of the same amount). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a purchase whose payment minus the fee equals the seller payment, or a purchase at cost whose payment equals it, comes first, then a check or an audit, then a purchase the seller payment merely fits (a /v1/verdict-priced payment at cost comes last).`,
         `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check or a purchase (/v1/buy, whose price is the seller's price + vet402's fee) has room for one seller payment (within ${this.windowSec} s)${
           this.o.auditPriceAtomic !== undefined
             ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`
