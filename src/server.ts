@@ -28,6 +28,7 @@ import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
 import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, landingHtml } from "./landing.js";
+import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -48,6 +49,8 @@ export interface AppDeps {
   guard: SpendGuard;
   /** Injected in tests; default is the HTTP facilitator at cfg.facilitatorUrl. */
   facilitator?: FacilitatorLike;
+  /** Public activity ledger (GET /activity, /activity.json). Omitted = routes not mounted. */
+  activity?: { get(): Promise<ActivityReport> };
 }
 
 export function createApp(cfg: AppConfig, deps: AppDeps) {
@@ -121,6 +124,27 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps }));
   });
 
+  // Public, free, read-only: mounted before the payment middleware so it is never charged.
+  if (deps.activity) {
+    const activity = deps.activity;
+    const cacheControl = "public, max-age=60, s-maxage=60";
+    const unavailable = (e: unknown) => ({ error: "indexer_unavailable", detail: String((e as Error).message ?? e).slice(0, 200) });
+    app.get("/activity.json", async (c) => {
+      try {
+        return c.json(await activity.get(), 200, { "cache-control": cacheControl });
+      } catch (e) {
+        return c.json(unavailable(e), 503, { "cache-control": "no-store" });
+      }
+    });
+    app.get("/activity", async (c) => {
+      try {
+        return c.html(activityHtml(await activity.get()), 200, { "cache-control": cacheControl });
+      } catch (e) {
+        return c.text(`vet402 activity: the Algorand indexer cannot be read right now (${unavailable(e).detail}). Try again shortly.`, 503, { "cache-control": "no-store" });
+      }
+    });
+  }
+
   app.use(
     settleFirstMiddleware(httpServer, {
       // Free checks: a request we cannot serve is refused before the customer is charged.
@@ -165,7 +189,15 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     paidFetch: makePaidFetch(cfg, payer.secretKeyB64),
     ownAddresses: [payTo, payer.address],
   };
-  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard }) };
+  // Public addresses only: the activity page never needs the payer's secret.
+  const activity = new ActivityLedger({
+    networkName: cfg.networkName,
+    indexerUrl: cfg.indexerUrl,
+    asaId: cfg.usdcAsaId,
+    payTo,
+    payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
+  });
+  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity }) };
 }
 
 // Vercel entry (zero-config Hono): build lazily so importing this module has no side effects.
