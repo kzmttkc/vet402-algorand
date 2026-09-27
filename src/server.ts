@@ -147,7 +147,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     });
   }
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
-  registerSeller(app); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
+  registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
 
   app.use(
     settleFirstMiddleware(httpServer, {

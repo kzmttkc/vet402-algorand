@@ -27,8 +27,12 @@ import {
 
 /** Public base URL used in the badge Markdown. */
 export const SELLER_PAGE_BASE = "https://vet402-algorand.vercel.app";
-/** Price of GET /v1/audit?seller=<host> (the paid re-check). */
-export const AUDIT_PRICE_USDC = "0.50";
+/** What /seller pages say about the paid re-check (from AppConfig). Off = the box is not shown. */
+export interface SellerPageOptions {
+  auditLinkEnabled: boolean;
+  auditPriceUsdc: string;
+}
+const AUDIT_OFF: SellerPageOptions = { auditLinkEnabled: false, auditPriceUsdc: "" };
 export const PERA_URL = "https://perawallet.app";
 
 /**
@@ -84,7 +88,9 @@ export function sellerView(host: string, files: { daily: BoardFile | null; censu
       const row: SellerRow = { ...r, cls: displayClass(r), source, day: dayOf(r, f) };
       const key = `${r.method} ${r.url}`;
       const prev = latest.get(key);
-      if (!prev || (row.at || row.day) > (prev.at || prev.day)) latest.set(key, row);
+      // A row with a result beats a SKIPPED row (vet402 never contacted the seller), whatever the time; then the newest wins.
+      const rank = (x: SellerRow) => (x.verdict === "SKIPPED" ? 0 : 1);
+      if (!prev || rank(row) > rank(prev) || (rank(row) === rank(prev) && (row.at || row.day) > (prev.at || prev.day))) latest.set(key, row);
     }
   }
   const order: Record<DisplayClass, number> = { DELIVERED: 0, MISMATCH: 1, UNCLEAR: 2, UNREACHABLE: 3 };
@@ -161,7 +167,7 @@ function pathOf(u: string): string {
   }
 }
 
-export function sellerHtml(v: SellerView): string {
+export function sellerHtml(v: SellerView, o: SellerPageOptions = AUDIT_OFF): string {
   const h = esc(v.host);
   const enc = encodeURIComponent(v.host);
   const summary = v.cls
@@ -214,11 +220,15 @@ ul{list-style:none;padding:0;margin:0}
 <h1>${h}</h1>
 <p><img src="/badge/${esc(enc)}.svg" alt="vet402: ${esc(badgeText(v))}" height="20"></p>
 ${summary}
-<div class="box">
-<p>Check this seller again now: <code>GET /v1/audit?seller=${h}</code> (${AUDIT_PRICE_USDC} USDC). Your payment settles first; only then does vet402 pay the seller.</p>
+${
+  o.auditLinkEnabled
+    ? `<div class="box">
+<p>Check this seller again now: <code>GET /v1/audit?seller=${h}</code> (${esc(o.auditPriceUsdc)} USDC). Your payment settles first; only then does vet402 pay the seller.</p>
 <p><small>No USDC on Algorand? In the Pera Wallet app you can buy USDC with a card: <a href="${PERA_URL}" rel="noopener">perawallet.app</a></small></p>
 </div>
-<div class="box">
+`
+    : ""
+}<div class="box">
 <p>Badge for your README (Markdown):</p>
 <pre><code>${esc(badgeMarkdown(v.host))}</code></pre>
 </div>
@@ -229,7 +239,13 @@ ${summary}
 }
 
 /** Register GET /seller/:host and GET /badge/:host.svg. Call before the payment middleware. */
-export function registerSeller<E extends Env>(app: Hono<E>, file: string = defaultBoardFile(), load: BoardLoader = sharedBoardLoader()): void {
+export function registerSeller<E extends Env>(
+  app: Hono<E>,
+  o: SellerPageOptions = AUDIT_OFF,
+  file: string = defaultBoardFile(),
+  load: BoardLoader = sharedBoardLoader(),
+): void {
+  const page: SellerPageOptions = { auditLinkEnabled: o.auditLinkEnabled, auditPriceUsdc: o.auditPriceUsdc };
   const view = async (host: string) => {
     const [daily, census] = await Promise.all([load(file), load(censusFileFor(file))]);
     return sellerView(host, { daily, census });
@@ -238,7 +254,7 @@ export function registerSeller<E extends Env>(app: Hono<E>, file: string = defau
     const host = parseHost(c.req.param("host"));
     if (!host) return c.text("invalid host", 400, { "cache-control": "no-store" });
     c.header("cache-control", "public, max-age=300");
-    return c.html(sellerHtml(await view(host)));
+    return c.html(sellerHtml(await view(host), page));
   });
   app.get("/badge/:file", async (c) => {
     const f = c.req.param("file");
@@ -248,6 +264,7 @@ export function registerSeller<E extends Env>(app: Hono<E>, file: string = defau
       "content-type": "image/svg+xml; charset=utf-8",
       "cache-control": "public, max-age=3600",
       "x-content-type-options": "nosniff",
+      "content-security-policy": "default-src 'none'",
     });
   });
 }

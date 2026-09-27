@@ -168,12 +168,14 @@ export function readBoard(file: string): BoardFile | null {
  */
 export const BOARD_REMOTE_BASE = "https://raw.githubusercontent.com/kzmttkc/vet402-algorand/main/board/";
 export const BOARD_REMOTE_FILES: readonly string[] = ["latest.json", "census-latest.json"];
-/** Dated census files may also be fetched: census-YYYY-MM-DD.json, a real date, nothing else. */
+/** Dated census files may also be fetched, only for the fixed list CENSUS_DATES (no directory listing, no API). */
 export function isRemoteBoardName(name: string): boolean {
   if (BOARD_REMOTE_FILES.includes(name)) return true;
   const m = /^census-(\d{4}-\d{2}-\d{2})\.json$/.exec(name);
-  return !!m && isBoardDate(m[1]);
+  return !!m && CENSUS_DATES.includes(m[1]);
 }
+/** The loader keeps at most this many file names in its cache (oldest dropped first). */
+export const BOARD_CACHE_MAX = 20;
 const REMOTE_MAX_BYTES = 16 * 1024 * 1024;
 
 export interface BoardLoaderOptions {
@@ -184,6 +186,8 @@ export interface BoardLoaderOptions {
   timeoutMs?: number;
   okTtlMs?: number;
   failTtlMs?: number;
+  /** Most file names kept in the cache. Default BOARD_CACHE_MAX. */
+  maxEntries?: number;
 }
 
 export type BoardLoader = (file: string) => Promise<BoardFile | null>;
@@ -206,6 +210,7 @@ export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
   const timeoutMs = o.timeoutMs ?? 5_000;
   const okTtl = o.okTtlMs ?? 5 * 60_000;
   const failTtl = o.failTtlMs ?? 30_000;
+  const maxEntries = Math.max(1, o.maxEntries ?? BOARD_CACHE_MAX);
   const cache = new Map<string, { until: number; board: BoardFile | null; good: BoardFile | null }>();
   const inflight = new Map<string, Promise<BoardFile | null>>();
 
@@ -234,7 +239,9 @@ export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
     if (running) return running;
     const p = fetchRemote(name).then((board) => {
       const good = board ?? cache.get(name)?.good ?? null;
+      cache.delete(name); // re-insert as newest
       cache.set(name, { until: now() + (board ? okTtl : failTtl), board: good, good });
+      while (cache.size > maxEntries) cache.delete(cache.keys().next().value!);
       inflight.delete(name);
       return good;
     });
@@ -434,13 +441,13 @@ export type BoardView = "daily" | "census";
 export interface BoardHtmlOptions {
   /** Census day asked for with ?date= (undefined = the latest census). */
   date?: string;
-  /** Census days offered as tabs. Default CENSUS_DATES plus the shown file's day. */
+  /** Census days offered as tabs. Default CENSUS_DATES. */
   censusDates?: readonly string[];
 }
 
 /** Census day tabs: "latest" plus each known day. */
 function censusDateNav(board: BoardFile | null, o: BoardHtmlOptions): string {
-  const days = [...new Set([...(o.censusDates ?? CENSUS_DATES), ...(isBoardDate(board?.date) ? [board!.date] : [])])].filter(isBoardDate).sort();
+  const days = [...(o.censusDates ?? CENSUS_DATES)].filter(isBoardDate).sort();
   const link = (href: string, label: string, current: boolean) => `<a href="${esc(href)}"${current ? ' aria-current="page"' : ""}>${esc(label)}</a>`;
   return (
     `<nav class="tabs dates" aria-label="census day">` +
@@ -635,10 +642,10 @@ export function registerBoard<E extends Env>(
   file: string = defaultBoardFile(),
   load: BoardLoader = sharedBoardLoader(),
 ): void {
-  // ?date= is honoured only for the census view and only as a real YYYY-MM-DD; anything else is the latest file.
+  // ?date= is honoured only for the census view and only for a day in CENSUS_DATES; anything else is the latest file.
   const pick = (v: string | undefined, d: string | undefined): { view: BoardView; path: string; date?: string } =>
     v === "census"
-      ? isBoardDate(d)
+      ? d !== undefined && CENSUS_DATES.includes(d)
         ? { view: "census", path: censusFileFor(file, d), date: d }
         : { view: "census", path: censusFileFor(file) }
       : { view: "daily", path: file };

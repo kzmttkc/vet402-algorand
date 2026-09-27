@@ -428,11 +428,11 @@ test("loader: local file first; else GitHub raw for allow-listed names only; 5 s
   t += 31_000;
   await load(miss);
   assert.equal(urls.length, 3);
-  // A dated census file (real date) is allowed; names outside the allow-list are never fetched.
+  // A dated census file on the fixed list is allowed; names outside the allow-list are never fetched.
   status = 200;
   assert.equal((await load(join(dir, "census-2026-09-27.json")))?.rows.length, 1);
   assert.equal(urls.at(-1), `${BOARD_REMOTE_BASE}census-2026-09-27.json`);
-  for (const bad of ["census-2026-13-40.json", "census-2026-9-27.json", "census-2026-09-27.json.bak", "2026-09-27.json", "census-../x.json"]) {
+  for (const bad of ["census-2026-09-26.json", "census-2031-01-01.json", "census-2026-13-40.json", "census-2026-9-27.json", "census-2026-09-27.json.bak", "2026-09-27.json", "census-../x.json"]) {
     assert.equal(await load(join(dir, "none", bad)), null, bad);
   }
   assert.equal(await load(join(dir, "..", "secret.json")), null);
@@ -443,6 +443,23 @@ test("loader: local file first; else GitHub raw for allow-listed names only; 5 s
   // remote:false never fetches.
   const off = createBoardLoader({ remote: false, fetchImpl: async () => assert.fail("must not fetch") });
   assert.equal(await off(join(dir, "none", "census-latest.json")), null);
+});
+
+test("loader: the cache holds at most maxEntries names (oldest dropped); the allow-list is the fixed census days", async () => {
+  const { BOARD_CACHE_MAX, CENSUS_DATES, isRemoteBoardName } = await import("../src/board.js");
+  assert.equal(BOARD_CACHE_MAX, 20);
+  assert.deepEqual([...CENSUS_DATES], ["2026-09-27", "2026-09-28"]);
+  assert.ok(isRemoteBoardName("census-2026-09-28.json") && !isRemoteBoardName("census-2026-09-29.json"));
+  const dir = mkdtempSync(join(tmpdir(), "board-cap-"));
+  const urls: string[] = [];
+  const load = createBoardLoader({ maxEntries: 2, now: () => 0, fetchImpl: async (u) => (urls.push(String(u)), new Response(JSON.stringify(board([{}])), { status: 200 })) });
+  for (const n of ["latest.json", "census-latest.json", "census-2026-09-27.json"]) await load(join(dir, n));
+  assert.equal(urls.length, 3);
+  await load(join(dir, "census-2026-09-27.json"));
+  await load(join(dir, "census-latest.json"));
+  assert.equal(urls.length, 3, "the two newest are cached");
+  await load(join(dir, "latest.json"));
+  assert.equal(urls.length, 4, "the oldest was dropped");
 });
 
 function fakeFacilitator(calls: string[]): FacilitatorClient {

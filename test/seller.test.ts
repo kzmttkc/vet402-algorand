@@ -53,6 +53,14 @@ test("seller view: latest row per resource across daily and census; delivered wi
   assert.equal(v.rows[0].source, "daily");
   assert.equal(badgeSvg(v).includes("delivered 2026-09-28"), true);
 
+  // A later SKIPPED row never hides an earlier result (the badge does not fall back to "not checked").
+  const later = sellerView("s.example", {
+    census: file([{ url: "https://s.example/a", verdict: "ALLOW", reason: "delivered", paid: true, at: "2026-09-27T04:00:00Z" }]),
+    daily: file([{ url: "https://s.example/a", verdict: "SKIPPED", reason: "daily_cap", paid: false, at: "2026-09-28T21:00:00Z" }]),
+  });
+  assert.equal(later.cls, "DELIVERED");
+  assert.equal(later.rows[0].verdict, "ALLOW");
+
   const skipped = sellerView("s.example", { daily: null, census: file([{ verdict: "SKIPPED", reason: "daily_cap", paid: false }]) });
   assert.equal(skipped.cls, null);
   assert.ok(badgeSvg(skipped).includes(">not checked<"));
@@ -82,8 +90,11 @@ test("seller page and badge: every string from a file is escaped; no external sc
   assert.ok(!html.includes("javascript:alert"));
   assert.ok(html.includes(`https://allo.info/tx/${TX1}`));
   assert.ok(!/<script/i.test(html), "no script at all");
-  assert.ok(html.includes("/v1/audit?seller=s.example") && html.includes("0.50 USDC") && html.includes("Your payment settles first"));
-  assert.ok(html.includes("https://perawallet.app"));
+  // The paid re-check box is off by default (until /v1/audit is live); on, it shows the configured price.
+  assert.ok(!html.includes("/v1/audit") && !html.includes("perawallet.app"));
+  const on = sellerHtml(v, { auditLinkEnabled: true, auditPriceUsdc: "0.50" });
+  assert.ok(on.includes("/v1/audit?seller=s.example") && on.includes("0.50 USDC") && on.includes("Your payment settles first"));
+  assert.ok(on.includes("https://perawallet.app"));
   assert.ok(html.includes(badgeMarkdown("s.example").replace(/"/g, "&quot;")));
   assert.ok(html.includes("bought the resource once") && html.includes("github.com/kzmttkc/vet402-algorand/issues"));
   assert.ok(html.includes("this is not a rating"));
@@ -157,6 +168,7 @@ test("routes: /seller/<host> and /badge/<host>.svg are free, read the census, ca
     assert.equal(b.status, 200);
     assert.match(b.headers.get("content-type") ?? "", /^image\/svg\+xml/);
     assert.equal(b.headers.get("cache-control"), "public, max-age=3600");
+    assert.equal(b.headers.get("content-security-policy"), "default-src 'none'");
     assert.ok((await b.text()).includes("delivered 2026-09-27"));
 
     const none = await (await app.request("/badge/never-listed.example.svg")).text();
@@ -170,10 +182,22 @@ test("routes: /seller/<host> and /badge/<host>.svg are free, read the census, ca
     const d = await (await app.request("/board?view=census&date=2026-09-27")).text();
     assert.ok(d.includes('aria-current="page">2026-09-27<'));
     assert.ok(d.includes('href="/seller/agent402.tools"'));
-    const missing = await (await app.request("/board?view=census&date=2026-09-26")).text();
-    assert.ok(missing.includes("Not run yet for 2026-09-26"));
+    const missing = await (await app.request("/board?view=census&date=2026-09-28")).text();
+    assert.ok(missing.includes("Not run yet for 2026-09-28"));
+    const unlisted = await (await app.request("/board?view=census&date=2026-09-26")).text();
+    assert.ok(unlisted.includes('aria-current="page">latest<'), "a day off the fixed list falls back to the latest census");
+    // Default config: no paid re-check box on the seller page.
+    assert.ok(!html.includes("/v1/audit"));
     const junk = await (await app.request("/board?view=census&date=../../etc")).text();
     assert.ok(junk.includes('aria-current="page">latest<'), "a bad date falls back to the latest census");
+
+    // SELLER_PAGE_AUDIT=on shows the box with the configured price.
+    const cfgOn = loadConfig({ ALLOW_PRIVATE_TARGETS: "1", SELLER_PAGE_AUDIT: "on", AUDIT_PRICE_USDC: "0.50" });
+    assert.equal(cfgOn.auditPriceUsdc, "0.50");
+    assert.equal(cfg.auditLinkEnabled, false);
+    const appOn = createApp(cfgOn, { payTo: "VET402PAYTO", probeDeps, guard, facilitator: fakeFacilitator(calls) });
+    const onHtml = await (await appOn.request("/seller/agent402.tools")).text();
+    assert.ok(onHtml.includes("GET /v1/audit?seller=agent402.tools</code> (0.50 USDC)"));
 
     assert.deepEqual(calls, [], "facilitator never called");
   } finally {
