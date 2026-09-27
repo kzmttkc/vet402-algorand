@@ -65,16 +65,17 @@ What counts as a promise:
 
 `GET /v1/audit?seller=<host or payTo address>` (`AUDIT_PRICE_USDC`, default 0.50 USDC). For sellers who want their own API checked from someone else's wallet: vet402 buys each of the seller's listed resources with its own payer wallet and judges each delivery the same way as `/v1/check`. The 402 has the same shape as `/v1/check` (`exact`, USDC ASA, `tag: x402-global-challenge`, Bazaar extension with input and output declared).
 
-**Free plan before payment.** The unpaid request reads the Bazaar feed (`https://facilitator.goplausible.xyz/discovery/resources`, every page by `offset`, cached 10 minutes) and lists the seller's resources that are paid in USDC on this network. `seller` matches the resource host (`api.example.com`, or `localhost:4031` locally) or the `payTo` of its USDC accept.
+**Free plan before payment.** The unpaid request reads the Bazaar feed (`https://facilitator.goplausible.xyz/discovery/resources`, every page by `offset`, cached 5 minutes) and lists the seller's resources that are paid in USDC on this network. `seller` matches the resource host (`api.example.com`, or `localhost:4031` locally) or the `payTo` of its USDC accept.
 
-- None listed → `404 seller_not_found`, no 402 challenge, nothing to pay. Invalid or vet402's own seller → `400`. Bazaar or daily-cap check unreadable → `503`.
+- None listed → `404 seller_not_found`, no 402 challenge, nothing to pay. Invalid or vet402's own seller → `400`. Bazaar unreadable → `503`.
+- The unpaid request stays cheap: the plan (and a 404/422 answer) is cached per seller for 5 minutes, and the daily cap is read from the indexer only for a paid request.
 - Otherwise the 402 JSON body carries `audit`: `found`, `checking`, `paying`, `plannedSpendUsdc`, the exact `targets` in the order they will be bought, and `notChecked` with a reason for each resource that will not be bought. So the seller knows how many resources will be checked before signing anything.
-- Order: most-bought first (`settleCount`), then cheapest. At most `AUDIT_MAX_TARGETS` (default 10) resources. The listed prices of the resources vet402 expects to pay for stay within `AUDIT_MAX_SPEND_USDC` (default 0.40, always below the audit price) and today's remaining daily cap; the rest are listed as `over_audit_budget`, `over_daily_headroom` or `over_target_limit`.
-- A resource above the per-call cap is still checked: vet402 reads its 402 and returns `price_over_cap` without paying.
+- Order: most-bought first (`settleCount`), then cheapest. At most `AUDIT_MAX_TARGETS` (default 10) resources. The listed prices of the resources vet402 expects to pay for stay within `AUDIT_MAX_SPEND_USDC` (default 0.40, always below the audit price); the rest are listed as `over_audit_budget` or `over_target_limit`. At payment time the plan is also trimmed to today's remaining daily cap (`over_daily_headroom`); if nothing is left to pay for, `503 daily_cap_reached` before settlement.
+- A resource above the per-call cap is still checked: vet402 reads its 402 and returns `price_over_cap` without paying. It is never paid in this audit, even if its live price has dropped under the cap by then (`SKIPPED plan_changed`).
 - vet402 sends the example input the seller published in the Bazaar (query or JSON body), as the board does. `PUT`/`DELETE`, form bodies and path templates are listed as not checked. On 2026-09-27, 810 of the 2,090 MainNet USDC listings were `POST` and 867 were `GET` with declared query parameters, so a bare `GET` on the URL would misjudge most of them.
 - If nothing can be bought within the caps → `422 nothing_to_audit` with the list, nothing to pay.
 
-**After payment (settle-first).** The plan is made again when the paid request arrives (same cached catalogue, current daily headroom), before the customer's payment is settled; that plan is the one that runs, and it is returned in the response. The customer's payment settles first, then vet402 buys the targets one at a time through the normal `probe()`: per-call cap before any signature, the daily cap read from the chain, no self-dealing, no private addresses. On top of that, one audit never spends more than `AUDIT_MAX_SPEND_USDC`, even if a seller raised its price after the plan. When the audit budget or the daily cap is hit, or the audit runs longer than `AUDIT_DEADLINE_MS` (default 240 s), the remaining resources are not paid and come back as `SKIPPED` with `audit_budget`, `daily_cap` or `time_limit`.
+**After payment (settle-first).** The paid request takes the cached plan for the seller (or plans again if the cache has expired) and trims it to the daily headroom, before the customer's payment is settled. vet402 never pays for more resources than the `paying` last shown for that seller in a 402 (kept 30 minutes): resources beyond it come back as `SKIPPED plan_changed`. The plan that runs is returned in the response. The customer's payment settles first, then vet402 buys the targets one at a time through the normal `probe()`: per-call cap before any signature, the daily cap read from the chain, no self-dealing, no private addresses. On top of that, one audit never spends more than `AUDIT_MAX_SPEND_USDC`, even if a seller raised its price after the plan, and each payment is locked to the `payTo` in the plan: if the live 402 asks for a different address, vet402 does not sign (`REFUSE payto_changed`). With `seller=<payTo>`, no other address is ever paid. When the audit budget or the daily cap is hit, or the next resource could not finish within `AUDIT_DEADLINE_MS` (default 240 s; worst case per resource = 2 × `PROBE_TIMEOUT_MS` + 10 s), the remaining resources are not paid and come back as `SKIPPED` with `audit_budget`, `daily_cap` or `time_limit`.
 
 Response: `results[]` (per resource: `verdict`, `reason`, `class`, `customerTx`, `downstreamPayment.transaction`, `price`, `delivery`), `summary` (`delivered` / `mismatch` / `unreachable` / `unclear` / `skipped`, number of seller payments, USDC spent), `customerPayment`, and the `plan`. `class` uses the same rules as the board: `mismatch` only when vet402 paid and the delivery did not match the declaration.
 
@@ -144,7 +145,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 ## Deploy (Vercel, Node runtime)
 
-`src/server.ts` default-exports a Hono app, which Vercel's zero-config Hono support picks up (Node.js runtime, Fluid compute). The app is built lazily on the first request. `vercel.json` only pins `npm ci`. Do not add `src/index.ts` or `src/app.ts`: Vercel also looks for those names.
+`src/server.ts` default-exports a Hono app, which Vercel's zero-config Hono support picks up (Node.js runtime, Fluid compute). The app is built lazily on the first request. `vercel.json` pins `npm ci` and sets `maxDuration: 300` for `src/server.ts` (an audit buys up to 10 resources in one request). Keep it equal to `VERCEL_MAX_DURATION_SEC` in `src/config.ts`; a test checks this. Do not add `src/index.ts` or `src/app.ts`: Vercel also looks for those names.
 
 ### Environment variables
 
@@ -158,7 +159,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `AUDIT_PRICE_USDC` | no | `0.50` | price of one seller audit |
 | `AUDIT_MAX_SPEND_USDC` | no | `0.40` | most one audit pays sellers; must be below `AUDIT_PRICE_USDC` |
 | `AUDIT_MAX_TARGETS` | no | `10` | most resources one audit checks (1–50) |
-| `AUDIT_DEADLINE_MS` | no | `240000` | the rest of an audit is SKIPPED after this |
+| `AUDIT_DEADLINE_MS` | no | `240000` | whole ms, at most 60 s under the function limit (`vercel.json` `maxDuration` 300 s); anything else refuses to start. The rest of an audit is SKIPPED after this |
 | `BAZAAR_URL` | no | `https://facilitator.goplausible.xyz/discovery/resources` | where the audit lists a seller's resources |
 | `PROBE_MAX_PER_CALL_USDC` | no | `0.10` (MainNet) | per-seller-payment cap |
 | `PROBE_MAX_PER_DAY_USDC` | no | `3.00` (MainNet) | per-UTC-day cap (on-chain) |
@@ -247,6 +248,8 @@ One audit of the test seller `Y6IYAN3L…HZKEJXXM` (`/honest`, `/liar`, `/pricey
 | `/pricey` | REFUSE | price_over_cap | not paid | |
 
 The customer's round is earlier than both seller payments. `/activity.json` shows the audit as one row (`kind: "audit"`) with both seller payments under it.
+
+Re-run after the review fixes (plan cache, payTo lock, paying cap): customer `F7XPSMXYWE6QWSPEL4AJNN62FQPPDFSMWRIHT6AZEJ6MUSS3NIXA` round 67704373 → `/honest` ALLOW `6J2AP5JFKBSYQSJQTIRGV5S7FID4MGJOQBUA7XEL2EQXODXSYDCQ` round 67704375 → `/liar` REFUSE delivery_missing_keys `56CKOPLE7O6THCQGGBKTG7IPCS2I6VCFSBFSHNWU4HKPVNVC3TCQ` round 67704377 → `/pricey` REFUSE price_over_cap, not paid.
 
 ### 2026-09-27 11:1x JST: settle-first run (current code)
 

@@ -35,7 +35,7 @@ import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js
 import { registerBoard } from "./board.js";
 import { registerSeller } from "./seller.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
-import { parseSeller, planAudit, runAudit, type AuditPlan } from "./audit.js";
+import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -169,25 +169,41 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   const probeDeps: ProbeDeps = { ...deps.probeDeps, ownAddresses };
 
   const catalog = deps.catalog ?? new BazaarCatalog(cfg.bazaarUrl);
-  /** The plan shown before payment is the plan run after it (same request object). */
-  const auditPlans = new WeakMap<Request, AuditPlan>();
-  const planForRequest = async (c: Context<SettleFirstEnv>): Promise<{ stop: Response } | { plan: AuditPlan }> => {
-    const seller = c.req.query("seller");
-    if (!parseSeller(seller)) {
-      return { stop: c.json({ error: "invalid_seller", detail: "seller must be a host (api.example.com) or an Algorand payTo address" }, 400) };
-    }
-    const h = await deps.guard.headroom();
-    if (!h.ok) return { stop: c.json({ error: h.reason, seller, detail: h.detail }, 503) };
-    let items;
-    try {
-      items = await catalog.items();
-    } catch (e) {
-      return { stop: c.json({ error: "bazaar_unavailable", seller, detail: String((e as Error).message ?? e).slice(0, 200) }, 503) };
-    }
-    const out = await planAudit(seller, items, { cfg, ownAddresses, resolveHost: deps.probeDeps.resolveHost, headroomAtomic: h.remainingAtomic });
-    if (!out.ok) return { stop: c.json(out.body, out.status) };
-    return { plan: out.plan };
+  /**
+   * Audit plans. The unpaid request is cheap: plans (and negative answers) are cached
+   * for PLAN_TTL_MS per seller, the Bazaar feed for 5 minutes, and today's daily-cap
+   * headroom is read only for a paid request. The paid request takes the same cached
+   * plan when it is still there (else it plans again) and trims it to the headroom;
+   * it never pays for more resources than the last plan shown for that seller
+   * (`shownPaying`): the excess is SKIPPED plan_changed.
+   */
+  const PLAN_TTL_MS = 5 * 60_000;
+  const SHOWN_TTL_MS = 30 * 60_000;
+  const MAX_CACHED_SELLERS = 500;
+  const planCache = new Map<string, { at: number; outcome: Promise<PlanOutcome> }>();
+  const shownPaying = new Map<string, { at: number; paying: number }>();
+  const remember = <V extends { at: number }>(m: Map<string, V>, k: string, v: V) => {
+    m.delete(k);
+    m.set(k, v);
+    if (m.size > MAX_CACHED_SELLERS) m.delete(m.keys().next().value!);
   };
+  const sellerKey = (ref: SellerRef) => (ref.kind === "host" ? `host:${ref.host}` : `payTo:${ref.address}`);
+  const cachedPlan = (key: string, seller: string): Promise<PlanOutcome> => {
+    const hit = planCache.get(key);
+    if (hit && Date.now() - hit.at < PLAN_TTL_MS) return hit.outcome;
+    const outcome = catalog.items().then((items) => planAudit(seller, items, { cfg, ownAddresses, resolveHost: deps.probeDeps.resolveHost }));
+    remember(planCache, key, { at: Date.now(), outcome });
+    outcome.catch(() => {
+      if (planCache.get(key)?.outcome === outcome) planCache.delete(key); // a Bazaar outage is not cached
+    });
+    return outcome;
+  };
+  const invalidSeller = (c: Context<SettleFirstEnv>) =>
+    c.json({ error: "invalid_seller", detail: "seller must be a host (api.example.com) or an Algorand payTo address" }, 400);
+  const bazaarDown = (c: Context<SettleFirstEnv>, seller: string, e: unknown) =>
+    c.json({ error: "bazaar_unavailable", seller, detail: String((e as Error).message ?? e).slice(0, 200) }, 503);
+  /** The paid request's plan and the most it may pay for (kept per request object). */
+  const auditRuns = new WeakMap<Request, { plan: AuditPlan; maxPayments: number }>();
 
   const app = new Hono<SettleFirstEnv>();
 
@@ -243,14 +259,40 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       // Free checks: a request we cannot serve is refused before the customer is charged.
       beforeChallenge: async (c) => {
         if (c.req.path !== "/v1/audit") return null;
-        const p = await planForRequest(c);
-        return "stop" in p ? p : { info: { audit: p.plan } };
+        const seller = c.req.query("seller") ?? "";
+        const ref = parseSeller(seller);
+        if (!ref) return { stop: invalidSeller(c) };
+        let out: PlanOutcome;
+        try {
+          out = await cachedPlan(sellerKey(ref), seller);
+        } catch (e) {
+          return { stop: bazaarDown(c, seller, e) };
+        }
+        if (!out.ok) return { stop: c.json(out.body, out.status) };
+        remember(shownPaying, sellerKey(ref), { at: Date.now(), paying: out.plan.paying });
+        return { info: { audit: out.plan } };
       },
       preflight: async (c) => {
+        // Only the exact paid paths reach a handler; anything else (/v1/check/, /V1/check, ...) is refused before settlement.
+        if (c.req.path !== "/v1/check" && c.req.path !== "/v1/audit") return c.json({ error: "not_found", path: c.req.path }, 404);
         if (c.req.path === "/v1/audit") {
-          const p = await planForRequest(c);
-          if ("stop" in p) return p.stop;
-          auditPlans.set(c.req.raw, p.plan);
+          const seller = c.req.query("seller") ?? "";
+          const ref = parseSeller(seller);
+          if (!ref) return invalidSeller(c);
+          const h = await deps.guard.headroom();
+          if (!h.ok) return c.json({ error: h.reason, seller, detail: h.detail }, 503);
+          let out: PlanOutcome;
+          try {
+            out = await cachedPlan(sellerKey(ref), seller);
+          } catch (e) {
+            return bazaarDown(c, seller, e);
+          }
+          if (!out.ok) return c.json(out.body, out.status);
+          const plan = applyHeadroom(out.plan, h.remainingAtomic);
+          if (plan.paying === 0) return c.json({ error: "daily_cap_reached", seller, detail: "today's remaining cap cannot pay for any planned resource. Nothing was charged.", audit: plan }, 503);
+          const shown = shownPaying.get(sellerKey(ref));
+          const shownCount = shown && Date.now() - shown.at < SHOWN_TTL_MS ? shown.paying : out.plan.paying;
+          auditRuns.set(c.req.raw, { plan, maxPayments: Math.min(shownCount, plan.paying) });
           return null;
         }
         const target = c.req.query("url");
@@ -280,12 +322,15 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
 
   app.get("/v1/audit", async (c) => {
     const customerPayment = c.get("customerPayment");
-    const plan = auditPlans.get(c.req.raw);
-    if (!plan) return c.json({ error: "audit_plan_missing", customerPayment }, 500);
+    // Defence in depth: never pay a seller unless this request's own payment has settled.
+    if (!customerPayment) return c.json({ error: "payment_required" }, 402);
+    const planned = auditRuns.get(c.req.raw);
+    if (!planned) return c.json({ error: "audit_plan_missing", customerPayment }, 500);
+    const { plan, maxPayments } = planned;
     const { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note } = plan;
     const planOut = { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note };
     try {
-      const run = await runAudit(plan, { cfg, guard: deps.guard, probeDeps, customerTx: customerPayment?.transaction, deadlineMs: cfg.auditDeadlineMs });
+      const run = await runAudit(plan, { cfg, guard: deps.guard, probeDeps, customerTx: customerPayment.transaction, maxPayments, deadlineMs: cfg.auditDeadlineMs });
       return c.json({ seller: plan.seller, network: cfg.network, customerPayment, summary: run.summary, results: run.results, plan: planOut }, 200);
     } catch (e) {
       // The customer has paid: always answer.

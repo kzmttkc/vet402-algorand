@@ -13,8 +13,14 @@
  *              applies (per-call cap before any signature, daily cap from the
  *              chain, self-dealing, private addresses). When the audit budget or
  *              the daily cap is hit, the rest is not paid and is reported as SKIPPED.
+ *
+ * Never more payments than the plan: a target planned as "read the price only"
+ * (listed above the per-call cap) gets a guard that refuses every reservation, a
+ * target whose live payTo differs from the planned one is refused before signing
+ * (payto_changed), and the number of paid targets never exceeds `maxPayments`
+ * (the `paying` the buyer was shown before paying).
  */
-import { atomicToUsdc, type AppConfig } from "./config.js";
+import { atomicToUsdc, usdcToAtomic, type AppConfig } from "./config.js";
 import { selectAccept, type AcceptLike } from "./declaration.js";
 import { buildRequest, isOwnHost, withInput, OWN_HOSTS, type BazaarItem } from "./bazaar.js";
 import { checkTarget } from "./target.js";
@@ -279,6 +285,52 @@ export async function planAudit(sellerRaw: string | undefined, items: BazaarItem
 }
 
 /**
+ * Trim a plan to today's remaining daily cap (read only for a paid request):
+ * willPay targets past the headroom move to notChecked as over_daily_headroom.
+ * Only ever removes targets.
+ */
+export function applyHeadroom(plan: AuditPlan, headroomAtomic: bigint): AuditPlan {
+  let sum = 0n;
+  const targets: AuditTarget[] = [];
+  const moved: NotChecked[] = [];
+  for (const t of plan.targets) {
+    if (!t.willPay) {
+      targets.push(t);
+      continue;
+    }
+    const price = usdcToAtomic(t.listedPriceUsdc);
+    if (sum + price > headroomAtomic) {
+      moved.push({ resourceUrl: t.resourceUrl, method: t.method, reason: "over_daily_headroom", listedPriceUsdc: t.listedPriceUsdc, detail: `today's remaining cap is ${atomicToUsdc(headroomAtomic)} USDC` });
+      continue;
+    }
+    sum += price;
+    targets.push(t);
+  }
+  if (moved.length === 0) return plan;
+  const counts = { ...plan.notChecked.counts, over_daily_headroom: (plan.notChecked.counts.over_daily_headroom ?? 0) + moved.length };
+  return {
+    ...plan,
+    targets,
+    checking: targets.length,
+    paying: targets.filter((t) => t.willPay).length,
+    plannedSpendUsdc: atomicToUsdc(sum),
+    notChecked: { total: plan.notChecked.total + moved.length, counts, items: [...moved, ...plan.notChecked.items].slice(0, LISTED_NOT_CHECKED) },
+  };
+}
+
+/** For a target planned as "read the price only": every reservation is refused, so probe() never signs. */
+export class ReadPriceOnlyGuard implements SpendGuard {
+  async reserve(): Promise<GuardDecision> {
+    return { ok: false, reason: "price_over_cap", detail: "listed above vet402's per-call cap: the audit reads the price only and never pays this one" };
+  }
+  release(): void {}
+  commit(): void {}
+  headroom() {
+    return Promise.resolve({ ok: true as const, remainingAtomic: 0n });
+  }
+}
+
+/**
  * Audit budget on top of the normal guard: the sum of this audit's reservations
  * never exceeds `budgetAtomic`. A price above the per-call cap is passed through
  * so probe() reports it as price_over_cap (never paid) and the audit continues.
@@ -297,6 +349,8 @@ export class AuditBudgetGuard implements SpendGuard {
   get spentAtomic(): bigint {
     return this.spent;
   }
+  /** Reservations that may have led to a payment (released ones are not counted). */
+  reservations = 0;
 
   async reserve(amountAtomic: bigint): Promise<GuardDecision> {
     if (amountAtomic <= this.maxPerCallAtomic && this.spent + amountAtomic > this.budgetAtomic) {
@@ -309,6 +363,7 @@ export class AuditBudgetGuard implements SpendGuard {
     if (d.ok) {
       this.open.set(d.reservationId, amountAtomic);
       this.spent += amountAtomic;
+      this.reservations += 1;
     }
     return d;
   }
@@ -318,6 +373,7 @@ export class AuditBudgetGuard implements SpendGuard {
     if (a !== undefined) {
       this.open.delete(id);
       this.spent -= a;
+      this.reservations -= 1;
     }
   }
   commit(id: string): void {
@@ -371,7 +427,9 @@ export interface RunOptions {
   guard: SpendGuard;
   probeDeps: ProbeDeps;
   customerTx?: string;
-  /** Wall-clock limit for the whole audit; the rest is SKIPPED (not paid). */
+  /** Most targets that may be paid (the `paying` shown before payment). Beyond it: SKIPPED plan_changed. */
+  maxPayments?: number;
+  /** Wall-clock limit for the whole audit: no target is started unless it can finish before it (SKIPPED time_limit). */
   deadlineMs?: number;
   now?: () => number;
 }
@@ -406,16 +464,52 @@ export async function runAudit(plan: AuditPlan, o: RunOptions): Promise<AuditRun
       results.push(skipped(t, stop.reason));
       continue;
     }
-    if (o.deadlineMs !== undefined && now() - start > o.deadlineMs) {
+    // Worst case of one target: unpaid look + paid request (each capped by probeTimeoutMs) + indexer read.
+    const worstMs = 2 * o.cfg.probeTimeoutMs + 10_000;
+    if (o.deadlineMs !== undefined && now() - start + worstMs > o.deadlineMs) {
       stop = { reason: "time_limit", detail: `audit ran longer than ${o.deadlineMs} ms` };
       results.push(skipped(t, stop.reason, stop.detail));
       continue;
     }
+    if (t.willPay && o.maxPayments !== undefined && guard.reservations >= o.maxPayments) {
+      results.push(skipped(t, "plan_changed", `the plan shown before payment paid for ${o.maxPayments} resource(s); this one is beyond it`));
+      continue;
+    }
+    // Lock the payment to the planned payTo: a different payTo is refused before any signature.
+    let payToChanged: string | null = null;
+    const deps = withInput(o.probeDeps, t);
+    const locked: ProbeDeps = {
+      ...deps,
+      paidFetch: async (url, approved, init) => {
+        if (approved.payTo !== t.payTo) {
+          payToChanged = approved.payTo;
+          throw Object.assign(new Error("payTo changed since the plan"), { signed: false });
+        }
+        return deps.paidFetch(url, approved, init);
+      },
+    };
     let r: ProbeResult;
     try {
-      r = await probe(t.url, o.cfg, guard, withInput(o.probeDeps, t));
+      r = await probe(t.url, o.cfg, t.willPay ? guard : new ReadPriceOnlyGuard(), locked);
     } catch (e) {
       r = { verdict: "REFUSE", reason: "probe_error", target: t.url, detail: String((e as Error).message ?? e).slice(0, 200) };
+    }
+    if (payToChanged) {
+      results.push({
+        ...base(t),
+        verdict: "REFUSE",
+        reason: "payto_changed",
+        class: "unclear",
+        detail: `planned payTo ${t.payTo}, the live 402 asks for ${payToChanged}: not paid`,
+        ...(r.price ? { price: r.price } : {}),
+        ...(r.declared ? { declared: r.declared } : {}),
+      });
+      continue;
+    }
+    if (!t.willPay && r.reason === "price_over_cap" && r.price && BigInt(r.price.amountAtomic) <= o.cfg.maxPerCallAtomic) {
+      // Listed above the cap, now within it: not in the paid plan, so still not paid.
+      results.push({ ...skipped(t, "plan_changed", `listed at ${t.listedPriceUsdc} USDC (above the per-call cap), now ${r.price.usdc}: not in the paid plan`), price: r.price });
+      continue;
     }
     if (guard.stopped) {
       stop = guard.stopped;

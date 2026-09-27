@@ -102,13 +102,13 @@ export interface Catalog {
   items(): Promise<BazaarItem[]>;
 }
 
-/** The Bazaar feed, cached in memory for `ttlMs`. A failed read is not cached. */
+/** The Bazaar feed, cached in memory for `ttlMs` (default 5 minutes). A failed read is not cached. */
 export class BazaarCatalog implements Catalog {
   private cache: { at: number; items: Promise<BazaarItem[]> } | null = null;
   constructor(
     private readonly base = DEFAULT_BAZAAR,
     private readonly fetchImpl: typeof fetch = fetch,
-    private readonly ttlMs = 10 * 60_000,
+    private readonly ttlMs = 5 * 60_000,
     private readonly now: () => number = Date.now,
   ) {}
 

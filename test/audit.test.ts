@@ -14,7 +14,9 @@ import { SpendLedger } from "../src/caps.js";
 import { LocalSpendGuard, type SpendGuard } from "../src/spend.js";
 import type { ProbeDeps } from "../src/probe.js";
 import type { BazaarItem, Catalog } from "../src/bazaar.js";
-import { parseSeller, planAudit } from "../src/audit.js";
+import { parseSeller, planAudit, runAudit } from "../src/audit.js";
+import { readFileSync } from "node:fs";
+import { VERCEL_MAX_DURATION_SEC } from "../src/config.js";
 
 const NET = ALGORAND_TESTNET_CAIP2;
 const ASA = "10458941";
@@ -253,12 +255,14 @@ test("daily cap hit mid-audit: stops without paying the rest, rest reported as S
   const trace: Trace = [];
   const deps = sellerDeps(trace);
   const items = [...SELLER_ITEMS.slice(0, 2), item("/honest2", "10000", { settleCount: 0 })];
-  // Plan at payment time already trims to headroom (0.01): only /honest is planned to be paid.
+  // The free plan does not read the daily cap (cheap); the paid request trims to headroom (0.01): only /honest is paid.
   const { app } = appWith({ cfg, trace, deps, items, guard: new LocalSpendGuard(ledger) });
-  const first = await app.request(`/v1/audit?seller=${SELLER}`);
-  const plan = ((await first.json()) as { audit: { paying: number; notChecked: { counts: Record<string, number> } } }).audit;
-  assert.equal(plan.paying, 1);
-  assert.equal(plan.notChecked.counts.over_daily_headroom, 2);
+  const { first, paid: paid0 } = await payFor(app, `/v1/audit?seller=${SELLER}`);
+  assert.equal(((await first.json()) as { audit: { paying: number } }).audit.paying, 3);
+  const b0 = (await paid0!.json()) as AuditBody;
+  assert.deepEqual(deps.paid, ["/honest"]);
+  assert.equal(b0.plan.paying, 1);
+  assert.equal(b0.plan.notChecked.counts.over_daily_headroom, 2);
 
   // Someone else spends between plan and run: the probe-level cap stops the audit.
   const ledger2 = new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
@@ -377,4 +381,126 @@ test("config: audit budget must be below the audit price", () => {
   assert.equal(c.auditPriceUsdc, "0.50");
   assert.equal(c.auditMaxSpendAtomic, 400_000n);
   assert.equal(c.auditMaxTargets, 10);
+});
+
+test("a target planned as 'read the price only' is never paid, even if its live price dropped under the cap", async () => {
+  const trace: Trace = [];
+  const deps = sellerDeps(trace, { "/pricey": "10000" }); // listed 0.50, live 0.01
+  const { app } = appWith({ trace, deps });
+  const { first, paid } = await payFor(app, `/v1/audit?seller=${SELLER}`);
+  assert.equal(((await first.json()) as { audit: { paying: number } }).audit.paying, 2);
+  const b = (await paid!.json()) as AuditBody;
+  assert.deepEqual(deps.paid, ["/honest", "/liar"], "no more payments than the plan's paying");
+  const pricey = b.results.find((r) => r.resourceUrl.endsWith("/pricey"))!;
+  assert.deepEqual([pricey.verdict, pricey.reason], ["SKIPPED", "plan_changed"]);
+  assert.equal(b.summary.sellerPayments, 2);
+});
+
+test("never more payments than the paying shown before payment (plan re-made after the cache expired)", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-09-27T00:00:00Z") });
+  const trace: Trace = [];
+  const deps = sellerDeps(trace);
+  let items = SELLER_ITEMS.slice(0, 1); // shown: /honest only
+  const cat: Catalog = { items: async () => items };
+  const { app } = appWith({ trace, deps, catalog: cat });
+  const first = await app.request(`/v1/audit?seller=${SELLER}`);
+  assert.equal(((await first.json()) as { audit: { paying: number } }).audit.paying, 1);
+  const pr = JSON.parse(Buffer.from(first.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+  // The seller lists two more resources and the 5-minute plan cache expires before the buyer pays.
+  items = [item("/honest0", "10000", { settleCount: 99 }), ...SELLER_ITEMS];
+  t.mock.timers.tick(6 * 60_000);
+  const payload = { x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } };
+  const paid = await app.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify(payload)).toString("base64") } });
+  const b = (await paid.json()) as AuditBody;
+  assert.equal(deps.paid.length, 1, "paid once, as shown");
+  assert.deepEqual(
+    b.results.filter((r) => r.verdict === "SKIPPED").map((r) => r.reason),
+    ["plan_changed", "plan_changed"],
+  );
+});
+
+test("payTo lock: a live 402 asking a different payTo is refused before signing (payto_changed)", async () => {
+  const trace: Trace = [];
+  const deps = sellerDeps(trace);
+  const look = deps.fetchImpl;
+  deps.fetchImpl = async (url, init) => {
+    const r = await look(url, init);
+    if (!url.endsWith("/liar")) return r;
+    const pr = JSON.parse(Buffer.from(r.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+    pr.accepts[0].payTo = OTHER; // not vet402's own, just not the seller that was named
+    return new Response("{}", { status: 402, headers: { "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(pr)).toString("base64") } });
+  };
+  const guard = guardFor(baseCfg());
+  const { app } = appWith({ trace, deps, guard });
+  const { paid } = await payFor(app, `/v1/audit?seller=${SELLER}`);
+  const b = (await paid!.json()) as AuditBody;
+  const liar = b.results.find((r) => r.resourceUrl.endsWith("/liar"))!;
+  assert.deepEqual([liar.verdict, liar.reason], ["REFUSE", "payto_changed"]);
+  assert.deepEqual(deps.paid, ["/honest"], "OTHER is never paid");
+  assert.equal(b.summary.sellerPayments, 1);
+  // The refused reservation was given back: only /honest counts against the day.
+  assert.deepEqual(await guard.headroom(), { ok: true, remainingAtomic: baseCfg().maxPerDayAtomic - 10_000n });
+});
+
+test("unpaid /v1/audit is cheap: no daily-cap read, plan and Bazaar cached across requests", async () => {
+  const cat = catalogOf(SELLER_ITEMS);
+  let headroomReads = 0;
+  const cfg = baseCfg();
+  const inner = guardFor(cfg);
+  const counting: SpendGuard = { reserve: (a) => inner.reserve(a), release: (i) => inner.release(i), commit: (i) => inner.commit(i), headroom: () => (headroomReads++, inner.headroom()) };
+  let dns = 0;
+  const trace: Trace = [];
+  const deps = { ...sellerDeps(trace), resolveHost: async () => (dns++, ["127.0.0.1"]) };
+  const { app } = appWith({ cfg, catalog: cat, guard: counting, deps, trace });
+  for (let i = 0; i < 5; i++) assert.equal((await app.request(`/v1/audit?seller=${SELLER}`)).status, 402);
+  for (let i = 0; i < 3; i++) assert.equal((await app.request("/v1/audit?seller=nobody.example")).status, 404);
+  assert.equal(headroomReads, 0);
+  assert.equal(cat.reads, 2, "one plan per seller, cached");
+  assert.deepEqual(trace, []);
+});
+
+test("exact paths only: /v1/check/, /V1/check, /v1/audit/ with a payment are refused before settlement", async () => {
+  const trace: Trace = [];
+  const { app } = appWith({ trace });
+  const challenge = await app.request(`/v1/check?url=${encodeURIComponent(`${HOST}/honest`)}`);
+  const pr = JSON.parse(Buffer.from(challenge.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+  const sig = Buffer.from(JSON.stringify({ x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } })).toString("base64");
+  for (const path of [`/v1/check/?url=${encodeURIComponent(`${HOST}/honest`)}`, `/V1/check?url=${encodeURIComponent(`${HOST}/honest`)}`, `/v1/audit/?seller=${SELLER}`, `/v1//check?url=x`]) {
+    const res = await app.request(path, { headers: { "PAYMENT-SIGNATURE": sig } });
+    assert.ok([402, 404].includes(res.status), `${path} -> ${res.status}`);
+    assert.ok(!trace.includes("settle"), `${path} settled the customer's payment (trace ${trace.join(",")})`);
+  }
+});
+
+test("unpaid HEAD /v1/audit never reaches a seller", async () => {
+  const trace: Trace = [];
+  const deps = sellerDeps(trace);
+  const { app } = appWith({ trace, deps });
+  const res = await app.request(`/v1/audit?seller=${SELLER}`, { method: "HEAD" });
+  assert.equal(res.status, 402);
+  assert.deepEqual(deps.paid, []);
+  assert.deepEqual(trace, []);
+});
+
+test("runAudit: maxPayments stops paying at the shown count; the deadline leaves room for one worst-case target", async () => {
+  const cfg = baseCfg();
+  const trace = ["settle"];
+  const deps = sellerDeps(trace);
+  const plan = await planAudit("localhost:4031", [...SELLER_ITEMS.slice(0, 2), item("/honest2", "10000")], { cfg, ownAddresses: [VET402] });
+  assert.ok(plan.ok);
+  const r = await runAudit(plan.plan, { cfg, guard: guardFor(cfg), probeDeps: deps, maxPayments: 1 });
+  assert.deepEqual(r.results.map((x) => x.reason), ["delivered", "plan_changed", "plan_changed"]);
+  let t = 0;
+  const slow = await runAudit(plan.plan, { cfg, guard: guardFor(cfg), probeDeps: sellerDeps(trace), deadlineMs: 2 * cfg.probeTimeoutMs + 10_000 + 1, now: () => (t += 1) });
+  assert.deepEqual(slow.results.map((x) => x.reason), ["delivered", "time_limit", "time_limit"]);
+});
+
+test("config: AUDIT_DEADLINE_MS must be a number at least 60 s under vercel.json maxDuration", () => {
+  const vj = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
+  assert.equal(vj.functions["src/server.ts"].maxDuration, VERCEL_MAX_DURATION_SEC);
+  assert.equal(loadConfig({}).auditDeadlineMs, (VERCEL_MAX_DURATION_SEC - 60) * 1000);
+  for (const bad of ["abc", "", "1e5", "-1", "0", String((VERCEL_MAX_DURATION_SEC - 59) * 1000)]) {
+    assert.throws(() => loadConfig({ AUDIT_DEADLINE_MS: bad }), /AUDIT_DEADLINE_MS/, bad);
+  }
+  assert.equal(loadConfig({ AUDIT_DEADLINE_MS: "120000" }).auditDeadlineMs, 120_000);
 });
