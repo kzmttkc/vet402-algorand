@@ -80,8 +80,8 @@ function trialPaidFetch(seen: Seen): ProbeDeps["paidFetch"] {
   return async (url) => {
     seen.trialPaid.push(url);
     return {
-      response: new Response('{"forecast":"sunny","temperature":21,"city":"Tokyo"}', { status: 200, headers: { "content-type": "application/json" } }),
-      settle: { success: true, transaction: "SELLERTXSELLERTXSELLERTXSELLERTXSELLERTXSELLERTXSELLE", network: NET },
+      response: new Response('{"forecast":"sunny","temperature":21,"city":"Kyoto"}', { status: 200, headers: { "content-type": "application/json" } }),
+      settle: { success: true, transaction: "SELLERTXSELLERTXSELLERTXSELLERTXSELLERTXSELLERTXSELL", network: NET },
       signed: true,
     };
   };
@@ -237,11 +237,15 @@ test("trial: vet402 pays once from the trial wallet; the same IP a second time i
   const { app, seen, trace } = setup();
   const first = await run(app, { url: `${HOST}/honest` });
   assert.equal(first.status, 200);
-  const j = (await first.json()) as { class: string; paidBy: string; sellerTx: string; delivery: { summary: string }; bodyPreview: string };
+  const text = await first.text();
+  const j = JSON.parse(text) as { class: string; paidBy: string; sellerTx: string; sellerTxUrl: string; delivery: { shape: string } };
   assert.equal(j.class, "DELIVERED");
   assert.equal(j.paidBy, TRIAL);
-  assert.match(j.delivery.summary, /forecast/);
-  assert.match(j.bodyPreview, /Tokyo/);
+  assert.match(j.sellerTxUrl, /^https:\/\/lora\.algokit\.io\/testnet\/transaction\//);
+  // The shape only: field names and types. The content itself is what a buyer gets through /v1/buy.
+  assert.equal(j.delivery.shape, "JSON object with 3 fields: forecast (text), temperature (number), city (text) (52 bytes)");
+  for (const v of ["sunny", "Kyoto", '"21', ":21"]) assert.ok(!text.includes(v), `trial response leaks the seller's content (${v})`);
+  assert.ok(!("bodyPreview" in j));
   assert.equal(seen.trialPaid.length, 1);
   assert.deepEqual(seen.mainPaid, []);
   assert.deepEqual(trace, []); // no customer payment exists in a trial
@@ -380,4 +384,169 @@ test("/activity: trial payments are counted as trials, never as customers or cus
   assert.equal(r.totals.sellerPayments.payments, 1);
   assert.deepEqual(r.totals.trials, { payments: 2, usdc: "0.011000", wallet: TRIAL });
   assert.ok(r.rows.find((w) => w.customerTx === "TRIAL3")?.operatorTest);
+});
+
+/* ---------- /v1/buy: first purchase at cost ---------- */
+
+import { randomBytes } from "node:crypto";
+import { Transaction, TransactionType, encodeTransactionRaw } from "@algorandfoundation/algokit-utils/transact";
+import { Address } from "@algorandfoundation/algokit-utils/common";
+import { toClientAvmSigner } from "@x402/avm";
+import { publicKeyFromSeed, addressFromSeed } from "../src/keys.js";
+
+/** A real signed USDC transfer from a fresh key: what a wallet puts in paymentGroup. */
+async function account() {
+  const seed = randomBytes(32);
+  const address = addressFromSeed(seed);
+  const signer = toClientAvmSigner(Buffer.concat([seed, Buffer.from(publicKeyFromSeed(seed))]).toString("base64"));
+  const signedTransfer = async (amount: bigint) => {
+    const txn = new Transaction({
+      type: TransactionType.AssetTransfer,
+      sender: Address.fromString(address),
+      firstValid: 1n,
+      lastValid: 1000n,
+      genesisId: "testnet-v1.0",
+      genesisHash: Buffer.from("SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=", "base64"),
+      assetTransfer: { assetId: BigInt(ASA), amount, receiver: Address.fromString(ALGO_ADDR) },
+    });
+    const [signed] = await signer.signTransactions([encodeTransactionRaw(txn)]);
+    return Buffer.from(signed!).toString("base64");
+  };
+  return { address, signedTransfer };
+}
+
+function buyApp(paid: Set<string>) {
+  const cfg = baseCfg();
+  const trace: string[] = [];
+  const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
+  const deps = sellerDeps(seen);
+  deps.paidFetch = trialPaidFetch(seen); // the seller is paid by vet402's payer here
+  const app = createApp(cfg, {
+    payTo: VET402,
+    probeDeps: deps,
+    guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
+    facilitator: facilitator(trace),
+    catalog: { items: async () => [] },
+    firstPurchase: async (a) => !paid.has(a),
+  });
+  return { app, trace, seen };
+}
+
+const decode402 = (res: Response) => JSON.parse(Buffer.from(res.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+const sigHeader = (accepted: unknown, resource: unknown, group: string[]) =>
+  Buffer.from(JSON.stringify({ x402Version: 2, resource, accepted, payload: { paymentGroup: group, paymentIndex: 0 } })).toString("base64");
+const buyUrl = (payer?: string) => `/v1/buy?url=${encodeURIComponent(`${HOST}/honest`)}${payer ? `&payer=${payer}` : ""}`;
+
+test("first purchase at cost: an address that never paid vet402 pays the seller's price only; the second time the fee is back", async () => {
+  const paid = new Set<string>();
+  const { app, trace, seen } = buyApp(paid);
+  const a = await account();
+  const first = await app.request(buyUrl(a.address));
+  assert.equal(first.status, 402);
+  const acc = decode402(first).accepts[0];
+  assert.equal(acc.amount, "10000"); // seller 0.01, fee 0
+  assert.deepEqual([acc.extra.buyFee, acc.extra.firstPurchase, acc.extra.payer], ["0", true, a.address]);
+  assert.equal(((await first.json()) as { buy: { fee: { amountAtomic: string } } }).buy.fee.amountAtomic, "0");
+  // Without ?payer= (or with an address that has paid) the normal price.
+  assert.equal(decode402(await app.request(buyUrl())).accepts[0].amount, "15000");
+  const res = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, decode402(first).resource, [await a.signedTransfer(10_000n)]) } });
+  assert.equal(res.status, 200);
+  assert.ok(trace.includes("settle"));
+  assert.equal(seen.trialPaid.length, 1);
+  // Second time: the same address now has a payment (the indexer, or this instance right after settling).
+  const again = await app.request(buyUrl(a.address));
+  assert.equal(decode402(again).accepts[0].amount, "15000");
+  assert.equal(decode402(again).accepts[0].extra.firstPurchase, undefined);
+  paid.add(a.address);
+  assert.equal(decode402(await app.request(buyUrl(a.address))).accepts[0].amount, "15000");
+});
+
+test("first purchase at cost cannot be forged: a lowered amount, a dropped payer, or another account paying is never settled", async () => {
+  const { app, trace, seen } = buyApp(new Set());
+  const a = await account();
+  const b = await account();
+  const first = await app.request(buyUrl(a.address));
+  const pr = decode402(first);
+  const acc = pr.accepts[0];
+  const group = [await a.signedTransfer(10_000n)];
+
+  // 1) The normal-price request signed with the at-cost requirements: they do not match, 402.
+  const r1 = await app.request(buyUrl(), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, pr.resource, group) } });
+  assert.equal(r1.status, 402);
+  // 2) A lower amount than asked.
+  const r2 = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader({ ...acc, amount: "9000" }, pr.resource, group) } });
+  assert.equal(r2.status, 402);
+  // 3) firstPurchase added by hand to a normal-price request.
+  const normal = decode402(await app.request(buyUrl())).accepts[0];
+  const r3 = await app.request(buyUrl(), { headers: { "PAYMENT-SIGNATURE": sigHeader({ ...normal, amount: "10000", extra: { ...normal.extra, buyFee: "0", firstPurchase: true, payer: a.address } }, pr.resource, group) } });
+  assert.equal(r3.status, 402);
+  // 4) The at-cost price for A, paid from B's account: refused before settling.
+  const r4 = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, pr.resource, [await b.signedTransfer(10_000n)]) } });
+  assert.equal(r4.status, 409);
+  assert.equal(((await r4.json()) as { reason: string; charged: boolean }).reason, "first_purchase_payer_mismatch");
+  // 5) ?payer= that is not an address: the normal price.
+  assert.equal(decode402(await app.request(buyUrl("NOTANADDRESS"))).accepts[0].amount, "15000");
+  assert.ok(!trace.includes("settle"), "nothing may settle");
+  assert.equal(seen.trialPaid.length, 0);
+});
+
+test("neverPaidVet402 reads the address's USDC transfers: any transfer to payTo means it has paid; an unknown account has not", async () => {
+  const { neverPaidVet402 } = await import("../src/buy.js");
+  const PT = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+  const mk = (txs: unknown[], status = 200) => (async () => (status === 200 ? Response.json({ transactions: txs }) : new Response("x", { status }))) as unknown as typeof fetch;
+  const o = { indexerUrl: "https://idx", asaId: "31566704", payTo: PT, address: ALGO_ADDR };
+  assert.equal(await neverPaidVet402({ ...o, fetchImpl: mk([], 404) }), true);
+  assert.equal(await neverPaidVet402({ ...o, fetchImpl: mk([{ sender: ALGO_ADDR, "asset-transfer-transaction": { receiver: SELLER, "asset-id": 31566704 } }]) }), true);
+  assert.equal(await neverPaidVet402({ ...o, fetchImpl: mk([{ sender: ALGO_ADDR, "asset-transfer-transaction": { receiver: PT, "asset-id": 31566704 } }]) }), false);
+  await assert.rejects(neverPaidVet402({ ...o, fetchImpl: mk([], 500) }));
+});
+
+test("/activity: a first purchase at cost (no fee) pairs with its seller payment and counts as a customer, also at the /v1/verdict price", async () => {
+  const ASA_M = "31566704";
+  const FEE = "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
+  const PAYTO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+  const MPAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+  const CAROL = "CAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCARO";
+  const DAVE = "DAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVEDAVE";
+  const T0 = 1790479000;
+  const axfer = (id: string, sender: string, receiver: string, amount: number, round: number, group?: string) => ({
+    id, sender, "tx-type": "axfer", fee: 0, ...(group ? { group } : {}), "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 1,
+    "asset-transfer-transaction": { "asset-id": Number(ASA_M), amount, receiver, "close-amount": 0 },
+  });
+  const feePay = (round: number, group: string) => ({ id: `FEE-${group}`, sender: FEE, "tx-type": "pay", fee: 2000, group, "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 0, "payment-transaction": { amount: 0, receiver: FEE } });
+  const carol = axfer("CAROL1", CAROL, PAYTO, 3_000, 100, "G1"); // at cost: seller price 0.003, fee 0
+  const carolOut = axfer("OUT1", MPAYER, SELLER, 3_000, 101, "G2");
+  const dave = axfer("DAVE1", DAVE, PAYTO, 1_000, 200, "G3"); // at cost at 0.001 = the /v1/verdict price
+  const daveOut = axfer("OUT2", MPAYER, SELLER, 1_000, 201, "G4");
+  const accounts: Record<string, unknown[]> = { [PAYTO]: [carol, dave], [MPAYER]: [carolOut, daveOut] };
+  const groups: Record<string, unknown[]> = { G1: [feePay(100, "G1"), carol], G3: [feePay(200, "G3"), dave] };
+  const f = (async (url: string) => {
+    const u = new URL(url);
+    const m = u.pathname.match(/^\/v2\/accounts\/([A-Z2-7]+)\/transactions$/);
+    if (m) return accounts[m[1]] ? Response.json({ transactions: accounts[m[1]] }) : new Response("nf", { status: 404 });
+    if (u.pathname === "/v2/transactions") return Response.json({ transactions: groups[u.searchParams.get("group-id")!] ?? [] });
+    return new Response("?", { status: 400 });
+  }) as unknown as typeof fetch;
+  const r = await new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PAYTO, payer: MPAYER, fetchImpl: f, priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: 1_000n }).get();
+  assert.equal(r.totals.customers.addresses, 2);
+  assert.equal(r.totals.customers.usdc, "0.004000");
+  assert.equal(r.totals.sellerPayments.payments, 2);
+  assert.equal(r.totals.sellerPayments.unmatched, 0);
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["DAVE1", "buy", "OUT2"], ["CAROL1", "buy", "OUT1"]]);
+});
+
+test("/try/wallet.js is the committed build of src/web (fresh), served as JavaScript, and loaded only on demand", async () => {
+  const { buildWalletJs, moduleText } = await import("../scripts/build-wallet.js");
+  const { readFileSync } = await import("node:fs");
+  const committed = readFileSync(new URL("../src/web/wallet-bundle.gen.ts", import.meta.url), "utf8");
+  assert.equal(committed, moduleText(await buildWalletJs()), "src/web/wallet-bundle.gen.ts is stale: run npm run build:wallet");
+  const { WALLET_JS_SHA } = await import("../src/web/wallet-bundle.gen.js");
+  const { app } = setup();
+  const js = await app.request(`/try/wallet.js?v=${WALLET_JS_SHA}`);
+  assert.equal(js.status, 200);
+  assert.match(js.headers.get("content-type") ?? "", /^text\/javascript/);
+  const page = await (await app.request("/try")).text();
+  assert.ok(page.includes(`/try/wallet.js?v=${WALLET_JS_SHA}`));
+  assert.doesNotMatch(page, /<script[^>]+src=/); // no script tag loads it up front, and nothing from another origin
+  assert.doesNotMatch(page, /coming soon/i);
 });

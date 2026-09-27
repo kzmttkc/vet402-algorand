@@ -276,9 +276,9 @@ export class ActivityLedger {
     return this.o.verdictPriceAtomic !== undefined && t.amount === this.o.verdictPriceAtomic;
   }
 
-  /** Could be a /v1/buy (seller price >= 1 + fee); decided after pairing. */
+  /** Could be a /v1/buy (seller price + fee, or the seller price alone for a first purchase at cost); decided after pairing. */
   private mayBeBuy(t: Transfer): boolean {
-    return this.o.buyFeeAtomic !== undefined && t.amount > this.o.buyFeeAtomic;
+    return this.o.buyFeeAtomic !== undefined && t.amount > 0n;
   }
 
   private async isX402Group(t: Transfer): Promise<boolean> {
@@ -348,17 +348,23 @@ export class ActivityLedger {
     const room = (c: Transfer) => ({ audit: this.o.auditMaxTargets ?? 10, check: 1, buy: 1, verdict: 0 })[kindOf(c)];
     const windowOf = (c: Transfer) => (isAudit(c) ? this.auditWindowSec : this.windowSec);
     // A purchase below the check price paid the seller's price + fee: its seller payment is at most (payment - fee).
-    const fits = (c: Transfer, p: Transfer) => kindOf(c) !== "buy" || c.amount - (this.o.buyFeeAtomic ?? 0n) >= p.amount;
+    // A first purchase at cost (no fee) paid exactly the seller's price: its seller payment equals the payment.
+    const atCost = (c: Transfer, p: Transfer) => this.o.buyFeeAtomic !== undefined && c.amount === p.amount;
+    const fits = (c: Transfer, p: Transfer) => kindOf(c) !== "buy" || c.amount - (this.o.buyFeeAtomic ?? 0n) >= p.amount || atCost(c, p);
+    // A payment of exactly the /v1/verdict price is a lookup, unless a seller payment of the same amount pairs with it:
+    // then it was a first purchase at cost of a seller priced like a lookup.
+    const roomFor = (c: Transfer, p: Transfer) => (kindOf(c) === "verdict" && atCost(c, p) ? 1 : room(c));
     const pairedWith = new Map<string, Transfer[]>();
     const unmatched: Transfer[] = [];
     // Among the eligible customer payments (earlier, in the window, with room), the latest one of the
     // best rank: a purchase whose (payment - fee) is exactly this seller payment (that is what /v1/buy
-    // pays), then a check or an audit, then any other purchase it fits. So a check's seller payment is
+    // pays), or a first purchase at cost whose payment is exactly it (no fee), then a check or an audit,
+    // then any other purchase it fits (and a /v1/verdict-priced payment at cost). So a check's seller payment is
     // not taken by a purchase that does not match it exactly, and a purchase's own seller payment is not
     // taken by an earlier check that still has room.
     const rank = (c: Transfer, p: Transfer) => {
       const k = kindOf(c);
-      if (k === "buy" && c.amount - (this.o.buyFeeAtomic ?? 0n) === p.amount) return 0;
+      if (k === "buy" && (c.amount - (this.o.buyFeeAtomic ?? 0n) === p.amount || atCost(c, p))) return 0;
       return k === "check" || k === "audit" ? 1 : 2;
     };
     for (const p of payouts) {
@@ -366,7 +372,7 @@ export class ActivityLedger {
       let best = Infinity;
       for (const c of customers) {
         if (!before(c, p)) continue; // sorted, but Base and Algorand payments are ordered by different clocks
-        if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= room(c) || !fits(c, p)) continue;
+        if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= roomFor(c, p) || !fits(c, p)) continue;
         const r = rank(c, p);
         if (r <= best) {
           best = r;
@@ -389,7 +395,7 @@ export class ActivityLedger {
         const ps = pairedWith.get(c.tx) ?? [];
         const p = ps[0];
         return {
-          kind: kindOf(c),
+          kind: kindOf(c) === "verdict" && ps.length ? ("buy" as const) : kindOf(c),
           ...(c.chain === "base" && b ? { network: b.network } : {}),
           time: iso(c.time),
           round: c.round,
@@ -456,7 +462,7 @@ export class ActivityLedger {
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
-        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a purchase whose payment minus the fee equals the seller payment comes first, then a check or an audit, then a purchase the seller payment merely fits.`,
+        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee), or of exactly the payment (a first purchase at cost, no fee; this includes a payment of the /v1/verdict price that pairs with a seller payment of the same amount). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a purchase whose payment minus the fee equals the seller payment, or a purchase at cost whose payment equals it, comes first, then a check or an audit, then a purchase the seller payment merely fits (a /v1/verdict-priced payment at cost comes last).`,
         `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check or a purchase (/v1/buy, whose price is the seller's price + vet402's fee) has room for one seller payment (within ${this.windowSec} s)${
           this.o.auditPriceAtomic !== undefined
             ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`

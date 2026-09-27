@@ -12,7 +12,8 @@
     "sellers": "tsx src/sellers.ts",
     "demo": "tsx src/client-demo.ts",
     "probe:once": "tsx scripts/probe-once.ts",
-    "keys:gen:mainnet": "tsx scripts/gen-payer-mainnet.ts"
+    "keys:gen:mainnet": "tsx scripts/gen-payer-mainnet.ts",
+    "build:wallet": "tsx scripts/build-wallet.ts"
   },
   "bin": {
     "vet402-cert": "bin/vet402-cert.mjs"
@@ -20,6 +21,9 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "@perawallet/connect": "^1.6.1",
+    "algosdk": "^3.8.0",
+    "lute-connect": "^2.0.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },

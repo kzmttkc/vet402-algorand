@@ -22,6 +22,13 @@
  *
  * The customer has paid from step 3 on. If the seller is then not paid (or its body is too
  * large), the answer is 502 with the reason and the customer's tx. There is no refund.
+ *
+ * First purchase at cost: `?payer=<Algorand address>` asks for the first-purchase price. If that
+ * address has never sent USDC to vet402's payTo (read from the indexer, see `neverPaidVet402`), the
+ * fee is 0 and the requirements carry extra.firstPurchase = true and extra.payer = that address. The
+ * price is still decided by the server and bound into the requirements the customer signs, so a
+ * changed amount, a dropped or changed `payer`, or a payer who has paid meanwhile is a 402 and nothing
+ * settles; and before settling, the paying transaction's sender must be extra.payer (409 otherwise).
  */
 import type { Context, Hono } from "hono";
 import { x402HTTPResourceServer, type x402ResourceServer } from "@x402/core/server";
@@ -35,6 +42,9 @@ import { checkTarget } from "./target.js";
 import { buildRequest, type Catalog } from "./bazaar.js";
 import { settleFirstMiddleware, type CustomerPayment, type SettleFirstEnv } from "./settle-first.js";
 import { withBase } from "./base.js";
+import { decodePaymentSignatureHeader } from "@x402/core/http";
+import { decodeSignedTransaction } from "@x402/avm";
+import { isValidAddress } from "@algorandfoundation/algokit-utils/common";
 
 export const BUY_PATH = "/v1/buy";
 /** Largest customer body vet402 forwards to the seller on POST (read no further than this). */
@@ -49,6 +59,11 @@ export interface BuyDeps {
   probeDeps: ProbeDeps;
   /** Bazaar listings: a POST-only seller is priced from its listed example input. */
   catalog: Catalog;
+  /**
+   * Has this address never paid vet402's payTo? (first purchase at cost). Omitted = no first-purchase price.
+   * Throwing (indexer down) means the normal price.
+   */
+  firstPurchase?: (address: string) => Promise<boolean>;
   /** Tests: override the per-IP limit and the clock. */
   quotesPerMinute?: number;
   now?: () => number;
@@ -216,6 +231,45 @@ export async function quote(
   return { ok: true, target: url, method, body, contentType, priceRead, accept, sellerAtomic, feeAtomic, customerAtomic: buyPriceAtomic(sellerAtomic, feeAtomic) };
 }
 
+/**
+ * true when `address` has never sent USDC (ASA `asaId`) to `payTo`, read from the indexer (the address's
+ * own USDC transfers, up to `maxPages` pages; more than that counts as "has paid", i.e. no first-purchase price).
+ */
+export async function neverPaidVet402(o: { indexerUrl: string; asaId: string; payTo: string; address: string; fetchImpl?: typeof fetch; timeoutMs?: number; maxPages?: number }): Promise<boolean> {
+  const f = o.fetchImpl ?? fetch;
+  let next: string | undefined;
+  for (let page = 0; page < (o.maxPages ?? 5); page++) {
+    const q = new URLSearchParams({ "asset-id": o.asaId, "tx-type": "axfer", limit: "1000" });
+    if (next) q.set("next", next);
+    const res = await f(`${o.indexerUrl}/v2/accounts/${o.address}/transactions?${q}`, { signal: AbortSignal.timeout(o.timeoutMs ?? 6000) });
+    if (res.status === 404) return true;
+    if (!res.ok) throw new Error(`indexer ${res.status}`);
+    const body = (await res.json()) as { transactions?: { sender: string; "asset-transfer-transaction"?: { receiver: string; "asset-id": number } }[]; "next-token"?: string };
+    if (!Array.isArray(body.transactions)) throw new Error("indexer: malformed response");
+    for (const t of body.transactions) {
+      const a = t["asset-transfer-transaction"];
+      if (a && t.sender === o.address && a.receiver === o.payTo && String(a["asset-id"]) === String(o.asaId)) return false;
+    }
+    next = body["next-token"];
+    if (!next || body.transactions.length === 0) return true;
+  }
+  return false;
+}
+
+/** Sender of the paying transaction in an x402 AVM PAYMENT-SIGNATURE header, or null. */
+export function paymentSender(header: string | undefined): string | null {
+  if (!header) return null;
+  try {
+    const p = decodePaymentSignatureHeader(header) as { payload?: { paymentGroup?: string[]; paymentIndex?: number } };
+    const g = p.payload?.paymentGroup;
+    const i = p.payload?.paymentIndex ?? 0;
+    if (!Array.isArray(g) || typeof g[i] !== "string") return null;
+    return decodeSignedTransaction(g[i]).txn.sender.toString();
+  } catch {
+    return null;
+  }
+}
+
 /** Per-IP fixed-window counter, in memory (per instance). */
 export class QuoteLimiter {
   private readonly seen = new Map<string, { start: number; count: number }>();
@@ -288,7 +342,32 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
     return q;
   };
   /** What the paid request settled for and the daily-cap reservation it holds, per request object. */
-  const approved = new WeakMap<Request, { q: Quote; reservationId: string }>();
+  const approved = new WeakMap<Request, { q: Quote; reservationId: string; firstFor?: string }>();
+  /** Addresses whose at-cost first purchase settled on this instance (the indexer shows it a few seconds later). */
+  const paidOnce = new Set<string>();
+  const own = new Set(deps.probeDeps.ownAddresses ?? []);
+
+  /** Fee and total for this request: 0 fee for a first purchase (?payer= that never paid payTo). One read per request object. */
+  const pricings = new WeakMap<Request, Promise<{ feeAtomic: bigint; customerAtomic: bigint; firstFor?: string }>>();
+  const pricingFor = (c: Context<SettleFirstEnv>, q: Quote) => {
+    const hit = pricings.get(c.req.raw);
+    if (hit) return hit;
+    const p = (async () => {
+      const payer = c.req.query("payer")?.trim();
+      let first = false;
+      if (payer && deps.firstPurchase && payer.length === 58 && isValidAddress(payer) && !own.has(payer) && !paidOnce.has(payer)) {
+        try {
+          first = await deps.firstPurchase(payer);
+        } catch {
+          first = false; // cannot tell: the normal price
+        }
+      }
+      const feeAtomic = first ? 0n : q.feeAtomic;
+      return { feeAtomic, customerAtomic: buyPriceAtomic(q.sellerAtomic, feeAtomic), ...(first ? { firstFor: payer } : {}) };
+    })();
+    pricings.set(c.req.raw, p);
+    return p;
+  };
 
   /** The amount and extra of this request's price: the same on every accept (Algorand USDC, and Base USDC when on). */
   const priceOf = async (ctx: HTTPRequestContext) => {
@@ -301,7 +380,24 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
       extra: { sellerAmount: q.accept.amount, sellerPayTo: q.accept.payTo, buyFee: q.feeAtomic.toString() } as Record<string, unknown>,
     };
   };
-  const price = async (ctx: HTTPRequestContext) => ({ ...(await priceOf(ctx)), asset: cfg.usdcAsaId });
+  // The Algorand accept may carry the first-purchase price (?payer= is an Algorand address that never paid payTo).
+  // The Base accept (priceOf) always carries the normal price: a first purchase at cost is paid on Algorand only.
+  const price = async (ctx: HTTPRequestContext) => {
+    const c = (ctx.adapter as unknown as { c: Context<SettleFirstEnv> }).c;
+    const q = await quoteFor(c);
+    if (!q.ok) return { ...(await priceOf(ctx)), asset: cfg.usdcAsaId };
+    const pr = await pricingFor(c, q);
+    return {
+      amount: pr.customerAtomic.toString(),
+      asset: cfg.usdcAsaId,
+      extra: {
+        sellerAmount: q.accept.amount,
+        sellerPayTo: q.accept.payTo,
+        buyFee: pr.feeAtomic.toString(),
+        ...(pr.firstFor ? { firstPurchase: true, payer: pr.firstFor } : {}),
+      } as Record<string, unknown>,
+    };
+  };
   const accepts = withBase(
     cfg,
     {
@@ -334,6 +430,7 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
       beforeChallenge: async (c) => {
         const q = await quoteFor(c);
         if (!q.ok) return { stop: c.json(q.body, q.status) };
+        const pr = await pricingFor(c, q);
         return {
           info: {
             buy: {
@@ -341,8 +438,9 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
               method: q.method,
               priceRead: q.priceRead,
               sellerPrice: { amountAtomic: q.accept.amount, usdc: atomicToUsdc(q.sellerAtomic), payTo: q.accept.payTo },
-              fee: { amountAtomic: q.feeAtomic.toString(), usdc: atomicToUsdc(q.feeAtomic) },
-              total: { amountAtomic: q.customerAtomic.toString(), usdc: atomicToUsdc(q.customerAtomic) },
+              fee: { amountAtomic: pr.feeAtomic.toString(), usdc: atomicToUsdc(pr.feeAtomic) },
+              total: { amountAtomic: pr.customerAtomic.toString(), usdc: atomicToUsdc(pr.customerAtomic) },
+              ...(pr.firstFor ? { firstPurchase: { payer: pr.firstFor, note: "first purchase from this address: no vet402 fee" } } : {}),
               refund: "none",
             },
           },
@@ -359,10 +457,20 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
         // deep equality of the signed `accepted` with these requirements and the facilitator's exact-amount check.
         const q = await quoteFor(c);
         if (!q.ok) return c.json(q.body, q.status);
+        // A first-purchase price is bound to extra.payer (deep-equal checked by x402): the paying account must be that address.
+        const extra = c.get("paidRequirements")?.extra ?? {};
+        let firstFor: string | undefined;
+        if (extra.firstPurchase === true) {
+          const sender = paymentSender(c.req.header("payment-signature") || c.req.header("x-payment"));
+          if (typeof extra.payer !== "string" || sender !== extra.payer) {
+            return c.json({ verdict: "REFUSE", reason: "first_purchase_payer_mismatch", target: q.target, charged: false, detail: "the first-purchase price is for the address in ?payer=; this payment comes from another account. Nothing was charged." }, 409);
+          }
+          firstFor = extra.payer;
+        }
         // Hold the seller's price on the daily cap now, so a concurrent purchase cannot take it after this customer paid.
         const r = await deps.guard.reserve(q.sellerAtomic);
         if (!r.ok) return c.json({ verdict: "REFUSE", reason: r.reason, target: q.target, charged: false, detail: r.detail }, r.reason === "price_over_cap" ? 422 : 503);
-        approved.set(c.req.raw, { q, reservationId: r.reservationId });
+        approved.set(c.req.raw, { q, reservationId: r.reservationId, firstFor });
         return null;
       },
       onNotSettled: (c) => {
@@ -380,7 +488,8 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
     if (!customerPayment) return c.json({ error: "payment_required" }, 402);
     const a = approved.get(c.req.raw);
     if (!a) return c.json({ verdict: "REFUSE", reason: "probe_error", detail: "purchase not approved in preflight", customerPayment, refund: "none" }, 500, paidHeaders("REFUSE", "probe_error", customerPayment));
-    const { q, reservationId } = a;
+    const { q, reservationId, firstFor } = a;
+    if (firstFor) paidOnce.add(firstFor); // settled: the next purchase from this address is at the normal price
     let out: Awaited<ReturnType<typeof probeWithBody>>;
     try {
       out = await probeWithBody(q.target, cfg, deps.guard, deps.probeDeps, {

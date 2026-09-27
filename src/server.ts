@@ -37,7 +37,7 @@ import { registerBoard, type BoardLoader } from "./board.js";
 import { registerSeller } from "./seller.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
-import { registerBuy } from "./buy.js";
+import { neverPaidVet402, registerBuy } from "./buy.js";
 import { BaseCustomerReader, withBase } from "./base.js";
 import { registerTry, type TrialDeps } from "./try.js";
 import { ChainTrialStore, loadTrialConfig } from "./trial.js";
@@ -92,6 +92,8 @@ export interface AppDeps {
   trial?: TrialDeps;
   /** Tests: where /try reads the board files. Default: the shared board loader. */
   tryBoard?: { load?: BoardLoader; file?: string };
+  /** /v1/buy first purchase at cost: has this address never paid payTo? Default: the indexer (neverPaidVet402). */
+  firstPurchase?: (address: string) => Promise<boolean>;
 }
 
 /**
@@ -311,12 +313,18 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       }
     });
   }
-  registerTry(app, cfg, { probeDeps, catalog, trial: deps.trial, load: deps.tryBoard?.load, boardFile: deps.tryBoard?.file }); // free: /try, /try/preview, /try/run (trial wallet), /try/log
+  registerTry(app, cfg, { probeDeps, catalog, trial: deps.trial, activity: deps.activity, load: deps.tryBoard?.load, boardFile: deps.tryBoard?.file }); // free: /try, /try/preview, /try/run (trial wallet), /try/log
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
   if (deps.cert) registerCert(app, deps.cert.reader); // free: GET /cert/:id, /cert/:id/badge.svg (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
   registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
-  registerBuy(app, cfg, resourceServer, { payTo: deps.payTo, guard: deps.guard, probeDeps, catalog }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
+  registerBuy(app, cfg, resourceServer, {
+    payTo: deps.payTo,
+    guard: deps.guard,
+    probeDeps,
+    catalog,
+    firstPurchase: deps.firstPurchase ?? ((address) => neverPaidVet402({ indexerUrl: cfg.indexerUrl, asaId: cfg.usdcAsaId, payTo: deps.payTo, address })),
+  }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
 
   app.use(
     settleFirstMiddleware(httpServer, {

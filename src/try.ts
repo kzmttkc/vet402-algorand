@@ -35,11 +35,41 @@ import { SELLER_PAGE_BASE } from "./seller.js";
 import { BASE_CSS, topNav } from "./landing.js";
 import { claimKeys, isAlgorandAddress, type TrialLog, type TrialStore } from "./trial.js";
 import type { SettleFirstEnv } from "./settle-first.js";
+import type { ActivityReport } from "./activity.js";
+import { WALLET_JS, WALLET_JS_SHA } from "./web/wallet-bundle.gen.js";
 
 export const TRY_PREVIEWS_PER_MINUTE = 30;
 export const TRY_RUNS_PER_MINUTE = 5;
 const RUN_MAX_BODY = 4 * 1024;
-const BODY_PREVIEW_CHARS = 1500;
+
+const typeName = (v: unknown) => (v === null ? "null" : Array.isArray(v) ? "list" : typeof v === "string" ? "text" : typeof v === "object" ? "object" : typeof v);
+
+/**
+ * What the seller returned, without its content: the shape only (field names and types, or type and size).
+ * The free trial shows this; the content itself is what a buyer gets through /v1/buy.
+ */
+export function shapeOf(bytes: Buffer, contentType: string | null): string {
+  const ct = (contentType ?? "").split(";")[0].trim().toLowerCase();
+  const size = `${bytes.length.toLocaleString("en-US")} bytes`;
+  if (bytes.length === 0) return "an empty answer";
+  let v: unknown;
+  try {
+    v = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    return `${ct || "data"}, ${size}`;
+  }
+  const fields = (o: Record<string, unknown>) => {
+    const ks = Object.keys(o);
+    const shown = ks.slice(0, 8).map((k) => `${k.slice(0, 40)} (${typeName(o[k])})`).join(", ");
+    return `${ks.length} field${ks.length === 1 ? "" : "s"}${ks.length ? `: ${shown}${ks.length > 8 ? ", …" : ""}` : ""}`;
+  };
+  if (Array.isArray(v)) {
+    const first = v[0];
+    return `JSON list of ${v.length} item${v.length === 1 ? "" : "s"}${first && typeof first === "object" && !Array.isArray(first) ? `, each an object with ${fields(first as Record<string, unknown>)}` : ""} (${size})`;
+  }
+  if (v && typeof v === "object") return `JSON object with ${fields(v as Record<string, unknown>)} (${size})`;
+  return `a single JSON ${typeName(v)} (${size})`;
+}
 
 export interface TrialDeps {
   address: string;
@@ -60,6 +90,8 @@ export interface TryDeps {
   trial?: TrialDeps;
   boardFile?: string;
   load?: BoardLoader;
+  /** Paying customers for the "today" line (the /activity ledger). */
+  activity?: { get(): Promise<ActivityReport> };
   previewsPerMinute?: number;
   runsPerMinute?: number;
   now?: () => number;
@@ -142,10 +174,20 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
         networkName: cfg.networkName,
         buyFeeUsdc: atomicToUsdc(cfg.buyFeeAtomic),
         trial: trial ? { address: trial.address, maxUsdc: atomicToUsdc(trial.maxPerCallAtomic) } : null,
+        walletJs: `/try/wallet.js?v=${WALLET_JS_SHA}`,
       }),
       200,
       { "cache-control": "public, max-age=300" },
     ),
+  );
+
+  // The wallet code (Pera, Lute, x402 AVM client) as one file, loaded by /try only when the visitor opens the wallet step.
+  app.get("/try/wallet.js", (c) =>
+    c.body(WALLET_JS, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": c.req.query("v") === WALLET_JS_SHA ? "public, max-age=31536000, immutable" : "public, max-age=300",
+      "x-content-type-options": "nosniff",
+    }),
   );
 
   app.get("/try/sellers.json", async (c) => {
@@ -203,6 +245,15 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
   });
 
   const logOf = async (): Promise<TrialLog | null> => (trial ? trial.store.log() : null);
+
+  // Real numbers only: today's free tries (trial records) and today's paying customers (/activity, operator excluded).
+  app.get("/try/stats.json", async (c) => {
+    const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
+    const [log, act] = await Promise.all([logOf().catch(() => null), deps.activity ? deps.activity.get().catch(() => null) : Promise.resolve(null)]);
+    const triedToday = log ? log.entries.filter((e) => e.at.slice(0, 10) === today).length : null;
+    const paidToday = act ? new Set(act.rows.filter((r) => !r.operatorTest && r.time.slice(0, 10) === today).map((r) => r.customer)).size : null;
+    return c.json({ date: today, triedToday, triedTotal: log ? log.people : null, paidToday }, 200, { "cache-control": "public, max-age=60" });
+  });
 
   app.get("/try/log.json", async (c) => {
     if (!trial) return c.json({ error: "trials_off" }, 404);
@@ -287,7 +338,6 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
         recorded = false;
       }
       const d = out.delivered;
-      const textual = /json|text|xml|javascript|csv/i.test(d?.contentType ?? "");
       return c.json(
         {
           url,
@@ -298,8 +348,8 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
           price: r.price ? { usdc: short(r.price.usdc), payTo: r.price.payTo } : undefined,
           paidBy: trial.address,
           ...(sellerTx ? { sellerTx, sellerTxUrl: txLink(sellerTx, cfg.networkName) } : {}),
-          delivery: r.delivery ? { status: r.delivery.status, contentType: r.delivery.contentType, bytes: r.delivery.bytes, summary: r.delivery.summary, missingKeys: r.delivery.missingKeys } : undefined,
-          ...(d && textual ? { bodyPreview: d.bytes.toString("utf8").slice(0, BODY_PREVIEW_CHARS) } : {}),
+          // The shape only, never the content: the content is what a buyer gets through /v1/buy.
+          delivery: d ? { status: d.status, contentType: d.contentType, bytes: d.bytes.length, shape: shapeOf(d.bytes, d.contentType), missingKeys: r.delivery?.missingKeys ?? [] } : undefined,
           declared: r.declared ? { description: r.declared.description } : undefined,
           recorded,
           note: "A free trial: vet402 paid with its trial wallet. It is not a customer payment.",
@@ -319,7 +369,9 @@ h1{font-size:clamp(24px,5vw,34px);line-height:1.2;margin:8px 0 10px}
 .lead{color:#cbd5e1;font-size:17px;margin:0 0 6px}
 .people{color:var(--mut);font-size:14px;margin:0 0 20px;min-height:1.4em}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.card[hidden]{display:none}
 .card h2{font-size:17px;margin:0 0 10px;display:flex;gap:10px;align-items:center}
+.card .intro{margin:0 0 10px;color:var(--mut);font-size:14px}
 .num{display:inline-grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:rgba(96,165,250,.16);color:var(--acc);font-weight:700;font-size:13px}
 label{display:block;font-size:14px;color:var(--mut);margin:0 0 6px}
 input[type=search],input[type=text]{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:16px}
@@ -328,7 +380,7 @@ input:focus{outline:2px solid var(--acc);outline-offset:1px}
 #list:empty{display:none}
 #list li{padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:8px;align-items:baseline;justify-content:space-between}
 #list li:last-child{border-bottom:0}
-#list li[aria-selected=true],#list li:hover{background:#172033}
+#list li:hover,#list li:focus{background:#172033;outline:none}
 #list .u{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 #list .m{flex:none;font-size:12px;color:var(--mut);white-space:nowrap}
 .chip{font-size:11px;font-weight:700;letter-spacing:.03em;padding:1px 6px;border-radius:999px;border:1px solid currentColor;margin-right:6px}
@@ -339,34 +391,38 @@ input:focus{outline:2px solid var(--acc);outline-offset:1px}
 .out p{margin:0 0 8px}
 .out .big{font-size:19px;font-weight:650}
 .out .sub{color:var(--mut);font-size:14px}
-pre{white-space:pre-wrap;word-break:break-word;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;max-height:260px;overflow:auto;margin:8px 0}
-details{margin-top:10px;font-size:14px;color:var(--mut)}
+.total{font-size:30px;font-weight:750;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;max-height:320px;overflow:auto;margin:8px 0}
+.roles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:12px}
+.roles a{display:block;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;text-decoration:none;color:var(--fg)}
+.roles a b{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-bottom:2px}
 .next{font-size:15px;color:#cbd5e1}
 .err{color:var(--mismatch)}
 `;
 
-/** Client script: no interpolation inside (String.raw), all seller text goes through textContent. */
+/** Client script: no interpolation inside (String.raw); all seller text goes through textContent. */
 const TRY_JS = String.raw`
 (function(){
   var cfg=JSON.parse(document.getElementById('cfg').textContent||'{}');
-  var q=document.getElementById('q'),list=document.getElementById('list'),hint=document.getElementById('hint');
-  var bPrev=document.getElementById('preview'),bRun=document.getElementById('run');
-  var outPrev=document.getElementById('outPreview'),outRun=document.getElementById('outRun');
-  var addr=document.getElementById('addr');
-  var sellers=[],picked=null;
+  function $(id){return document.getElementById(id)}
+  var q=$('q'),list=$('list'),hint=$('hint'),bPrev=$('preview'),bRun=$('run'),outPrev=$('outPreview'),outRun=$('outRun'),addr=$('addr');
+  var wCard=$('wallet'),wOut=$('wOut'),wQuote=$('wQuote'),wWho=$('wWho');
+  var sellers=[],picked=null,walletMod=null;
   var CLS={DELIVERED:'delivered',MISMATCH:'mismatch',UNREACHABLE:'unreach',UNCLEAR:'unclear'};
   function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
   function link(href,text){var a=el('a',null,text);a.href=href;a.rel='noopener';return a}
   function p(parent,cls,parts){var e=el('p',cls);parts.forEach(function(x){e.appendChild(typeof x==='string'?document.createTextNode(x):x)});parent.appendChild(e);return e}
+  function usd(s){return String(s).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'')}
   function isUrl(s){return /^https?:\/\/\S+$/i.test(s)}
-  function current(){var v=q.value.trim();return picked&&picked.u===v?picked:(isUrl(v)?{u:v,m:'GET'}:null)}
+  function current(){var v=q.value.trim();return picked&&picked.u===v?picked:(isUrl(v)?{u:v,m:'GET',h:(v.split('/')[2]||'')}:null)}
   function render(items){
     list.textContent='';
     items.slice(0,40).forEach(function(s){
-      var li=el('li');li.setAttribute('role','option');li.tabIndex=-1;
-      var u=el('span','u');var chip=el('span','chip '+CLS[s.c],s.c);u.appendChild(chip);u.appendChild(document.createTextNode(s.u.replace(/^https?:\/\//,'')));
+      var li=el('li');li.setAttribute('role','option');li.tabIndex=0;
+      var u=el('span','u');u.appendChild(el('span','chip '+CLS[s.c],s.c));u.appendChild(document.createTextNode(s.u.replace(/^https?:\/\//,'')));
       li.appendChild(u);li.appendChild(el('span','m',(s.m!=='GET'?s.m+' · ':'')+(s.p?s.p+' USDC':'')));
       li.addEventListener('click',function(){pick(s)});
+      li.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();pick(s)}});
       list.appendChild(li);
     });
   }
@@ -379,12 +435,18 @@ const TRY_JS = String.raw`
     hint.textContent=sellers.length?(hits.length+' of '+sellers.length+' listings match. Sellers that delivered come first, cheapest first.'):'Loading the list…';
     sync();
   }
-  function pick(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'');sync();outPrev.textContent='';outRun.textContent=''}
+  function pick(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'');outPrev.textContent='';outRun.textContent='';wReset();sync()}
   function sync(){var c=current();bPrev.disabled=!c;if(bRun)bRun.disabled=!c}
-  q.addEventListener('input',filter);
+  q.addEventListener('input',function(){filter();wReset()});
   q.addEventListener('focus',function(){if(!q.value)filter()});
   fetch('/try/sellers.json').then(function(r){return r.json()}).then(function(j){sellers=j.sellers||[];filter()}).catch(function(){hint.textContent='The list could not be loaded. You can still paste a URL.'});
-  if(cfg.trial){fetch('/try/log.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(!j)return;var e=document.getElementById('people');e.textContent='';e.appendChild(document.createTextNode(j.people+(j.people===1?' person has':' people have')+' tried vet402 so far · '));e.appendChild(link('/try/log','see every try'))}).catch(function(){})}
+  fetch('/try/stats.json').then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j)return;var parts=[];
+    if(j.triedToday!=null)parts.push(j.triedToday+(j.triedToday===1?' person':' people')+' tried vet402 free');
+    if(j.paidToday!=null)parts.push(j.paidToday+' paid through vet402 with their own wallet');
+    if(!parts.length)return;var e=$('people');e.textContent='Today (UTC): '+parts.join(' · ')+(cfg.trial?' · ':'');
+    if(cfg.trial)e.appendChild(link('/try/log','every free try'));
+  }).catch(function(){});
 
   function lastSentence(l){
     if(!l)return 'vet402 has no record for this URL yet.';
@@ -396,8 +458,12 @@ const TRY_JS = String.raw`
     return when+'vet402 could not get a clear answer'+how+'. This is not held against the seller.';
   }
   function priceSentence(b){
-    if(b.ok)return 'Buying through vet402 now costs '+b.total.usdc.replace(/0+$/,'').replace(/\.$/,'')+' USDC: the seller\'s '+b.sellerPrice.usdc.replace(/0+$/,'').replace(/\.$/,'')+' + vet402\'s fee '+b.fee.usdc.replace(/0+$/,'').replace(/\.$/,'')+'.';
+    if(b.ok)return 'Buying it through vet402 now costs '+usd(b.total.usdc)+' USDC: the seller\'s '+usd(b.sellerPrice.usdc)+' + vet402\'s fee '+usd(b.fee.usdc)+' (no fee on your first purchase).';
     return 'vet402 would not buy it right now: '+(b.detail||b.reason)+'.';
+  }
+  function buyButton(parent,label){
+    if(!cfg.wallet)return;
+    var r=el('div','row');var b=el('button','btn',label);b.addEventListener('click',openWallet);r.appendChild(b);parent.appendChild(r);
   }
   bPrev.addEventListener('click',function(){
     var c=current();if(!c)return;bPrev.disabled=true;outPrev.textContent='';p(outPrev,'sub',['Checking… (free)']);
@@ -409,7 +475,8 @@ const TRY_JS = String.raw`
       if(l&&l.class!=='DELIVERED'&&l.reason)p(outPrev,'sub',['Reason code: '+l.reason+(l.detail?' ('+l.detail+')':'')]);
       p(outPrev,null,[priceSentence(j.buy)]);
       p(outPrev,'sub',[link(j.sellerPage,'Everything vet402 recorded for this seller')]);
-      if(bRun&&j.trial&&!j.trial.available){var why={post_only:'The free try buys with a plain GET; this seller needs a POST.',price_over_trial_cap:'The free try covers sellers up to '+j.trial.maxUsdc+' USDC.'}[j.trial.reason];if(why)p(outPrev,'sub',[why])}
+      if(bRun&&j.trial&&!j.trial.available){var why={post_only:'The free try buys with a plain GET; this seller needs a POST.',price_over_trial_cap:'The free try covers sellers up to '+usd(j.trial.maxUsdc)+' USDC.'}[j.trial.reason];if(why)p(outPrev,'sub',[why])}
+      if(j.buy.ok)buyButton(outPrev,'Buy it through vet402 with your wallet');
     }).catch(function(e){outPrev.textContent='';p(outPrev,'err',['Could not check: '+e.message])}).then(function(){sync()});
   });
 
@@ -419,37 +486,109 @@ const TRY_JS = String.raw`
     var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;
     fetch('/try/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
       outRun.textContent='';var j=x.j;
-      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached')nextLine();return}
-      var price=j.price?j.price.usdc+' USDC':'the price';
+      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached'){buyButton(outRun,'Buy it through vet402 with your wallet');roles(c)}return}
+      var price=j.price?usd(j.price.usdc)+' USDC':'the price';
       var head={DELIVERED:'vet402 paid '+price+' and got what the listing promised.',MISMATCH:'vet402 paid '+price+', and what came back did not match the listing.',UNREACHABLE:'This URL did not ask for payment, so vet402 paid nothing.',UNCLEAR:'vet402 could not get a clear answer this time. Nothing is held against the seller.'}[j.class]||j.class;
       p(outRun,'big '+(CLS[j.class]||''),[head]);
       if(j.declared&&j.declared.description)p(outRun,'sub',['The listing said: '+j.declared.description]);
-      if(j.delivery)p(outRun,'sub',['What came back: '+j.delivery.summary+' ('+j.delivery.bytes+' bytes, '+(j.delivery.contentType||'no type')+')']);
-      if(j.bodyPreview){outRun.appendChild(el('pre',null,j.bodyPreview))}
+      if(j.delivery)p(outRun,'sub',['What came back: '+j.delivery.shape+'.']);
       if(j.sellerTxUrl)p(outRun,null,['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
       if(j.class!=='DELIVERED')p(outRun,'sub',['Reason code: '+j.reason+(j.detail?' ('+j.detail+')':'')]);
-      nextLine();
+      if(cfg.wallet)buyButton(outRun,'See what it actually returned — buy it through vet402 with your wallet');
+      else p(outRun,'next',['Want what it returned? Pay the seller\'s price through ',link('/#developers','/v1/buy'),' (no vet402 fee on your first purchase).']);
+      roles(c);
     }).catch(function(e){outRun.textContent='';p(outRun,'err',['Something went wrong: '+e.message])}).then(function(){sync()});
   });
-  function nextLine(){p(outRun,'next',['Want the content for yourself? Pay the seller\'s price + '+cfg.fee+' USDC with your own wallet through ',link('/#developers','/v1/buy'),' and vet402 checks it on the way.'])}
+  function roles(c){
+    var box=el('div','roles');
+    var s=el('a');s.href='/cert/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'I sell an x402 API'));s.appendChild(document.createTextNode('Get a delivery certificate for my endpoint →'));
+    var d=el('a');d.href='/#developers';d.appendChild(el('b',null,'I build agents'));d.appendChild(document.createTextNode('Check before you buy, in one line: /v1/verdict for 0.001 USDC, or the MCP server →'));
+    box.appendChild(s);box.appendChild(d);outRun.appendChild(box);
+  }
+
+  /* ---- pay with your own wallet (loaded on demand) ---- */
+  var quoted=null;
+  function wReset(){quoted=null;if(wQuote)wQuote.textContent='';if(wOut)wOut.textContent=''}
+  function loadWallet(){
+    if(walletMod)return Promise.resolve(walletMod);
+    return import(cfg.walletJs).then(function(){walletMod=window.vet402Wallet;if(!walletMod)throw new Error('wallet code did not load');return walletMod});
+  }
+  function openWallet(){
+    if(!wCard)return;wCard.hidden=false;wCard.scrollIntoView({behavior:'smooth',block:'start'});
+    loadWallet().then(function(){if(walletMod.address())priceFor(walletMod.address())}).catch(function(e){wCard.hidden=true});
+  }
+  function connect(kind){
+    wOut.textContent='';p(wOut,'sub',['Opening '+(kind==='pera'?'Pera':'Lute')+'…']);
+    loadWallet().then(function(w){return w.connect(kind,cfg.network)}).then(function(r){
+      wOut.textContent='';wWho.textContent='Connected: '+r.name+' '+r.address.slice(0,6)+'…'+r.address.slice(-6);priceFor(r.address);
+    }).catch(function(e){wOut.textContent='';p(wOut,'err',['Wallet not connected: '+(e&&e.message||e)])});
+  }
+  function priceFor(address){
+    var c=current();wQuote.textContent='';wOut.textContent='';if(!c){p(wQuote,'sub',['Pick a seller first.']);return}
+    p(wQuote,'sub',['Reading the price… (free)']);
+    fetch('/v1/buy?url='+encodeURIComponent(c.u)+'&payer='+encodeURIComponent(address),{headers:{accept:'application/json'}}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
+      wQuote.textContent='';var j=x.j;
+      if(x.s!==402||!j.buy){p(wQuote,'err',['vet402 would not buy it: '+(j.detail||j.reason||j.error||('HTTP '+x.s))]);return}
+      var b=j.buy;
+      if(BigInt(b.sellerPrice.amountAtomic)>BigInt(walletMod.maxSellerAtomic)){p(wQuote,'sub',['This page buys sellers up to 0.10 USDC. This one asks '+usd(b.sellerPrice.usdc)+' USDC.']);return}
+      quoted={target:c.u,total:b.total,fee:b.fee};
+      p(wQuote,'sub',['You pay']);p(wQuote,'total',[usd(b.total.usdc)+' USDC']);
+      p(wQuote,'sub',[b.firstPurchase?'The seller\'s price only: your first purchase through vet402 has no fee.':'The seller\'s '+usd(b.sellerPrice.usdc)+' + vet402\'s fee '+usd(b.fee.usdc)+'. No refunds.']);
+      var r=el('div','row');var go=el('button','btn','Pay '+usd(b.total.usdc)+' USDC');go.addEventListener('click',pay);r.appendChild(go);wQuote.appendChild(r);
+      p(wQuote,'sub',['Nothing is paid until you approve it in your wallet.']);
+    }).catch(function(e){wQuote.textContent='';p(wQuote,'err',['Could not read the price: '+e.message])});
+  }
+  function pay(ev){
+    if(!quoted||!walletMod)return;var btn=ev.target;btn.disabled=true;wOut.textContent='';
+    var step=p(wOut,'sub',['Approve the payment in your wallet…']);
+    walletMod.buy({target:quoted.target,network:cfg.network,expectedTotalAtomic:quoted.total.amountAtomic,feeAtomic:quoted.fee.amountAtomic,onStep:function(s){step.textContent={price:'Checking the price…',sign:'Approve the payment in your wallet…',send:'Paid. vet402 is buying it from the seller now…'}[s]||s}}).then(function(r){
+      wOut.textContent='';
+      if(r.status!==200){p(wOut,'err big',[(r.error&&(r.error.detail||r.error.error))||('HTTP '+r.status)]);if(r.customerTx)p(wOut,'sub',['Your payment: ',link(cfg.txBase+r.customerTx,r.customerTx.slice(0,10)+'…')]);return}
+      var ok=r.verdict==='ALLOW';
+      p(wOut,'big '+(ok?'delivered':'mismatch'),[ok?'Here is what the seller returned. vet402 checked it: it matches the listing.':'Here is what the seller returned. vet402 checked it: it does not match the listing ('+(r.reason||'')+').']);
+      wOut.appendChild(el('pre',null,r.bodyText.slice(0,8000)+(r.bodyText.length>8000?'\n…':'')));
+      p(wOut,'sub',[r.contentType+' · '+r.bytes+' bytes']);
+      if(r.customerTx)p(wOut,null,['Your payment to vet402: ',link(cfg.txBase+r.customerTx,r.customerTx.slice(0,10)+'…')]);
+      if(r.sellerTx)p(wOut,null,['vet402\'s payment to the seller: ',link(cfg.txBase+r.sellerTx,r.sellerTx.slice(0,10)+'…')]);
+    }).catch(function(e){wOut.textContent='';p(wOut,'err',[(e&&e.name==='PriceChangedError')?'The price changed before you paid. Nothing was paid.':'Not paid: '+(e&&e.message||e)]);if(e&&e.name==='PriceChangedError'&&walletMod.address())priceFor(walletMod.address())});
+  }
+  if(wCard){$('wPera').addEventListener('click',function(){connect('pera')});$('wLute').addEventListener('click',function(){connect('lute')})}
 })();
 `;
 
-export function tryHtml(o: { networkName: string; buyFeeUsdc: string; trial: { address: string; maxUsdc: string } | null }): string {
-  const cfgJson = JSON.stringify({ trial: !!o.trial, fee: short(o.buyFeeUsdc), network: o.networkName }).replace(/</g, "\\u003c");
+export function tryHtml(o: { networkName: string; buyFeeUsdc: string; trial: { address: string; maxUsdc: string } | null; walletJs?: string }): string {
+  const cfgJson = JSON.stringify({
+    trial: !!o.trial,
+    wallet: !!o.walletJs,
+    walletJs: o.walletJs ?? "",
+    fee: short(o.buyFeeUsdc),
+    network: o.networkName,
+    txBase: o.networkName === "mainnet" ? "https://allo.info/tx/" : "https://lora.algokit.io/testnet/transaction/",
+  }).replace(/</g, "\\u003c");
   const net = o.networkName === "mainnet" ? "Algorand" : `Algorand ${esc(o.networkName)}`;
-  const trialCard = o.trial
-    ? `<div class="card" id="trial"><h2><span class="num">3</span>Watch vet402 buy it — free, once per person</h2>
-<p class="sub" style="margin:0 0 10px;color:var(--mut);font-size:14px">vet402 pays the seller (up to ${esc(short(o.trial.maxUsdc))} USDC) from its own trial wallet on ${net}, then shows you what came back and the receipt.</p>
+  const step2 = o.trial
+    ? `<div class="card" id="trial"><h2><span class="num">2</span>Watch vet402 buy it — free, once per person</h2>
+<p class="intro">vet402 pays the seller (up to ${esc(short(o.trial.maxUsdc))} USDC) from its own trial wallet on ${net}, checks what came back against the listing, and shows you the result and the receipt.</p>
 <label for="addr">Your Algorand address (optional; it also counts as your one try)</label>
-<input id="addr" type="text" inputmode="latin" autocomplete="off" spellcheck="false" placeholder="ABCD…">
-<div class="row"><button class="btn" id="run" disabled>Try it free</button></div>
-<div class="out" id="outRun" aria-live="polite"></div></div>`
+<input id="addr" type="text" autocomplete="off" spellcheck="false" placeholder="ABCD…">
+<div class="row"><button class="btn" id="run" disabled>Try it free</button><button class="btn ghost" id="preview" disabled>Only show what vet402 got last time</button></div>
+<div class="out" id="outRun" aria-live="polite"></div>
+<div class="out" id="outPreview" aria-live="polite"></div></div>`
+    : `<div class="card"><h2><span class="num">2</span>See what vet402 got last time</h2>
+<div class="row"><button class="btn" id="preview" disabled>Check for free</button></div>
+<div class="out" id="outPreview" aria-live="polite"></div></div>`;
+  const wallet = o.walletJs
+    ? `<div class="card" id="wallet" hidden><h2><span class="num">3</span>Get the content with your own wallet</h2>
+<p class="intro">vet402 buys it from the seller for you, checks it, and hands you exactly what the seller returned, with both receipts. You pay the seller's price + ${esc(short(o.buyFeeUsdc))} USDC; your first purchase has no vet402 fee. No refunds.</p>
+<div class="row"><button class="btn" id="wPera">Connect Pera</button><button class="btn ghost" id="wLute">Connect Lute</button></div>
+<p class="hint" id="wWho"></p>
+<div class="out" id="wQuote" aria-live="polite"></div>
+<div class="out" id="wOut" aria-live="polite"></div></div>`
     : "";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Try vet402</title>
-<meta name="description" content="Pick a paid API on Algorand, see what vet402 got when it bought it, and watch vet402 buy it once for free.">
+<meta name="description" content="Pick a paid API on Algorand, watch vet402 buy it once for free, and see what it delivered.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <style>${BASE_CSS}${TRY_CSS}</style>
 </head><body>
@@ -464,10 +603,8 @@ ${topNav()}
 <ul id="list" role="listbox" aria-label="sellers"></ul>
 <p class="hint" id="hint">Loading the list…</p>
 </div>
-<div class="card"><h2><span class="num">2</span>See what vet402 got last time</h2>
-<div class="row"><button class="btn${o.trial ? " ghost" : ""}" id="preview" disabled>Check for free</button></div>
-<div class="out" id="outPreview" aria-live="polite"></div></div>
-${trialCard}
+${step2}
+${wallet}
 <p class="next">Building an agent? The same checks are paid HTTP endpoints: <a href="/#developers">/v1/check, /v1/buy, /v1/verdict, /v1/audit and an MCP server</a>.</p>
 </main>
 <footer>${o.trial ? `Trial wallet <code>${esc(o.trial.address.slice(0, 6))}…${esc(o.trial.address.slice(-6))}</code> · <a href="/try/log">every free try</a> · ` : ""}<a href="/board?view=census">Board</a> · <a href="/activity">Activity</a></footer>
