@@ -190,7 +190,7 @@ test("certificate: every fact read back from the chain; stranger's purchase is n
       ["unclear", "price_over_cap", null, null],
     ],
   );
-  assert.ok(certBadgeSvg(c).includes("delivered 1/3"));
+  assert.ok(certBadgeSvg(c).includes("delivered 1/2"), "only paid resources count as deliveries");
 });
 
 test("tamper: bad id, missing tx, swapped id (check payment, audit without anchor) and forged anchors give no certificate", async () => {

@@ -400,8 +400,9 @@ type BadgeInfo = { text: string; color: string };
 
 export function certBadgeInfo(c: CertView | null): BadgeInfo {
   if (!c) return { text: "no certificate", color: "#8a8f98" };
-  const judged = c.rows.filter((r) => r.v !== "SKIPPED").length;
-  let text = `delivered ${c.counts.delivered}/${judged}`;
+  // Only paid rows are deliveries; a resource vet402 did not pay for was never delivered.
+  const judged = c.rows.filter((r) => r.t).length;
+  let text = judged ? `delivered ${c.counts.delivered}/${judged}` : "no delivery";
   let color = c.counts.mismatch > 0 ? "#d73a3a" : c.counts.delivered > 0 ? "#2e9e4f" : "#8a8f98";
   if (!c.allPaymentsVerified) {
     text += " (unverified)";
@@ -444,11 +445,11 @@ export function certHtml(c: CertView, base: string): string {
   const x = explorer(c.network);
   const txA = (id: string, label?: string) => `<a href="${esc(x.tx(id))}" rel="noopener" title="${esc(id)}"><code>${esc(label ?? `${id.slice(0, 10)}…`)}</code></a>`;
   const addrA = (a: string) => `<a href="${esc(x.addr(a))}" rel="noopener" title="${esc(a)}"><code>${esc(shortAddr(a))}</code></a>`;
-  const judged = c.rows.filter((r) => r.v !== "SKIPPED").length;
+  const judged = c.rows.filter((r) => r.t).length;
   const headline =
     c.counts.delivered > 0 && c.counts.delivered === judged && c.allPaymentsVerified
       ? `vet402's wallet bought from ${esc(c.seller)} and got what the listing promised${judged > 1 ? `, ${judged} of ${judged} times` : ""}.`
-      : `vet402 bought from ${esc(c.seller)} with its own wallet: ${c.counts.delivered} of ${judged} deliveries matched the listing.`;
+      : `vet402 bought from ${esc(c.seller)} with its own wallet: ${c.counts.delivered} of ${judged} ${judged === 1 ? "delivery" : "deliveries"} matched the listing.`;
   const self =
     c.selfPurchased === null
       ? ""
