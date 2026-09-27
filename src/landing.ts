@@ -21,7 +21,7 @@ export function landingHtml(o: { network: string; priceUsdc: string; perCallUsdc
 </body></html>`;
 }
 
-export const DEMO_VIDEO_URL = "https://github.com/kzmttkc/vet402-algorand/releases/download/demo-2026-09-27/vet402-algorand-demo.mp4";
+export const DEMO_VIDEO_URL = "https://github.com/kzmttkc/vet402-algorand/releases/download/demo-2026-09-27/vet402-algorand-demo-v3.mp4";
 
 export function demoHtml(): string {
   return `<!doctype html>
