@@ -164,6 +164,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
 
   app.get("/v1/check", async (c) => {
     const customerPayment = c.get("customerPayment");
+    // Defence in depth: never pay a seller unless this request's own payment has settled.
+    if (!customerPayment) return c.json({ error: "payment_required" }, 402);
     const target = c.req.query("url") ?? "";
     try {
       const result = await probe(target, cfg, deps.guard, probeDeps);

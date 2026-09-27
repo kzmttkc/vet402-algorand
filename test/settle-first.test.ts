@@ -163,3 +163,11 @@ test("unpaid request never reaches verify/settle/probe", async () => {
   assert.equal(res.status, 402);
   assert.deepEqual(trace, []);
 });
+
+test("unpaid HEAD request is priced like GET: never reaches verify/settle/probe, no seller payment", async () => {
+  const trace: Trace = [];
+  const app = createApp(cfg, { payTo: VET402, probeDeps: probeDeps(trace), guard: guard(), facilitator: fakeFacilitator(trace) });
+  const res = await app.request("/v1/check?url=http://localhost:4031/honest", { method: "HEAD" });
+  assert.equal(res.status, 402);
+  assert.deepEqual(trace, []);
+});

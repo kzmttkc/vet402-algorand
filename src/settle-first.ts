@@ -48,7 +48,8 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
     const context = {
       adapter,
       path: c.req.path,
-      method: c.req.method,
+      // Hono serves HEAD with the GET handler: price HEAD exactly like GET so it can never skip payment.
+      method: c.req.method === "HEAD" ? "GET" : c.req.method,
       paymentHeader: adapter.getHeader("payment-signature") || adapter.getHeader("x-payment"),
     };
     if (!httpServer.requiresPayment(context)) return next();
