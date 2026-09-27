@@ -20,7 +20,7 @@ import { ExactAvmScheme } from "@x402/avm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402-avm/extensions";
-import { atomicToUsdc, loadConfig, type AppConfig } from "./config.js";
+import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "./config.js";
 import { loadKeys, loadPayer } from "./keys.js";
 import { SpendLedger } from "./caps.js";
 import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
@@ -196,6 +196,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     asaId: cfg.usdcAsaId,
     payTo,
     payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
+    priceAtomic: usdcToAtomic(cfg.checkPriceUsdc),
   });
   return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity }) };
 }

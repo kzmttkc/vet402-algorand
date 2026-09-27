@@ -151,7 +151,10 @@ test("operator self-tests are flagged and excluded from customer totals (exact a
   assert.deepEqual(r.totals.customers, { addresses: 3, payments: 4, usdc: "0.200000" });
   assert.deepEqual(r.totals.operatorTests, { payments: 2, usdc: "0.100000" });
   // Payer's own funding (inner, incoming) is not a seller payment; an outgoing one via an app is, and is shown unmatched.
-  assert.deepEqual(r.totals.sellerPayments, { payments: 5, usdc: "0.035000", unmatched: 2 });
+  // Headline counts only payouts matched to a customer payment; unmatched ones are reported separately.
+  assert.equal(r.totals.sellerPayments.payments, 3);
+  assert.equal(r.totals.sellerPayments.unmatched, 2);
+  assert.equal(Number(r.totals.sellerPayments.usdc) + Number(r.totals.sellerPayments.unmatchedUsdc), 0.035);
 });
 
 test("each seller payment pairs with the most recent earlier unpaired customer payment", async () => {
@@ -247,4 +250,16 @@ test("GET /activity and /activity.json are free and cached; /v1/check still asks
   assert.equal(b.status, 503);
   assert.equal(b.headers.get("cache-control"), "no-store");
   assert.equal(calls, 1);
+});
+
+test("deposits below the check price are not counted as customers", async () => {
+  const f = scenario().f;
+  const r = await new ActivityLedger(
+    { networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA, payTo: PAYTO, payer: PAYER, fetchImpl: f, priceAtomic: 60_000n },
+    60_000,
+    () => Date.parse("2026-09-27T12:00:00Z"),
+  ).get();
+  // every x402 payment in the fixture is 0.05 USDC, so a 0.06 price excludes all of them
+  assert.equal(r.totals.customers.payments, 0);
+  assert.ok(r.notCounted.some((n) => n.reason === "below_price"));
 });

@@ -30,6 +30,8 @@ export interface ActivityOptions {
   payTo: string;
   payer: string;
   feePayers?: string[];
+  /** Price of one check in atomic USDC; smaller deposits are not counted as customers. */
+  priceAtomic?: bigint;
   /** Max seconds between a customer payment and the seller payment it pays for. */
   pairWindowSec?: number;
   fetchImpl?: typeof fetch;
@@ -60,7 +62,7 @@ export interface Payout {
 export interface NotCounted {
   tx: string;
   round: number;
-  reason: "not_in_a_group" | "no_x402_facilitator_in_group" | "inner_transaction";
+  reason: "not_in_a_group" | "no_x402_facilitator_in_group" | "inner_transaction" | "below_price";
 }
 
 export interface ActivityReport {
@@ -74,7 +76,7 @@ export interface ActivityReport {
   totals: {
     customers: { addresses: number; payments: number; usdc: string };
     operatorTests: { payments: number; usdc: string };
-    sellerPayments: { payments: number; usdc: string; unmatched: number };
+    sellerPayments: { payments: number; usdc: string; unmatched: number; unmatchedUsdc: string };
   };
   /** Newest first. */
   rows: ActivityRow[];
@@ -218,7 +220,9 @@ export class ActivityLedger {
     const notCounted: NotCounted[] = [];
     for (const t of incoming) {
       if (t.receiver !== payTo || t.amount <= 0n) continue; // outgoing, or a 0-amount opt-in
-      if (t.inner) {
+      if (this.o.priceAtomic !== undefined && t.amount < this.o.priceAtomic) {
+        notCounted.push({ tx: t.tx, round: t.round, reason: "below_price" });
+      } else if (t.inner) {
         notCounted.push({ tx: t.tx, round: t.round, reason: "inner_transaction" });
       } else if (!t.group) {
         notCounted.push({ tx: t.tx, round: t.round, reason: "not_in_a_group" });
@@ -265,6 +269,7 @@ export class ActivityLedger {
 
     const real = customers.filter((c) => !own.has(c.sender));
     const ops = customers.filter((c) => own.has(c.sender));
+    const matched = payouts.filter((p) => !unmatched.includes(p));
     const sum = (ts: Transfer[]) => atomicToUsdc(ts.reduce((s, t) => s + t.amount, 0n));
     return {
       network: this.o.networkName,
@@ -277,7 +282,7 @@ export class ActivityLedger {
       totals: {
         customers: { addresses: new Set(real.map((c) => c.sender)).size, payments: real.length, usdc: sum(real) },
         operatorTests: { payments: ops.length, usdc: sum(ops) },
-        sellerPayments: { payments: payouts.length, usdc: sum(payouts), unmatched: unmatched.length },
+        sellerPayments: { payments: matched.length, usdc: sum(matched), unmatched: unmatched.length, unmatchedUsdc: sum(unmatched) },
       },
       rows,
       unmatchedPayouts: unmatched.reverse().map((p) => ({ time: iso(p.time), round: p.round, seller: p.receiver, tx: p.tx, amountUsdc: atomicToUsdc(p.amount) })),

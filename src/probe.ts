@@ -7,6 +7,7 @@
  * we approved, and to a single payload per probe, so a seller cannot raise the
  * price or ask twice between our look and our payment.
  */
+import { AlgorandClient } from "@algorandfoundation/algokit-utils";
 import { x402Client, x402HTTPClient, wrapFetchWithPayment } from "@x402/fetch";
 import { ExactAvmScheme, toClientAvmSigner, ALGORAND_TESTNET_GENESIS_HASH, ALGORAND_MAINNET_GENESIS_HASH } from "@x402/avm";
 import { atomicToUsdc, type AppConfig } from "./config.js";
@@ -169,7 +170,9 @@ export function makePaidFetch(cfg: AppConfig, secretKeyB64: string, baseFetch: t
   return async (url, approved, init) => {
     let signedCount = 0;
     const client = new x402Client();
-    const scheme = new ExactAvmScheme(signer);
+    const scheme = new ExactAvmScheme(signer, {
+      algorandClient: cfg.networkName === "mainnet" ? AlgorandClient.mainNet() : AlgorandClient.testNet(),
+    });
     client.register(cfg.network as `${string}:${string}`, scheme);
     // Newer sellers advertise the truncated CAIP-2; register that form too.
     const genesis = cfg.networkName === "mainnet" ? ALGORAND_MAINNET_GENESIS_HASH : ALGORAND_TESTNET_GENESIS_HASH;

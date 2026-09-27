@@ -27,7 +27,7 @@ export const CHECK_TOOL = {
       "Env: ALGORAND_MNEMONIC (required), VET402_NETWORK=mainnet|testnet (default mainnet), VET402_URL (default " +
       `${VET402_DEFAULT_URL}), VET402_MAX_PRICE_USDC (default ${VET402_DEFAULT_MAX_USDC}; the call refuses to pay more).`,
     inputSchema: { url: z.string().url().describe("The x402 endpoint (https) you are considering buying from") },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
 };
 

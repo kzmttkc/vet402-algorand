@@ -10,6 +10,7 @@
  * No side effects on import: this module does not read env files or print.
  * It is also used inside the stdio MCP server, where stdout belongs to JSON-RPC.
  */
+import { AlgorandClient } from "@algorandfoundation/algokit-utils";
 import { x402Client, x402HTTPClient, wrapFetchWithPayment } from "@x402/fetch";
 import {
   ExactAvmScheme,
@@ -136,7 +137,8 @@ export async function checkBeforeBuy(targetUrl: string, opts: CheckOptions): Pro
   if (!scheme) {
     const sk = opts.secretKey?.trim() || (opts.mnemonic?.trim() ? secretKeyB64FromMnemonic(opts.mnemonic.trim()) : "");
     if (!sk) throw new CheckError("a paying key is required: pass mnemonic or secretKey");
-    scheme = new ExactAvmScheme(toClientAvmSigner(sk));
+    const algorandClient = network === "testnet" ? AlgorandClient.testNet() : AlgorandClient.mainNet();
+    scheme = new ExactAvmScheme(toClientAvmSigner(sk), { algorandClient });
   }
 
   const maxAtomic = usdcToAtomic(opts.maxPriceUsdc ?? VET402_DEFAULT_MAX_USDC);
