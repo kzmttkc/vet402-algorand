@@ -41,6 +41,12 @@ export const TRY_DEFAULT_PER_DAY_USDC = "3.00";
 export const TRY_MAX_PER_DAY_CEILING_USDC = "10.00";
 /** Validity window of every leased trial note (claims, seller slots): the protocol's maximum. */
 export const TRY_LEASE_ROUNDS = 1000;
+/**
+ * How long a leased note send waits for confirmation. algokit swallows the pool's lease error and would otherwise wait
+ * the whole validity window (~47 min). A timeout throws, so nothing is paid; if the note lands later, it only uses up
+ * a slot or a claim (pays less, never more).
+ */
+export const TRY_CONFIRM_ROUNDS = 20;
 export const TRY_NOTE_PREFIX = "vet402-try:v1:";
 const CLAIM = `${TRY_NOTE_PREFIX}c:`;
 const SLOT = `${TRY_NOTE_PREFIX}s:`;
@@ -313,7 +319,7 @@ export class ChainTrialStore implements TrialStore {
   }
 
   async claim(keys: string[]): Promise<void> {
-    await this.claimGroup(keys).send();
+    await this.claimGroup(keys).send({ maxRoundsToWaitForConfirmation: TRY_CONFIRM_ROUNDS });
     for (const k of keys) this.local.add(k);
     this.cache = null;
   }
@@ -333,7 +339,7 @@ export class ChainTrialStore implements TrialStore {
       const note = slotNote(host, date, n);
       if (used.has(n) || this.local.has(note)) continue;
       try {
-        await this.slotGroup(host, date, n).send();
+        await this.slotGroup(host, date, n).send({ maxRoundsToWaitForConfirmation: TRY_CONFIRM_ROUNDS });
       } catch (e) {
         if (isLeaseConflict(e)) continue;
         throw e;
