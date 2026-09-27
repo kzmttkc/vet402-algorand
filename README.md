@@ -88,6 +88,8 @@ Every paid audit also gets a free public page: `certificateUrl` in the audit ans
 
 - No server state and no extra service. Right after the audit, vet402's payer wallet sends itself a 0-ALGO payment group (fee 0.001 ALGO per note) whose notes hold the record: `vet402-cert/1:<customer tx>:<i>/<n>:<JSON>`. The x402 payments themselves carry no link to each other (their note is `x402-payment-v2-<ms>`), so this signed note is the link.
 - The page reads everything back from the indexer and shows only what it finds: the customer payment must be an x402 settlement to `payTo` of at least the audit price, the note must be sent by the payer to itself and name that tx, and each seller payment must be a USDC transfer from the payer after the customer's payment (otherwise that row says "not verified"). Any other id, a missing tx, or a note sent by anyone else gives 404.
+- The record never delays the audit answer by more than 40 s. If it is submitted but not yet confirmed, the answer has `certificatePending: true` and `certificateUrl` ends in `?anchor=<tx>`; the page then says "Recording…" (202) until the indexer has it. If it could not be written, the answer has `certificateError` and the audit result is still complete.
+- **Operations:** the payer wallet needs ALGO for these fees. Below 1 ALGO (`CERT_MIN_PAYER_ALGO`) vet402 writes no record, answers `certificateError` ("low on ALGO") and logs a line starting with `ALERT vet402 cert` (Vercel logs). Top the payer wallet up with ALGO when you see it.
 - Get one from the command line (plain JS, runs from this repo): `npx -y github:kzmttkc/vet402-algorand <seller>` shows the free plan; add `--yes` with `ALGORAND_MNEMONIC` set to pay and print the certificate URL.
 
 ## Look up a past result

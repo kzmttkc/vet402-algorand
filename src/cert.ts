@@ -24,6 +24,7 @@
 import type { Env, Hono } from "hono";
 import { AlgorandClient, microAlgo } from "@algorandfoundation/algokit-utils";
 import { getAlgokitSigner, toClientAvmSigner } from "@x402/avm";
+import { encodeAddress } from "@algorandfoundation/algokit-utils/common";
 import { atomicToUsdc, type AppConfig, type NetworkName } from "./config.js";
 import { GOPLAUSIBLE_FEE_PAYERS, explorer, shortAddr } from "./activity.js";
 import { esc } from "./board.js";
@@ -49,6 +50,8 @@ export interface CertRecord {
   r: CertRow[];
   /** Resources listed but not looked at. */
   n?: { found: number; notChecked: number };
+  /** What the customer paid for this audit (atomic USDC). The page compares with this, not today's price. */
+  pa?: string;
 }
 
 export interface CertRow {
@@ -65,7 +68,13 @@ export interface CertRow {
 }
 
 /** The record for one finished audit. */
-export function buildCertRecord(networkName: NetworkName, plan: Pick<AuditPlan, "seller" | "targets" | "found" | "notChecked">, run: Pick<AuditRun, "results">, customerTx: string): CertRecord {
+export function buildCertRecord(
+  networkName: NetworkName,
+  plan: Pick<AuditPlan, "seller" | "targets" | "found" | "notChecked">,
+  run: Pick<AuditRun, "results">,
+  customerTx: string,
+  paidAtomic?: string,
+): CertRecord {
   return {
     v: 1,
     net: networkName,
@@ -85,6 +94,7 @@ export function buildCertRecord(networkName: NetworkName, plan: Pick<AuditPlan, 
       };
     }),
     n: { found: plan.found, notChecked: plan.notChecked.total },
+    ...(paidAtomic && /^\d{1,15}$/.test(paidAtomic) ? { pa: paidAtomic } : {}),
   };
 }
 
@@ -152,44 +162,141 @@ function validRecord(x: unknown, id: string): x is CertRecord {
       typeof w.k === "string" &&
       typeof w.why === "string" &&
       (w.t === undefined || (typeof w.t === "string" && TXID_RE.test(w.t))),
-  );
+  ) && (r.pa === undefined || (typeof r.pa === "string" && /^\d{1,15}$/.test(r.pa)));
 }
 
 // ---------------------------------------------------------------- writing (after a paid audit)
 
-/** Sends the notes as one atomic group of 0-ALGO self-payments from the payer wallet. */
-export type CertAnchor = (notes: Uint8Array[]) => Promise<{ txIds: string[] }>;
+/**
+ * Writes the notes as one atomic group of 0-ALGO self-payments from the payer wallet.
+ * `submit` returns once algod accepted the group (the ids are known then); confirmation
+ * is awaited separately, so a slow confirmation never loses the ids.
+ */
+export interface CertAnchor {
+  /** The payer wallet's ALGO balance (microAlgo). */
+  algoBalance(): Promise<bigint>;
+  submit(notes: Uint8Array[]): Promise<{ txIds: string[] }>;
+  /** true once confirmed; false if not confirmed within `ms`. Throws if algod dropped it. */
+  waitConfirmed(txId: string, ms: number): Promise<boolean>;
+}
 
-export function makeCertAnchor(networkName: NetworkName, payerSecretKeyB64: string): CertAnchor {
+export const ALGOD_URLS: Record<NetworkName, string> = {
+  mainnet: "https://mainnet-api.algonode.cloud",
+  testnet: "https://testnet-api.algonode.cloud",
+};
+
+interface PendingInfo {
+  "confirmed-round"?: number;
+  "pool-error"?: string;
+  txn?: { txn?: { snd?: string; note?: string } };
+}
+
+async function pendingInfo(algodUrl: string, txId: string, f: typeof fetch = fetch): Promise<PendingInfo | null> {
+  const res = await f(`${algodUrl}/v2/transactions/pending/${txId}?format=json`, { signal: AbortSignal.timeout(8000) });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`algod ${res.status}`);
+  return (await res.json()) as PendingInfo;
+}
+
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export function makeCertAnchor(networkName: NetworkName, payerSecretKeyB64: string, algodUrl = ALGOD_URLS[networkName]): CertAnchor {
   const account = getAlgokitSigner(toClientAvmSigner(payerSecretKeyB64));
   if (!account) throw new Error("cannot build the payer signer");
   const algorand = networkName === "mainnet" ? AlgorandClient.mainNet() : AlgorandClient.testNet();
-  return async (notes) => {
-    const g = algorand.newGroup();
-    for (const note of notes) g.addPayment({ sender: account.addr, receiver: account.addr, amount: microAlgo(0), note, signer: account.signer });
-    const r = await g.send({ maxRoundsToWaitForConfirmation: 12 });
-    return { txIds: r.txIds };
+  const address = account.addr.toString();
+  return {
+    async algoBalance() {
+      const res = await fetch(`${algodUrl}/v2/accounts/${address}?exclude=all&format=json`, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error(`algod ${res.status}`);
+      return BigInt(((await res.json()) as { amount: number }).amount);
+    },
+    async submit(notes) {
+      const g = algorand.newGroup();
+      for (const note of notes) g.addPayment({ sender: account.addr, receiver: account.addr, amount: microAlgo(0), note, signer: account.signer });
+      const { transactions } = await g.build();
+      const txIds = transactions.map((t) => t.txn.txId());
+      const signed = await g.gatherSignatures();
+      const res = await fetch(`${algodUrl}/v2/transactions`, {
+        method: "POST",
+        headers: { "content-type": "application/x-binary" },
+        body: Buffer.concat(signed.map((b) => Buffer.from(b))),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) throw new Error(`algod ${res.status}: ${(await res.text()).slice(0, 160)}`);
+      return { txIds };
+    },
+    async waitConfirmed(txId, ms) {
+      const end = Date.now() + ms;
+      while (Date.now() < end) {
+        const p = await pendingInfo(algodUrl, txId).catch(() => null);
+        if (p?.["pool-error"]) throw new Error(`algod dropped it: ${p["pool-error"].slice(0, 160)}`);
+        if ((p?.["confirmed-round"] ?? 0) > 0) return true;
+        await pause(Math.min(1500, Math.max(0, end - Date.now())));
+      }
+      return false;
+    },
   };
 }
 
-export type IssueOutcome = { certificateUrl: string; certificateTx: string } | { certificateError: string };
+export type IssueOutcome =
+  | { certificateUrl: string; certificateTx: string; certificatePending?: true }
+  | { certificateError: string };
 
-/** Anchor the audit's record and return the certificate URL. Never throws: the customer has paid either way. */
+export interface IssueOptions {
+  /** Most time the record may take (balance read + submit + confirmation). Default 40 s. */
+  limitMs?: number;
+  /** Below this ALGO balance (microAlgo) the payer writes no record. Default 1 ALGO. */
+  minPayerMicroAlgo?: bigint;
+  log?: (msg: string) => void;
+}
+
+export const CERT_DEFAULT_LIMIT_MS = 40_000;
+export const CERT_DEFAULT_MIN_PAYER_MICROALGO = 1_000_000n;
+
+class TimedOut extends Error {}
+function within<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: ReturnType<typeof setTimeout>;
+  return Promise.race([p, new Promise<never>((_, rej) => (t = setTimeout(() => rej(new TimedOut(`took longer than ${Math.round(ms / 1000)} s`)), Math.max(0, ms))))]).finally(() => clearTimeout(t));
+}
+
+/**
+ * Write the audit's record on-chain and return the certificate URL. Never throws and never
+ * takes longer than `limitMs`: the customer has paid and always gets the audit result.
+ * Submitted but not yet confirmed → the URL with `?anchor=<tx>` and `certificatePending`
+ * (the page says "recording…" until the indexer has it).
+ */
 export async function issueCertificate(
   anchor: CertAnchor,
   networkName: NetworkName,
   plan: AuditPlan,
   run: AuditRun,
-  customerTx: string,
+  customerPayment: { transaction: string; amount?: string },
   baseUrl: string,
+  o: IssueOptions = {},
 ): Promise<IssueOutcome> {
+  const customerTx = customerPayment.transaction;
   if (!TXID_RE.test(customerTx)) return { certificateError: "the customer payment has no Algorand tx id" };
+  const log = o.log ?? ((m: string) => console.error(m));
+  const end = Date.now() + (o.limitMs ?? CERT_DEFAULT_LIMIT_MS);
+  const left = () => end - Date.now();
+  const min = o.minPayerMicroAlgo ?? CERT_DEFAULT_MIN_PAYER_MICROALGO;
+  const url = `${baseUrl.replace(/\/+$/, "")}/cert/${customerTx}`;
+  let txIds: string[];
   try {
-    const { txIds } = await anchor(encodeCertNotes(buildCertRecord(networkName, plan, run, customerTx)));
-    return { certificateUrl: `${baseUrl.replace(/\/+$/, "")}/cert/${customerTx}`, certificateTx: txIds[0] };
+    const balance = await within(anchor.algoBalance(), left());
+    if (balance < min) {
+      log(`ALERT vet402 cert: payer ALGO balance ${balance} microAlgo is below ${min}; no certificate written for ${customerTx}`);
+      return { certificateError: `no certificate: vet402's payer wallet is low on ALGO for the on-chain record (below ${Number(min) / 1e6} ALGO). Your audit result above is complete.` };
+    }
+    txIds = (await within(anchor.submit(encodeCertNotes(buildCertRecord(networkName, plan, run, customerTx, customerPayment.amount))), left())).txIds;
   } catch (e) {
     return { certificateError: `the certificate could not be written on-chain: ${String((e as Error).message ?? e).slice(0, 160)}` };
   }
+  const confirmed = await within(anchor.waitConfirmed(txIds[0], left()), left() + 1000).catch(() => false);
+  return confirmed
+    ? { certificateUrl: url, certificateTx: txIds[0] }
+    : { certificateUrl: `${url}?anchor=${txIds[0]}`, certificateTx: txIds[0], certificatePending: true };
 }
 
 // ---------------------------------------------------------------- reading (the public page)
@@ -204,6 +311,8 @@ export interface CertReaderOptions {
   payer: string;
   auditPriceAtomic: bigint;
   feePayers?: string[];
+  /** algod, to show "recording…" while a submitted record is not yet in the indexer. Omitted = no pending page. */
+  algodUrl?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 }
@@ -279,7 +388,6 @@ export async function readCertificate(id: string, o: CertReaderOptions): Promise
       return notFound("not_an_audit_payment", "this transaction is not a USDC payment to vet402");
     }
     const paid = BigInt(ax.amount) + BigInt(ax["close-amount"] ?? 0);
-    if (paid < o.auditPriceAtomic) return notFound("not_an_audit_payment", "this payment to vet402 is smaller than the audit price, so it did not buy an audit");
     if (!ct.group) return notFound("not_an_audit_payment", "this payment is not an x402 settlement");
     const q = new URLSearchParams({ "group-id": ct.group, round: String(ct["confirmed-round"]) });
     const grp = ((await get(`/v2/transactions?${q}`)) as { transactions?: IdxTxn[] } | null)?.transactions ?? [];
@@ -291,8 +399,19 @@ export async function readCertificate(id: string, o: CertReaderOptions): Promise
 
     // 2) The anchor: sent by the payer to itself, after the customer's payment, naming this tx.
     const prefix = Buffer.from(`${CERT_NOTE_PREFIX}${id}:`).toString("base64");
-    const aq = new URLSearchParams({ "note-prefix": prefix, "tx-type": "pay", "min-round": String(round), limit: "100" });
-    const found = ((await get(`/v2/accounts/${o.payer}/transactions?${aq}`)) as { transactions?: IdxTxn[] } | null)?.transactions ?? [];
+    // Sent by the payer only: anyone can send the payer notes with this prefix, and those must not
+    // push the real record out of the page (the account endpoint also returns received txs).
+    const found: IdxTxn[] = [];
+    let next: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const aq = new URLSearchParams({ address: o.payer, "address-role": "sender", "note-prefix": prefix, "tx-type": "pay", "min-round": String(round), limit: "100" });
+      if (next) aq.set("next", next);
+      const body = (await get(`/v2/transactions?${aq}`)) as { transactions?: IdxTxn[]; "next-token"?: string } | null;
+      const txs = body?.transactions ?? [];
+      found.push(...txs);
+      next = body?.["next-token"];
+      if (!next || txs.length === 0) break;
+    }
     const groups = new Map<string, IdxTxn[]>();
     for (const t of found) {
       const p = t["payment-transaction"];
@@ -312,6 +431,10 @@ export async function readCertificate(id: string, o: CertReaderOptions): Promise
       }
     }
     if (!rec) return notFound("no_certificate", "vet402 has not written a certificate for this payment");
+    // The price vet402 recorded for this audit (a later price change does not undo old certificates).
+    if (rec.pa !== undefined ? paid !== BigInt(rec.pa) : paid < o.auditPriceAtomic) {
+      return notFound("not_an_audit_payment", "this payment does not match the audit price vet402 recorded");
+    }
 
     // 3) Each seller payment named in the record, read back from the chain.
     const own = new Set([o.payTo, o.payer]);
@@ -517,6 +640,13 @@ ${self}
 </main></body></html>`;
 }
 
+function recordingHtml(): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="5"><title>Recording certificate · vet402</title>
+<style>:root{--bg:#fff;--fg:#111}@media (prefers-color-scheme:dark){:root{--bg:#0a0e17;--fg:#e8ecf3}}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}main{max-width:760px;margin:0 auto;padding:20px 16px}</style>
+</head><body><main><h1>Recording…</h1><p>vet402 is writing this certificate on Algorand. It shows here once the record is confirmed and indexed, usually within a minute. This page reloads by itself.</p></main></body></html>`;
+}
+
 /** Register GET /cert/:id and GET /cert/:id/badge.svg. Free: call before the payment middleware. */
 export function registerCert<E extends Env>(app: Hono<E>, o: CertReaderOptions, base?: string): void {
   // A certificate that was found never changes: keep it per instance (bounded).
@@ -531,9 +661,26 @@ export function registerCert<E extends Env>(app: Hono<E>, o: CertReaderOptions, 
     }
     return out;
   };
+  /** A record vet402 submitted for `id` that the indexer does not show yet (pending, or confirmed moments ago). */
+  const recording = async (id: string, anchorTx: string | undefined): Promise<boolean> => {
+    if (!o.algodUrl || !anchorTx || !TXID_RE.test(anchorTx)) return false;
+    try {
+      const p = await pendingInfo(o.algodUrl, anchorTx, o.fetchImpl);
+      const t = p?.txn?.txn;
+      if (!p || p["pool-error"] || !t?.snd || !t.note) return false;
+      const note = Buffer.from(t.note, "base64").subarray(0, 80).toString("latin1");
+      return encodeAddress(new Uint8Array(Buffer.from(t.snd, "base64"))) === o.payer && note.startsWith(`${CERT_NOTE_PREFIX}${id}:`);
+    } catch {
+      return false;
+    }
+  };
   const baseOf = (reqUrl: string) => base ?? new URL(reqUrl).origin;
   app.get("/cert/:id", async (c) => {
-    const out = await load(c.req.param("id"));
+    const id = c.req.param("id");
+    const out = await load(id);
+    if (!out.ok && out.error === "no_certificate" && (await recording(id, c.req.query("anchor")))) {
+      return c.html(recordingHtml(), 202, { "cache-control": "no-store" });
+    }
     if (!out.ok) {
       return c.text(`vet402: no certificate here (${out.error}): ${out.detail}.`, out.status, { "cache-control": "no-store" });
     }

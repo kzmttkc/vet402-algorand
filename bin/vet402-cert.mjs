@@ -134,9 +134,13 @@ async function main() {
   }
   console.log(`Your payment: ${out.customerPayment?.transaction}`);
   for (const r of out.results ?? []) {
-    console.log(`  ${String(r.class).toUpperCase().padEnd(11)} ${r.reason.padEnd(22)} ${r.resourceUrl}${r.downstreamPayment?.transaction ? `  vet402 paid: ${r.downstreamPayment.transaction}` : ""}`);
+    console.log(`  ${String(r.class).toUpperCase().padEnd(11)} ${String(r.reason ?? "").padEnd(22)} ${r.resourceUrl}${r.downstreamPayment?.transaction ? `  vet402 paid: ${r.downstreamPayment.transaction}` : ""}`);
   }
-  if (out.certificateUrl) console.log(`\nCertificate: ${out.certificateUrl}\nBadge (Markdown): [![vet402 delivery certificate](${out.certificateUrl}/badge.svg)](${out.certificateUrl})`);
+  if (out.certificateUrl) {
+    const clean = String(out.certificateUrl).split("?")[0];
+    console.log(`\nCertificate: ${out.certificateUrl}${out.certificatePending ? "  (still being recorded on Algorand; the page shows it within a minute)" : ""}`);
+    console.log(`Badge (Markdown): [![vet402 delivery certificate](${clean}/badge.svg)](${clean})`);
+  }
   else console.log(`\nNo certificate: ${out.certificateError ?? "this vet402 does not issue certificates"}`);
 }
 

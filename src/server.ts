@@ -38,7 +38,7 @@ import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { registerBuy } from "./buy.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
-import { issueCertificate, makeCertAnchor, registerCert, type CertAnchor, type CertReaderOptions } from "./cert.js";
+import { ALGOD_URLS, issueCertificate, makeCertAnchor, registerCert, type CertAnchor, type CertReaderOptions, type IssueOptions } from "./cert.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -83,7 +83,7 @@ export interface AppDeps {
   /** Where /v1/audit reads a seller's resources. Default: the Bazaar feed at cfg.bazaarUrl (cached). */
   catalog?: Catalog;
   /** Delivery certificates (cert.ts): anchor written after each paid audit, free GET /cert/:id. Omitted = off. */
-  cert?: { anchor: CertAnchor; reader: CertReaderOptions };
+  cert?: { anchor: CertAnchor; reader: CertReaderOptions; issue?: IssueOptions };
 }
 
 /**
@@ -378,7 +378,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     const planOut = { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note };
     try {
       const run = await runAudit(plan, { cfg, guard: deps.guard, probeDeps, customerTx: customerPayment.transaction, maxPayments, deadlineMs: cfg.auditDeadlineMs });
-      const cert = deps.cert ? await issueCertificate(deps.cert.anchor, cfg.networkName, plan, run, customerPayment.transaction, new URL(c.req.url).origin) : {};
+      const cert = deps.cert ? await issueCertificate(deps.cert.anchor, cfg.networkName, plan, run, customerPayment, new URL(c.req.url).origin, deps.cert.issue) : {};
       return c.json({ seller: plan.seller, network: cfg.network, customerPayment, summary: run.summary, results: run.results, plan: planOut, ...cert }, 200);
     } catch (e) {
       // The customer has paid: always answer.
@@ -420,9 +420,12 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
   const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (catalogUrls.length && !cfg.allowPrivateTargets) throw new Error("AUDIT_CATALOG_URLS is for the local TestNet run only (needs ALLOW_PRIVATE_TARGETS=1)");
   const catalog = catalogUrls.length ? new UrlListCatalog(catalogUrls) : undefined;
+  const algodUrl = env.ALGOD_URL?.trim() || ALGOD_URLS[cfg.networkName];
   const cert = {
-    anchor: makeCertAnchor(cfg.networkName, payer.secretKeyB64),
-    reader: { networkName: cfg.networkName, indexerUrl: cfg.indexerUrl, asaId: cfg.usdcAsaId, payTo, payer: payer.address, auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc) },
+    anchor: makeCertAnchor(cfg.networkName, payer.secretKeyB64, algodUrl),
+    reader: { networkName: cfg.networkName, indexerUrl: cfg.indexerUrl, algodUrl, asaId: cfg.usdcAsaId, payTo, payer: payer.address, auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc) },
+    // Below this ALGO balance the payer writes no certificate record (default 1 ALGO).
+    issue: env.CERT_MIN_PAYER_ALGO ? { minPayerMicroAlgo: usdcToAtomic(env.CERT_MIN_PAYER_ALGO) } : {},
   };
   return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog, cert }) };
 }

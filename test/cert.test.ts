@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { ALGORAND_MAINNET_CAIP2, ALGORAND_TESTNET_CAIP2, USDC_MAINNET_ASA_ID, USDC_TESTNET_ASA_ID } from "@x402/avm";
 import type { FacilitatorClient } from "@x402/core/server";
 import { Hono } from "hono";
+import { encodeAddress } from "@algorandfoundation/algokit-utils/common";
 import {
   CERT_NOTE,
   CERT_NOTE_PREFIX,
@@ -16,8 +17,11 @@ import {
   encodeCertNotes,
   readCertificate,
   registerCert,
+  issueCertificate,
+  type CertAnchor,
   type CertReaderOptions,
   type CertRecord,
+  type IssueOptions,
 } from "../src/cert.js";
 import { GOPLAUSIBLE_FEE_PAYERS } from "../src/activity.js";
 import { createApp } from "../src/server.js";
@@ -106,19 +110,45 @@ function chain(extra: T[] = [], rec: CertRecord = RECORD, customer = CUSTOMER) {
   ];
 }
 
-function indexer(txs: T[], calls: string[] = [], status = 200): typeof fetch {
+const rxOf = (x: T) => (x["payment-transaction"] as { receiver?: string } | undefined)?.receiver ?? (x["asset-transfer-transaction"] as { receiver?: string } | undefined)?.receiver;
+const notePrefixed = (x: T, prefix: Buffer) => prefix.length === 0 || (typeof x.note === "string" && Buffer.from(x.note, "base64").subarray(0, prefix.length).equals(prefix));
+
+/** Indexer (and algod pending) as the real ones answer: newest first, `limit` per page, `next` token. */
+function indexer(txs: T[], calls: string[] = [], status = 200, pending: Record<string, unknown> = {}): typeof fetch {
   return (async (input: string | URL | Request) => {
     const u = new URL(String(input));
     calls.push(u.pathname + u.search);
     if (status !== 200) return new Response("down", { status });
+    const pend = /^\/v2\/transactions\/pending\/([A-Z2-7]+)$/.exec(u.pathname);
+    if (pend) return pending[pend[1]] ? Response.json(pending[pend[1]]) : new Response("no", { status: 404 });
     const one = /^\/v2\/transactions\/([A-Z2-7]+)$/.exec(u.pathname);
     if (one) {
       const t = txs.find((x) => x.id === one[1]);
       return t ? Response.json({ transaction: t }) : new Response("no", { status: 404 });
     }
-    if (u.pathname === "/v2/transactions") {
+    if (u.pathname === "/v2/transactions" && u.searchParams.has("group-id")) {
       const g = u.searchParams.get("group-id");
       return Response.json({ transactions: txs.filter((x) => x.group === g) });
+    }
+    if (u.pathname === "/v2/transactions") {
+      const a = u.searchParams.get("address");
+      const role = u.searchParams.get("address-role");
+      const prefix = Buffer.from(u.searchParams.get("note-prefix") ?? "", "base64");
+      const type = u.searchParams.get("tx-type");
+      const min = Number(u.searchParams.get("min-round") ?? 0);
+      const limit = Number(u.searchParams.get("limit") ?? 1000);
+      const from = Number(u.searchParams.get("next") ?? 0);
+      const all = txs
+        .filter(
+          (x) =>
+            (!a || (role === "sender" ? x.sender === a : role === "receiver" ? rxOf(x) === a : x.sender === a || rxOf(x) === a)) &&
+            (!type || x["tx-type"] === type) &&
+            x["confirmed-round"] >= min &&
+            notePrefixed(x, prefix),
+        )
+        .sort((p, q) => q["confirmed-round"] - p["confirmed-round"]);
+      const page = all.slice(from, from + limit);
+      return Response.json({ transactions: page, ...(from + limit < all.length ? { "next-token": String(from + limit) } : {}) });
     }
     const acct = /^\/v2\/accounts\/([A-Z2-7]+)\/transactions$/.exec(u.pathname);
     if (acct) {
@@ -127,14 +157,19 @@ function indexer(txs: T[], calls: string[] = [], status = 200): typeof fetch {
       const type = u.searchParams.get("tx-type");
       const min = Number(u.searchParams.get("min-round") ?? 0);
       const rx = (x: T) => (x["payment-transaction"] as { receiver?: string } | undefined)?.receiver ?? (x["asset-transfer-transaction"] as { receiver?: string } | undefined)?.receiver;
+      const limit = Number(u.searchParams.get("limit") ?? 1000);
+      // Like the real indexer: sent and received, newest first, one page of `limit`.
       return Response.json({
-        transactions: txs.filter(
-          (x) =>
-            (x.sender === a || rx(x) === a) &&
-            (!type || x["tx-type"] === type) &&
-            x["confirmed-round"] >= min &&
-            (prefix.length === 0 || (typeof x.note === "string" && Buffer.from(x.note, "base64").subarray(0, prefix.length).equals(prefix))),
-        ),
+        transactions: txs
+          .filter(
+            (x) =>
+              (x.sender === a || rx(x) === a) &&
+              (!type || x["tx-type"] === type) &&
+              x["confirmed-round"] >= min &&
+              (prefix.length === 0 || (typeof x.note === "string" && Buffer.from(x.note, "base64").subarray(0, prefix.length).equals(prefix))),
+          )
+          .sort((p, q) => q["confirmed-round"] - p["confirmed-round"])
+          .slice(0, limit),
       });
     }
     return new Response("unknown", { status: 404 });
@@ -200,7 +235,7 @@ test("tamper: bad id, missing tx, swapped id (check payment, audit without ancho
   const missing = await readCertificate(txid("M"), opts(txs));
   assert.ok(!missing.ok && missing.status === 404 && missing.error === "not_found");
   const check = await readCertificate(CHECK_TX, opts(txs));
-  assert.ok(!check.ok && check.error === "not_an_audit_payment", "a 0.05 check payment is not an audit");
+  assert.ok(!check.ok && check.status === 404 && check.error === "no_certificate", "a 0.05 check payment has no certificate");
   const lonely = await readCertificate(LONELY_AUDIT_TX, opts(txs));
   assert.ok(!lonely.ok && lonely.error === "no_certificate", "an audit payment vet402 wrote nothing for");
   const sellerTx = await readCertificate(SELLER_TX1, opts(txs));
@@ -327,7 +362,25 @@ const sellerDeps: ProbeDeps = {
   }),
 };
 
-async function paidAudit(anchor: (n: Uint8Array[]) => Promise<{ txIds: string[] }>, customerTx = AUDIT_TX) {
+type FakeAnchor = CertAnchor & { submitted: Uint8Array[][] };
+function fakeAnchor(o: { submit?: (n: Uint8Array[]) => Promise<{ txIds: string[] }>; confirmed?: boolean | (() => Promise<boolean>); balance?: bigint } = {}): FakeAnchor {
+  const a: FakeAnchor = {
+    submitted: [],
+    async algoBalance() {
+      return o.balance ?? 5_000_000n;
+    },
+    async submit(notes) {
+      a.submitted.push(notes);
+      return o.submit ? o.submit(notes) : { txIds: [txid("N")] };
+    },
+    async waitConfirmed() {
+      return typeof o.confirmed === "function" ? o.confirmed() : (o.confirmed ?? true);
+    },
+  };
+  return a;
+}
+
+async function paidAudit(anchor: CertAnchor, customerTx = AUDIT_TX, issue: IssueOptions = {}) {
   const cfg = loadConfig({ ALLOW_PRIVATE_TARGETS: "1" });
   const app = createApp(cfg, {
     payTo: PAYTO,
@@ -335,7 +388,7 @@ async function paidAudit(anchor: (n: Uint8Array[]) => Promise<{ txIds: string[] 
     guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
     facilitator: fakeFacilitator(customerTx),
     catalog: { items: async () => ITEMS },
-    cert: { anchor, reader: opts([]) },
+    cert: { anchor, reader: opts([]), issue: { log: () => {}, ...issue } },
   });
   const path = `/v1/audit?seller=${SELLER}`;
   const first = await app.request(path);
@@ -347,11 +400,9 @@ async function paidAudit(anchor: (n: Uint8Array[]) => Promise<{ txIds: string[] 
 }
 
 test("/v1/audit: after the audit, the record is anchored and the answer carries certificateUrl", async () => {
-  let written: Uint8Array[] = [];
-  const { paid } = await paidAudit(async (notes) => {
-    written = notes;
-    return { txIds: [txid("N")] };
-  });
+  const anchor = fakeAnchor();
+  const { paid } = await paidAudit(anchor);
+  const written = anchor.submitted[0];
   assert.equal(paid.status, 200);
   const b = (await paid.json()) as { certificateUrl?: string; certificateTx?: string };
   assert.equal(b.certificateUrl, `https://vet402.example/cert/${AUDIT_TX}`);
@@ -361,18 +412,23 @@ test("/v1/audit: after the audit, the record is anchored and the answer carries 
   assert.equal(rec.c, AUDIT_TX);
   assert.deepEqual(rec.p, [SELLER]);
   assert.deepEqual(rec.r.map((r) => [r.v, r.why, r.t]), [["ALLOW", "delivered", SELLER_TX1]]);
+  assert.equal(rec.pa, "500000", "the price the customer paid is recorded");
 });
 
 test("/v1/audit: anchor failure still answers 200 with certificateError; the customer's result is not lost", async () => {
-  const { paid } = await paidAudit(async () => {
-    throw new Error("algod down");
-  });
+  const { paid } = await paidAudit(
+    fakeAnchor({
+      submit: async () => {
+        throw new Error("algod down");
+      },
+    }),
+  );
   assert.equal(paid.status, 200);
   const b = (await paid.json()) as { certificateUrl?: string; certificateError?: string; results: unknown[] };
   assert.equal(b.certificateUrl, undefined);
   assert.match(b.certificateError!, /algod down/);
   assert.equal(b.results.length, 1);
-  const bad = await paidAudit(async () => ({ txIds: [] }), "NOT_A_TX");
+  const bad = await paidAudit(fakeAnchor(), "NOT_A_TX");
   assert.match(((await bad.paid.json()) as { certificateError: string }).certificateError, /no Algorand tx id/);
 });
 
@@ -405,4 +461,77 @@ test("CLI: pays only vet402's audit price, in USDC, to vet402's MainNet address 
   assert.equal(allowedRequirement({ ...r, asset: "1" }, lock), false);
   assert.equal(allowedRequirement({ ...r, network: ALGORAND_TESTNET_CAIP2 }, lock), false);
   assert.equal(payToLock("http://localhost:4021", "testnet"), undefined);
+});
+
+test("BLOCK fix: 150 forged notes sent to the payer (newest) do not push the real record out of the indexer page", async () => {
+  const flood: T[] = [];
+  const forgedRec: CertRecord = { ...RECORD, s: "evil.example" };
+  for (let i = 0; i < 150; i++) {
+    const [n] = encodeCertNotes(forgedRec);
+    flood.push({
+      id: `Z${String(i).padStart(3, "2").replace(/[0189]/g, "Q")}`.repeat(13),
+      sender: ATTACKER,
+      "tx-type": "pay",
+      "confirmed-round": 200 + i,
+      "round-time": 1_790_000_200 + i,
+      note: Buffer.from(n).toString("base64"),
+      "payment-transaction": { amount: 0, receiver: PAYER },
+    });
+  }
+  const out = await readCertificate(AUDIT_TX, opts(chain(flood)));
+  assert.ok(out.ok, "the real record is found");
+  assert.equal(out.cert.seller, "seller.example");
+});
+
+test("price: the certificate compares with the price vet402 recorded, so a later price change keeps old certificates", async () => {
+  const rec: CertRecord = { ...RECORD, pa: "500000" };
+  const raised = await readCertificate(AUDIT_TX, opts(chain([], rec), { auditPriceAtomic: 1_000_000n }));
+  assert.ok(raised.ok, "price raised to 1.00 later: the 0.50 certificate stays");
+  const lied = await readCertificate(AUDIT_TX, opts(chain([], { ...RECORD, pa: "400000" })));
+  assert.ok(!lied.ok && lied.error === "not_an_audit_payment", "a record whose price does not match the payment is refused");
+});
+
+test("issue: 40 s limit, pending record, low ALGO balance; the audit answer never waits longer or breaks", async () => {
+  const plan = { seller: "s.example", targets: [], found: 0, notChecked: { total: 0, counts: {}, items: [] } } as never;
+  const run = { results: [], summary: {} } as never;
+  const cp = { transaction: AUDIT_TX, amount: "500000" };
+  // Submit hangs: certificateError within the limit.
+  const t0 = Date.now();
+  const hung = await issueCertificate(fakeAnchor({ submit: () => new Promise(() => {}) }), "testnet", plan, run, cp, "https://v.example", { limitMs: 200 });
+  assert.ok("certificateError" in hung && /longer than/.test(hung.certificateError));
+  assert.ok(Date.now() - t0 < 1500);
+  // Submitted, not confirmed in time: URL with the anchor and a pending mark.
+  const pend = await issueCertificate(fakeAnchor({ confirmed: false }), "testnet", plan, run, cp, "https://v.example", { limitMs: 200 });
+  assert.deepEqual(pend, { certificateUrl: `https://v.example/cert/${AUDIT_TX}?anchor=${txid("N")}`, certificateTx: txid("N"), certificatePending: true });
+  const slow = await issueCertificate(fakeAnchor({ confirmed: () => new Promise(() => {}) }), "testnet", plan, run, cp, "https://v.example", { limitMs: 200 });
+  assert.ok("certificatePending" in slow && slow.certificatePending);
+  // Low ALGO: nothing written, reason given, ALERT logged.
+  const logs: string[] = [];
+  const low = fakeAnchor({ balance: 999_999n });
+  const lowOut = await issueCertificate(low, "testnet", plan, run, cp, "https://v.example", { log: (m) => logs.push(m) });
+  assert.ok("certificateError" in lowOut && /low on ALGO/.test(lowOut.certificateError));
+  assert.equal(low.submitted.length, 0);
+  assert.match(logs[0], /^ALERT vet402 cert/);
+});
+
+test("GET /cert/:id?anchor=: 'recording…' (202) only for a pending record sent by the payer naming this id", async () => {
+  const lonelyRec: CertRecord = { ...RECORD, c: LONELY_AUDIT_TX };
+  const [note] = encodeCertNotes(lonelyRec);
+  // Real (checksummed) addresses: algod gives the sender as public-key bytes.
+  const payerKey = new Uint8Array(32).fill(7);
+  const realPayer = encodeAddress(payerKey);
+  const payerB64 = Buffer.from(payerKey).toString("base64");
+  const attackerB64 = Buffer.from(new Uint8Array(32).fill(9)).toString("base64");
+  const pending = {
+    [txid("N")]: { "pool-error": "", txn: { txn: { snd: payerB64, note: Buffer.from(note).toString("base64") } } },
+    [txid("O")]: { "pool-error": "", txn: { txn: { snd: attackerB64, note: Buffer.from(note).toString("base64") } } },
+  };
+  const app = new Hono();
+  registerCert(app, opts(chain(), { payer: realPayer, algodUrl: "https://algod.test", fetchImpl: indexer(chain(), [], 200, pending) }), "https://vet402.example");
+  const r = await app.request(`/cert/${LONELY_AUDIT_TX}?anchor=${txid("N")}`);
+  assert.equal(r.status, 202);
+  assert.ok((await r.text()).includes("Recording…"));
+  assert.equal((await app.request(`/cert/${LONELY_AUDIT_TX}?anchor=${txid("O")}`)).status, 404, "a pending note from another sender");
+  assert.equal((await app.request(`/cert/${CHECK_TX}?anchor=${txid("N")}`)).status, 404, "a pending record for another id");
+  assert.equal((await app.request(`/cert/${LONELY_AUDIT_TX}`)).status, 404);
 });
