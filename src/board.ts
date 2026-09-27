@@ -505,7 +505,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
   const c = countBy(rows, displayClass);
   const what = view === "census" ? "listed resources" : "sellers";
   const tabs =
-    `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a></nav>` +
+    `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a><a href="/board/fix-first">What to fix first</a></nav>` +
     (view === "census" ? censusDateNav(board, o) : "");
   const headline = has
     ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${fmt(rows.length)}</b> ${what} · <b class="delivered">${fmt(c.DELIVERED)} DELIVERED</b> · <b class="mismatch">${fmt(c.MISMATCH)} MISMATCH</b> · <b class="unreach">${fmt(c.UNREACHABLE)} UNREACHABLE</b> · <b class="unclear">${fmt(c.UNCLEAR)} UNCLEAR</b> · paid <b>${esc(board!.totals.paidUsdc)}</b> USDC</p>`

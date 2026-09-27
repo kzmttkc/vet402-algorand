@@ -510,6 +510,12 @@ test("routes: /board, /board.json and the census view are free (no 402, facilita
     const ch = await (await app.request("/board?view=census")).text();
     assert.ok(ch.includes("1 MISMATCH") && ch.includes("1 UNCLEAR"));
 
+    const ff = await app.request("/board/fix-first");
+    assert.equal(ff.status, 200);
+    assert.equal(ff.headers.get("PAYMENT-REQUIRED"), null);
+    const ffj = (await (await app.request("/board/fix-first.json")).json()) as { notDelivered: number };
+    assert.equal(ffj.notDelivered, 2);
+
     assert.deepEqual(calls, []);
     // The paid route is still paid.
     assert.equal((await app.request("/v1/check?url=http://localhost:4031/honest")).status, 402);

@@ -35,6 +35,7 @@ import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { registerBoard, type BoardLoader } from "./board.js";
 import { registerSeller } from "./seller.js";
+import { registerFixFirst } from "./fix-first.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { neverPaidVet402, registerBuy } from "./buy.js";
@@ -315,6 +316,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   }
   registerTry(app, cfg, { probeDeps, catalog, trial: deps.trial, activity: deps.activity, load: deps.tryBoard?.load, boardFile: deps.tryBoard?.file }); // free: /try, /try/preview, /try/run (trial wallet), /try/log
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
+  registerFixFirst(app); // free: GET /board/fix-first, /board/fix-first.json (before the payment middleware)
   if (deps.cert) registerCert(app, deps.cert.reader); // free: GET /cert/:id, /cert/:id/badge.svg (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
   registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
