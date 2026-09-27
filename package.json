@@ -17,13 +17,13 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^26.6.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^10.0.0-alpha.46",
     "@hono/node-server": "^2.1.1",
+    "@types/node": "^26.6.3",
     "@x402-avm/extensions": "2.6.1",
     "@x402/avm": "2.11.0",
     "@x402/core": "2.11.0",
