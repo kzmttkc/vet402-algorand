@@ -197,7 +197,9 @@ test("routes: /seller/<host> and /badge/<host>.svg are free, read the census, ca
     assert.equal(cfg.auditLinkEnabled, false);
     const appOn = createApp(cfgOn, { payTo: "VET402PAYTO", probeDeps, guard, facilitator: fakeFacilitator(calls) });
     const onHtml = await (await appOn.request("/seller/agent402.tools")).text();
-    assert.ok(onHtml.includes("GET /v1/audit?seller=agent402.tools</code> (0.50 USDC)"));
+    assert.ok(onHtml.includes("Get a delivery certificate for this seller (0.50 USDC)"));
+    assert.ok(onHtml.includes("GET /v1/audit?seller=agent402.tools</code>"));
+    assert.ok(onHtml.includes("npx -y github:kzmttkc/vet402-algorand agent402.tools --yes"));
 
     assert.deepEqual(calls, [], "facilitator never called");
   } finally {

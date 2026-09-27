@@ -82,6 +82,16 @@ Response: `results[]` (per resource: `verdict`, `reason`, `class`, `customerTx`,
 
 Locally, the TestNet test sellers are not in the Bazaar. `AUDIT_CATALOG_URLS=<url,url,...>` lists them by URL instead (allowed only with `ALLOW_PRIVATE_TARGETS=1`). `npx tsx scripts/audit-demo.ts <seller>` pays for one audit as the TestNet client and prints each payment's confirmed round.
 
+## Delivery certificate (`/cert/<id>`)
+
+Every paid audit also gets a free public page: `certificateUrl` in the audit answer, `GET /cert/<customer payment tx id>`, and a README badge at `/cert/<id>/badge.svg`. It shows the seller, each resource vet402 bought with its verdict and reason, vet402's payment to the seller, and who paid for the audit (short address). If the buyer is a vet402 wallet or the seller's own `payTo`, the page and badge say `self-purchased`.
+
+- No server state and no extra service. Right after the audit, vet402's payer wallet sends itself a 0-ALGO payment group (fee 0.001 ALGO per note) whose notes hold the record: `vet402-cert/1:<customer tx>:<i>/<n>:<JSON>`. The x402 payments themselves carry no link to each other (their note is `x402-payment-v2-<ms>`), so this signed note is the link.
+- The page reads everything back from the indexer and shows only what it finds: the customer payment must be an x402 settlement to `payTo` of at least the audit price, the note must be sent by the payer to itself and name that tx, and each seller payment must be a USDC transfer from the payer after the customer's payment (otherwise that row says "not verified"). Any other id, a missing tx, or a note sent by anyone else gives 404.
+- The record never delays the audit answer by more than 40 s. If it is submitted but not yet confirmed, the answer has `certificatePending: true` and `certificateUrl` ends in `?anchor=<tx>`; the page then says "Recording…" (202) until the indexer has it. If it could not be written, the answer has `certificateError` and the audit result is still complete.
+- **Operations:** the payer wallet needs ALGO for these fees. Below 1 ALGO (`CERT_MIN_PAYER_ALGO`) vet402 writes no record, answers `certificateError` ("low on ALGO") and logs a line starting with `ALERT vet402 cert` (Vercel logs). Top the payer wallet up with ALGO when you see it.
+- Get one from the command line (plain JS, runs from this repo): `npx -y github:kzmttkc/vet402-algorand <seller>` shows the free plan; add `--yes` with `ALGORAND_MNEMONIC` set to pay and print the certificate URL.
+
 ## Look up a past result
 
 `GET /v1/verdict?url=<x402 URL>` (0.001 USDC, same 402 shape: `exact`, USDC ASA, `tag: x402-global-challenge`, Bazaar extension with input and output declared). It returns what vet402 recorded the last time it bought that URL with its own wallet (the files behind `/board`: `board/latest.json` and the latest census): `class` (`DELIVERED` / `MISMATCH` / `UNREACHABLE` / `UNCLEAR`), `reason`, `date`, `sellerTx` (vet402 → seller) and `countedAgainstSeller` (false for `UNCLEAR`). An exact URL match wins; otherwise the same origin and path with another query (`match: "path"`, the URL vet402 bought is in `latest.url`).
@@ -208,7 +218,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `AUDIT_PRICE_USDC` | no | `0.50` | price of one seller audit |
 | `AUDIT_MAX_SPEND_USDC` | no | `0.40` | most one audit pays sellers; must be below `AUDIT_PRICE_USDC` |
 | `AUDIT_MAX_TARGETS` | no | `10` | most resources one audit checks (1–50) |
-| `AUDIT_DEADLINE_MS` | no | `240000` | whole ms, at most 60 s under the function limit (`export const config = { maxDuration: 300 }` in `src/server.ts`); anything else refuses to start. The rest of an audit is SKIPPED after this |
+| `AUDIT_DEADLINE_MS` | no | `190000` | whole ms, at most 105 s under the function limit (room for settle, planning and the certificate record) (`export const config = { maxDuration: 300 }` in `src/server.ts`); anything else refuses to start. The rest of an audit is SKIPPED after this |
 | `BAZAAR_URL` | no | `https://facilitator.goplausible.xyz/discovery/resources` | where the audit lists a seller's resources |
 | `PROBE_MAX_PER_CALL_USDC` | no | `0.10` (MainNet) | per-seller-payment cap |
 | `PROBE_MAX_PER_DAY_USDC` | no | `3.00` (MainNet) | per-UTC-day cap (on-chain) |
