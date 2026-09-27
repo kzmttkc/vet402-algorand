@@ -34,6 +34,7 @@ import { sameNetwork, selectAccept, type AcceptLike } from "./declaration.js";
 import { checkTarget } from "./target.js";
 import { buildRequest, type Catalog } from "./bazaar.js";
 import { settleFirstMiddleware, type CustomerPayment, type SettleFirstEnv } from "./settle-first.js";
+import { withBase } from "./base.js";
 
 export const BUY_PATH = "/v1/buy";
 /** Largest customer body vet402 forwards to the seller on POST (read no further than this). */
@@ -289,18 +290,20 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
   /** What the paid request settled for and the daily-cap reservation it holds, per request object. */
   const approved = new WeakMap<Request, { q: Quote; reservationId: string }>();
 
-  const price = async (ctx: HTTPRequestContext) => {
+  /** The amount and extra of this request's price: the same on every accept (Algorand USDC, and Base USDC when on). */
+  const priceOf = async (ctx: HTTPRequestContext) => {
     const c = (ctx.adapter as unknown as { c: Context<SettleFirstEnv> }).c;
     const q = await quoteFor(c);
     // A refused purchase has no payable price: amount 0 matches no signed payment, and the preflight refuses it anyway.
-    if (!q.ok) return { amount: "0", asset: cfg.usdcAsaId, extra: { refused: q.body.reason } };
+    if (!q.ok) return { amount: "0", extra: { refused: q.body.reason } as Record<string, unknown> };
     return {
       amount: q.customerAtomic.toString(),
-      asset: cfg.usdcAsaId,
-      extra: { sellerAmount: q.accept.amount, sellerPayTo: q.accept.payTo, buyFee: q.feeAtomic.toString() },
+      extra: { sellerAmount: q.accept.amount, sellerPayTo: q.accept.payTo, buyFee: q.feeAtomic.toString() } as Record<string, unknown>,
     };
   };
-  const accepts = [
+  const price = async (ctx: HTTPRequestContext) => ({ ...(await priceOf(ctx)), asset: cfg.usdcAsaId });
+  const accepts = withBase(
+    cfg,
     {
       scheme: "exact",
       price,
@@ -308,7 +311,8 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
       payTo: deps.payTo,
       extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
     },
-  ];
+    priceOf,
+  );
   const description = `vet402 buys the x402 resource you name for you: you pay the seller's price + ${atomicToUsdc(cfg.buyFeeAtomic)} USDC; after your payment settles vet402 pays the seller (per-call cap ${atomicToUsdc(cfg.maxPerCallAtomic)} USDC), returns the seller's response body as-is, and adds its verdict (ALLOW/REFUSE) and both tx ids in x-vet402-* headers. The unpaid request is free and shows the price. No refunds.`;
   const discovery = declareDiscoveryExtension({
     input: { url: "https://seller.example/v1/data" },

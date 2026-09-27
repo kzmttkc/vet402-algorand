@@ -32,6 +32,20 @@
  * (payment - fee) is exactly that seller payment, then a check or an audit, then a purchase it only fits.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
+import type { BaseCustomerRead, BaseNotCounted } from "./base.js";
+
+/**
+ * Base customer payments (BASE_ACCEPT=on): read by base.ts from a keyless explorer, each proven from
+ * its receipt. They are customers like Algorand ones and pair with the Algorand seller payments by time.
+ */
+export interface BaseActivitySource {
+  network: string;
+  payTo: string;
+  usdc: string;
+  explorerUrl: string;
+  signers: string[];
+  read(): Promise<BaseCustomerRead>;
+}
 
 /** Fee payer of the GoPlausible x402 facilitator (from its /supported, `extra.feePayer`). */
 export const GOPLAUSIBLE_FEE_PAYERS = ["ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"];
@@ -59,6 +73,8 @@ export interface ActivityOptions {
   auditPairWindowSec?: number;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  /** BASE_ACCEPT=on: also count customers who paid on Base. Omitted = Algorand only (the report has no `base`). */
+  base?: BaseActivitySource;
 }
 
 export interface SellerPayment {
@@ -75,6 +91,8 @@ export interface ActivityRow {
    * "verdict" = a /v1/verdict lookup (no seller payment); "audit" = one customer payment for several.
    */
   kind: "check" | "audit" | "buy" | "verdict";
+  /** Set only for a customer payment made on Base (round = Base block). Seller payments are always on Algorand. */
+  network?: string;
   time: string;
   round: number;
   customer: string;
@@ -100,8 +118,15 @@ export interface Payout {
 export interface NotCounted {
   tx: string;
   round: number;
-  reason: "not_in_a_group" | "no_x402_facilitator_in_group" | "inner_transaction" | "below_price";
+  reason: "not_in_a_group" | "no_x402_facilitator_in_group" | "inner_transaction" | "below_price" | BaseNotCounted["reason"];
+  /** Set only for a Base deposit (round = Base block). */
+  network?: string;
 }
+
+/** The Base side of the report (only when BASE_ACCEPT=on). */
+export type BaseActivity =
+  | { status: "counted"; network: string; payTo: string; usdc: string; explorer: string; facilitatorSigners: string[]; customers: { addresses: number; payments: number; usdc: string } }
+  | { status: "not_counted"; network: string; payTo: string; explorer: string; detail: string };
 
 export interface ActivityReport {
   network: NetworkName;
@@ -118,6 +143,8 @@ export interface ActivityReport {
     /** Paying customers' audits (operator tests excluded): included in customers and sellerPayments above. */
     audits: { payments: number; sellerPayments: number; sellerUsdc: string };
   };
+  /** BASE_ACCEPT=on only. "not_counted": the Base explorer or RPC could not be read; Base payments are then missing from every total. */
+  base?: BaseActivity;
   /** Newest first. */
   rows: ActivityRow[];
   unmatchedPayouts: Payout[];
@@ -151,10 +178,16 @@ interface Transfer {
   group?: string;
   /** Moved by an app call (inner transaction); `tx` is the top-level app call. */
   inner?: boolean;
+  /** "base" for a Base customer payment (round = block, offset = log index). */
+  chain?: "base";
 }
 
 const iso = (sec: number) => new Date(sec * 1000).toISOString().replace(".000Z", "Z");
-const before = (a: Transfer, b: Transfer) => a.round < b.round || (a.round === b.round && a.offset < b.offset);
+/** Same chain: by round (block) and offset. Across chains only the clock can order them: a Base payment in the same second counts as earlier. */
+const before = (a: Transfer, b: Transfer) =>
+  a.chain === b.chain
+    ? a.round < b.round || (a.round === b.round && a.offset < b.offset)
+    : a.time < b.time || (a.time === b.time && a.chain === "base");
 
 export function shortAddr(a: string): string {
   return a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-6)}` : a;
@@ -262,10 +295,14 @@ export class ActivityLedger {
     const { payTo, payer, asaId, indexerUrl } = this.o;
     const own = new Set([payTo, payer]);
     const base = { indexerUrl, asaId, timeoutMs: this.timeoutMs, f: this.f };
-    const [incoming, outgoing] = await Promise.all([
+    const [incoming, outgoing, baseRead] = await Promise.all([
       usdcTransfers({ ...base, address: payTo }),
       usdcTransfers({ ...base, address: payer }),
+      this.o.base ? this.o.base.read().then((r) => ({ ok: true as const, r }), (e: unknown) => ({ ok: false as const, detail: String((e as Error).message ?? e).slice(0, 200) })) : undefined,
     ]);
+    const b = this.o.base;
+    const baseOwn = new Set(b ? [b.payTo.toLowerCase()] : []);
+    const isOwn = (t: Transfer) => (t.chain === "base" ? baseOwn.has(t.sender.toLowerCase()) : own.has(t.sender));
 
     let customers: Transfer[] = [];
     const notCounted: NotCounted[] = [];
@@ -281,6 +318,15 @@ export class ActivityLedger {
         customers.push(t);
       } else {
         notCounted.push({ tx: t.tx, round: t.round, reason: "no_x402_facilitator_in_group" });
+      }
+    }
+    if (b && baseRead?.ok) {
+      for (const n of baseRead.r.notCounted) notCounted.push({ tx: n.tx, round: n.block, reason: n.reason, network: b.network });
+      for (const p of baseRead.r.payments) {
+        const t: Transfer = { tx: p.tx, sender: p.customer, receiver: b.payTo, amount: p.amount, round: p.block, offset: p.logIndex, time: p.time, chain: "base" };
+        if (this.o.priceAtomic !== undefined && t.amount < this.o.priceAtomic && !this.isVerdict(t) && !this.mayBeBuy(t)) {
+          notCounted.push({ tx: t.tx, round: t.round, reason: "below_price", network: b.network });
+        } else customers.push(t);
       }
     }
     const payouts = outgoing.filter((t) => t.sender === payer && !own.has(t.receiver) && t.amount > 0n);
@@ -312,7 +358,7 @@ export class ActivityLedger {
       let pick: Transfer | undefined;
       let best = Infinity;
       for (const c of customers) {
-        if (!before(c, p)) break;
+        if (!before(c, p)) continue; // sorted, but Base and Algorand payments are ordered by different clocks
         if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= room(c) || !fits(c, p)) continue;
         const r = rank(c, p);
         if (r <= best) {
@@ -326,7 +372,7 @@ export class ActivityLedger {
     // A payment below the check price that no seller payment proves to be a purchase is not a customer.
     customers = customers.filter((c) => {
       if (kindOf(c) !== "buy" || pairedWith.has(c.tx)) return true;
-      notCounted.push({ tx: c.tx, round: c.round, reason: "below_price" });
+      notCounted.push({ tx: c.tx, round: c.round, reason: "below_price", ...(c.chain === "base" && b ? { network: b.network } : {}) });
       return false;
     });
     const sp = (p: Transfer): SellerPayment => ({ seller: p.receiver, tx: p.tx, round: p.round, amountUsdc: atomicToUsdc(p.amount) });
@@ -337,12 +383,13 @@ export class ActivityLedger {
         const p = ps[0];
         return {
           kind: kindOf(c),
+          ...(c.chain === "base" && b ? { network: b.network } : {}),
           time: iso(c.time),
           round: c.round,
           customer: c.sender,
           customerTx: c.tx,
           amountUsdc: atomicToUsdc(c.amount),
-          operatorTest: own.has(c.sender),
+          operatorTest: isOwn(c),
           seller: p?.receiver ?? null,
           sellerTx: p?.tx ?? null,
           sellerRound: p?.round ?? null,
@@ -352,14 +399,34 @@ export class ActivityLedger {
       })
       .reverse();
 
-    const real = customers.filter((c) => !own.has(c.sender));
-    const ops = customers.filter((c) => own.has(c.sender));
+    const real = customers.filter((c) => !isOwn(c));
+    const ops = customers.filter((c) => isOwn(c));
     // Headline: seller payments made for paying customers only; operator tests are reported with operatorTests.
     const matched = real.flatMap((c) => pairedWith.get(c.tx) ?? []);
     const opPayouts = ops.flatMap((c) => pairedWith.get(c.tx) ?? []);
     const realAudits = real.filter(isAudit);
     const auditPayouts = realAudits.flatMap((c) => pairedWith.get(c.tx) ?? []);
     const sum = (ts: Transfer[]) => atomicToUsdc(ts.reduce((s, t) => s + t.amount, 0n));
+    const realBase = real.filter((c) => c.chain === "base");
+    const baseSide: BaseActivity | undefined = !b
+      ? undefined
+      : baseRead?.ok
+        ? {
+            status: "counted",
+            network: b.network,
+            payTo: b.payTo,
+            usdc: b.usdc,
+            explorer: b.explorerUrl,
+            facilitatorSigners: b.signers,
+            customers: { addresses: new Set(realBase.map((c) => c.sender)).size, payments: realBase.length, usdc: sum(realBase) },
+          }
+        : { status: "not_counted", network: b.network, payTo: b.payTo, explorer: b.explorerUrl, detail: baseRead && !baseRead.ok ? baseRead.detail : "not read" };
+    const baseMethod = !b
+      ? []
+      : [
+          `Base (${b.network}) customer payment = USDC (${b.usdc}) sent to ${b.payTo} by a transaction that the x402 facilitator's EVM signer (${b.signers.join(", ")}) sent to the USDC contract, with USDC's AuthorizationUsed (EIP-3009) for the same payer. Proven from each receipt on a public RPC; plain transfers to that address are not counted. Such a customer is paired with the Algorand seller payment by time.`,
+          ...(baseSide?.status === "not_counted" ? [`Base payments are NOT counted in this report (the Base explorer or RPC could not be read: ${baseSide.detail}). Seller payments made for Base customers may show as unmatched.`] : []),
+        ];
     return {
       network: this.o.networkName,
       asaId,
@@ -374,6 +441,7 @@ export class ActivityLedger {
         sellerPayments: { payments: matched.length, usdc: sum(matched), unmatched: unmatched.length, unmatchedUsdc: sum(unmatched) },
         audits: { payments: realAudits.length, sellerPayments: auditPayouts.length, sellerUsdc: sum(auditPayouts) },
       },
+      ...(baseSide ? { base: baseSide } : {}),
       rows,
       unmatchedPayouts: [...unmatched].reverse().map((p) => ({ time: iso(p.time), round: p.round, seller: p.receiver, tx: p.tx, amountUsdc: atomicToUsdc(p.amount) })),
       notCounted: notCounted.sort((a, b) => b.round - a.round),
@@ -388,6 +456,7 @@ export class ActivityLedger {
         }. Otherwise it is listed as unmatched.`,
         "An audit is one customer payment and one row; its seller payments are listed under it. Customer counts never include them twice.",
         "A customer payment with no seller payment means vet402 refused before paying the seller (for example price over cap or payment failure at the seller).",
+        ...baseMethod,
       ],
     };
   }
@@ -405,12 +474,16 @@ export function activityHtml(r: ActivityReport): string {
   const x = explorer(r.network);
   const addr = (a: string) => `<a href="${esc(x.addr(a))}" title="${esc(a)}"><code>${esc(shortAddr(a))}</code></a>`;
   const tx = (id: string) => `<a href="${esc(x.tx(id))}" title="${esc(id)}"><code>${esc(id.slice(0, 10))}…</code></a>`;
+  const bx = r.base?.explorer;
+  const baseAddr = (a: string) => (bx ? `<a href="${esc(`${bx}/address/${a}`)}" title="${esc(a)}"><code>${esc(shortAddr(a))}</code></a>` : `<code>${esc(shortAddr(a))}</code>`);
+  const baseTx = (id: string) => (bx ? `<a href="${esc(`${bx}/tx/${id}`)}" title="${esc(id)}"><code>${esc(id.slice(0, 10))}…</code></a>` : `<code>${esc(id.slice(0, 10))}…</code>`);
   const when = (t: string) => esc(t.replace("T", " ").replace("Z", ""));
   const rows = r.rows
     .map((w) => {
       const cls = w.operatorTest ? ' class="op"' : "";
-      const who = `<td>${addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}${w.kind !== "check" ? ` <span class="tag">${w.kind}</span>` : ""}</td>`;
-      const head = `<tr${cls}><td>${when(w.time)}</td>${who}<td>${tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td>`;
+      const onBase = w.network !== undefined;
+      const who = `<td>${onBase ? baseAddr(w.customer) : addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}${w.kind !== "check" ? ` <span class="tag">${w.kind}</span>` : ""}${onBase ? ' <span class="tag">paid on Base</span>' : ""}</td>`;
+      const head = `<tr${cls}><td>${when(w.time)}</td>${who}<td>${onBase ? baseTx(w.customerTx) : tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td>`;
       const ps = w.sellerPayments ?? [];
       if (w.kind !== "audit" || ps.length === 0) {
         return `${head}<td>${w.seller ? addr(w.seller) : `<span class="muted">${w.kind === "verdict" ? "none (lookup)" : "not paid"}</span>`}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`;
@@ -452,7 +525,9 @@ tr.op td{background:var(--op)}tr.sub td{border-bottom-style:dotted;font-size:14p
 <div><b>${t.customers.payments}</b>customer payments<br><small>${esc(t.customers.usdc)} USDC</small></div>
 <div><b>${t.sellerPayments.payments}</b>payments to sellers<br><small>${esc(t.sellerPayments.usdc)} USDC${t.audits.payments ? `; ${t.audits.sellerPayments} of them inside ${t.audits.payments} audit(s)` : ""}</small></div>
 <div><b>${t.operatorTests.payments}</b>operator tests<br><small>${esc(t.operatorTests.usdc)} USDC, not counted</small></div>
+${r.base?.status === "counted" ? `<div><b>${r.base.customers.payments}</b>of them paid on Base<br><small>${esc(r.base.customers.usdc)} USDC to ${baseAddr(r.base.payTo)}</small></div>` : ""}
 </div>
+${r.base?.status === "not_counted" ? `<p><b>Base payments: not counted.</b> Customers may also pay vet402 in USDC on Base (${esc(r.base.network)}), but the Base explorer or RPC could not be read just now (${esc(r.base.detail)}), so those payments are missing from every number on this page. Payments to sellers made for them may show as unmatched.</p>` : ""}
 <div class="wrap"><table>
 <thead><tr><th>time (UTC)</th><th>customer</th><th>customer tx</th><th class="n">USDC</th><th>seller</th><th>seller tx</th><th class="n">USDC</th></tr></thead>
 <tbody>

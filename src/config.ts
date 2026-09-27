@@ -22,6 +22,33 @@ export const MAINNET_DEFAULT_PAY_TO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVU
 
 export type NetworkName = "testnet" | "mainnet";
 
+/**
+ * Base USDC that customers may pay vet402 with (BASE_ACCEPT=on). The network follows X402_NETWORK:
+ * mainnet -> Base (eip155:8453), testnet -> Base Sepolia (eip155:84532). `name`/`version` are the
+ * token's EIP-712 domain, which the buyer signs over (same values as @x402/evm's default assets).
+ */
+export const BASE_USDC = {
+  mainnet: { network: "eip155:8453", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", name: "USD Coin", version: "2" },
+  testnet: { network: "eip155:84532", address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", name: "USDC", version: "2" },
+} as const;
+
+/** Customers may also pay on Base. vet402 only receives there: no key is held, sellers are still paid on Algorand. */
+export interface BaseAcceptConfig {
+  network: "eip155:8453" | "eip155:84532";
+  /** USDC contract (6 decimals, the same atomic amounts as Algorand USDC). */
+  usdc: string;
+  usdcName: string;
+  usdcVersion: string;
+  /** Receive-only address (BASE_PAY_TO). */
+  payTo: string;
+  /** Public JSON-RPC (keyless) used by /activity to verify each settlement receipt. */
+  rpcUrl: string;
+  /** Blockscout API (keyless) used by /activity to list USDC transfers into payTo. */
+  explorerApiUrl: string;
+  /** Human explorer for tx / address links. */
+  explorerUrl: string;
+}
+
 
 /** USDC has 6 decimals on Algorand. 1 USDC = 1_000_000 atomic units. */
 export const USDC_DECIMALS = 6;
@@ -79,6 +106,31 @@ export interface AppConfig {
   bazaarUrl: string;
   /** vet402's fee on GET|POST /v1/buy (atomic USDC): the customer pays the seller's price plus this. */
   buyFeeAtomic: bigint;
+  /** BASE_ACCEPT=on: a second accept (Base USDC) on every paid route. undefined = Algorand only (the default). */
+  base?: BaseAcceptConfig;
+}
+
+/** BASE_ACCEPT (off unless exactly "on") and BASE_PAY_TO. Anything else is refused, not ignored. */
+export function loadBaseAccept(networkName: NetworkName, env: NodeJS.ProcessEnv): BaseAcceptConfig | undefined {
+  const sw = (env.BASE_ACCEPT ?? "off").trim().toLowerCase();
+  if (sw !== "on" && sw !== "off" && sw !== "") throw new Error(`BASE_ACCEPT must be on or off, got ${env.BASE_ACCEPT}`);
+  if (sw !== "on") return undefined;
+  const payTo = (env.BASE_PAY_TO ?? "").trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(payTo) || /^0x0{40}$/.test(payTo)) {
+    throw new Error("BASE_ACCEPT=on needs BASE_PAY_TO: the 0x address (40 hex digits) that receives Base USDC");
+  }
+  const u = BASE_USDC[networkName];
+  const isMain = networkName === "mainnet";
+  return {
+    network: u.network,
+    usdc: u.address,
+    usdcName: u.name,
+    usdcVersion: u.version,
+    payTo,
+    rpcUrl: env.BASE_RPC_URL ?? (isMain ? "https://mainnet.base.org" : "https://sepolia.base.org"),
+    explorerApiUrl: env.BASE_EXPLORER_API_URL ?? (isMain ? "https://base.blockscout.com" : "https://base-sepolia.blockscout.com"),
+    explorerUrl: isMain ? "https://basescan.org" : "https://sepolia.basescan.org",
+  };
 }
 
 const DEFAULT_CAPS: Record<NetworkName, { perCall: string; perDay: string }> = {
@@ -145,5 +197,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     auditDeadlineMs,
     bazaarUrl: env.BAZAAR_URL ?? "https://facilitator.goplausible.xyz/discovery/resources",
     buyFeeAtomic: buyFee,
+    base: loadBaseAccept(networkName, env),
   };
 }

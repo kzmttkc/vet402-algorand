@@ -28,6 +28,7 @@ import {
 } from "./board.js";
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
+import { withBase } from "./base.js";
 
 export const VERDICT_PATH = "/v1/verdict";
 export const VERDICT_PRICE_USDC = "0.001";
@@ -190,7 +191,8 @@ export function registerVerdictLookup(
   });
   const httpServer = new x402HTTPResourceServer(resourceServer, {
     [`GET ${VERDICT_PATH}`]: {
-      accepts: [
+      accepts: withBase(
+        cfg,
         {
           scheme: "exact",
           price: `$${VERDICT_PRICE_USDC}`,
@@ -198,7 +200,8 @@ export function registerVerdictLookup(
           payTo,
           extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
         },
-      ],
+        `$${VERDICT_PRICE_USDC}`,
+      ),
       description:
         "What vet402 found the last time it bought from this x402 URL with its own wallet: DELIVERED, MISMATCH, UNREACHABLE or UNCLEAR, the reason, the day and the vet402 -> seller tx. vet402 pays nobody for this answer. A URL with no result is a free 404.",
       mimeType: "application/json",

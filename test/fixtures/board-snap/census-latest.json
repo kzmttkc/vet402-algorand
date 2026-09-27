@@ -1,0 +1,42 @@
+{
+ "version": 1,
+ "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+ "networkName": "mainnet",
+ "date": "2026-09-27",
+ "startedAt": "2026-09-27T04:32:00.890Z",
+ "finishedAt": "2026-09-27T05:00:46.511Z",
+ "totals": {
+  "rows": 1,
+  "allow": 1,
+  "refuse": 0,
+  "skipped": 0,
+  "paidUsdc": "0"
+ },
+ "fixture": "x402 402 snapshot test",
+ "rows": [
+  {
+   "at": "2026-09-27T04:32:08.396Z",
+   "url": "https://api.algorand-indexer.xyz/v2/accounts/X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "host": "api.algorand-indexer.xyz",
+   "method": "GET",
+   "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+   "priceUsdc": "0.000100",
+   "declared": {
+    "description": "Algorand account lookup: balance, status, participation, and auth-addr for a single address",
+    "mimeType": "application/json",
+    "expectedKeys": [
+     "address",
+     "amount",
+     "status"
+    ]
+   },
+   "verdict": "REFUSE",
+   "reason": "delivery_missing_keys",
+   "paid": true,
+   "tx": "2N24D3GCR4E5SJGXF3J2XCOQVGNLE46HFRW2JWGQ5FSMT3S5OIGA",
+   "delivery": "200 application/json object{account:object, current-round:number=65433337}"
+  }
+ ],
+ "mode": "census"
+}
