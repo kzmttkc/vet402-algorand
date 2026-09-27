@@ -42,33 +42,58 @@ export const TRY_PREVIEWS_PER_MINUTE = 30;
 export const TRY_RUNS_PER_MINUTE = 5;
 const RUN_MAX_BODY = 4 * 1024;
 
-const typeName = (v: unknown) => (v === null ? "null" : Array.isArray(v) ? "list" : typeof v === "string" ? "text" : typeof v === "object" ? "object" : typeof v);
+/** Most of the seller's answer the free trial shows, in bytes of text. */
+export const TRY_PREVIEW_BYTES = 2048;
+
+const TEXTUAL = /^(text\/[\w.+-]+|application\/([\w.+-]*\+)?(json|xml)|application\/(javascript|x-ndjson|csv|x-www-form-urlencoded))$/;
 
 /**
- * What the seller returned, without its content: the shape only (field names and types, or type and size).
- * The free trial shows this; the content itself is what a buyer gets through /v1/buy.
+ * What the seller returned, as data for the page: text (JSON pretty-printed) up to TRY_PREVIEW_BYTES,
+ * or only the type and size for images and other binary answers. The page puts `text` in with textContent.
  */
-export function shapeOf(bytes: Buffer, contentType: string | null): string {
+export function contentPreview(bytes: Buffer, contentType: string | null): { contentType: string | null; bytes: number; text?: string; truncated: boolean } {
   const ct = (contentType ?? "").split(";")[0].trim().toLowerCase();
-  const size = `${bytes.length.toLocaleString("en-US")} bytes`;
-  if (bytes.length === 0) return "an empty answer";
-  let v: unknown;
-  try {
-    v = JSON.parse(bytes.toString("utf8"));
-  } catch {
-    return `${ct || "data"}, ${size}`;
+  const base = { contentType, bytes: bytes.length, truncated: false };
+  if (bytes.length === 0) return { ...base, text: "" };
+  if (!TEXTUAL.test(ct)) return base;
+  let text = bytes.toString("utf8");
+  if (/json/.test(ct)) {
+    try {
+      text = JSON.stringify(JSON.parse(text), null, 2);
+    } catch {
+      /* not valid JSON: show as sent */
+    }
   }
-  const fields = (o: Record<string, unknown>) => {
-    const ks = Object.keys(o);
-    const shown = ks.slice(0, 8).map((k) => `${k.slice(0, 40)} (${typeName(o[k])})`).join(", ");
-    return `${ks.length} field${ks.length === 1 ? "" : "s"}${ks.length ? `: ${shown}${ks.length > 8 ? ", …" : ""}` : ""}`;
-  };
-  if (Array.isArray(v)) {
-    const first = v[0];
-    return `JSON list of ${v.length} item${v.length === 1 ? "" : "s"}${first && typeof first === "object" && !Array.isArray(first) ? `, each an object with ${fields(first as Record<string, unknown>)}` : ""} (${size})`;
+  const b = Buffer.from(text, "utf8");
+  if (b.length <= TRY_PREVIEW_BYTES) return { ...base, text };
+  return { ...base, text: b.subarray(0, TRY_PREVIEW_BYTES).toString("utf8").replace(/\uFFFD+$/, ""), truncated: true };
+}
+
+/** Why vet402 answered as it did, in plain words (the reason code stays next to it). */
+export function because(r: { reason: string; detail?: string; declared?: { expectedKeys?: string[]; exampleKeys?: string[] }; delivery?: { status: number; missingKeys: string[] } }): string {
+  const req = r.declared?.expectedKeys ?? [];
+  switch (r.reason) {
+    case "delivered":
+      return req.length
+        ? `the answer is JSON and has every field the listing promised (${req.slice(0, 8).join(", ")})`
+        : (r.declared?.exampleKeys?.length ?? 0) > 0
+          ? "the answer is JSON and has the fields shown in the listing's example"
+          : "the answer is non-empty JSON, and the listing promised nothing more specific";
+    case "delivery_missing_keys":
+      return `the answer is missing ${(r.delivery?.missingKeys ?? []).slice(0, 8).join(", ") || "the fields"} that the listing promised`;
+    case "not_json":
+      return "the listing promised JSON, and the answer is not JSON";
+    case "empty_body":
+      return "the answer was empty";
+    case "http_error":
+      return `the seller took the payment and answered with an error (HTTP ${r.delivery?.status ?? "?"})`;
+    case "payment_failed":
+      return "the payment did not go through, so nothing was delivered";
+    case "not_x402":
+      return "the URL did not ask for payment, so there was nothing to buy";
+    default:
+      return r.detail ? `${r.reason}: ${r.detail}` : r.reason;
   }
-  if (v && typeof v === "object") return `JSON object with ${fields(v as Record<string, unknown>)} (${size})`;
-  return `a single JSON ${typeName(v)} (${size})`;
 }
 
 export interface TrialDeps {
@@ -348,9 +373,10 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
           price: r.price ? { usdc: short(r.price.usdc), payTo: r.price.payTo } : undefined,
           paidBy: trial.address,
           ...(sellerTx ? { sellerTx, sellerTxUrl: txLink(sellerTx, cfg.networkName) } : {}),
-          // The shape only, never the content: the content is what a buyer gets through /v1/buy.
-          delivery: d ? { status: d.status, contentType: d.contentType, bytes: d.bytes.length, shape: shapeOf(d.bytes, d.contentType), missingKeys: r.delivery?.missingKeys ?? [] } : undefined,
-          declared: r.declared ? { description: r.declared.description } : undefined,
+          // What the seller returned: text up to 2 KB (the page shows it with textContent), or type and size only.
+          delivery: d ? { status: d.status, missingKeys: r.delivery?.missingKeys ?? [], ...contentPreview(d.bytes, d.contentType) } : undefined,
+          because: because({ reason: r.reason, detail: r.detail, declared: r.declared, delivery: d ? { status: d.status, missingKeys: r.delivery?.missingKeys ?? [] } : undefined }),
+          declared: r.declared ? { description: r.declared.description, mimeType: r.declared.mimeType, expectedKeys: r.declared.expectedKeys, exampleKeys: r.declared.exampleKeys ?? [] } : undefined,
           recorded,
           note: "A free trial: vet402 paid with its trial wallet. It is not a customer payment.",
         },
@@ -397,6 +423,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:var(--card2);border:1p
 .roles a{display:block;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;text-decoration:none;color:var(--fg)}
 .roles a b{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-bottom:2px}
 .next{font-size:15px;color:#cbd5e1}
+h3.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 4px}
 .err{color:var(--mismatch)}
 `;
 
@@ -486,26 +513,34 @@ const TRY_JS = String.raw`
     var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;
     fetch('/try/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
       outRun.textContent='';var j=x.j;
-      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached'){buyButton(outRun,'Buy it through vet402 with your wallet');roles(c)}return}
+      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached')nextSteps(c);return}
       var price=j.price?usd(j.price.usdc)+' USDC':'the price';
-      var head={DELIVERED:'vet402 paid '+price+' and got what the listing promised.',MISMATCH:'vet402 paid '+price+', and what came back did not match the listing.',UNREACHABLE:'This URL did not ask for payment, so vet402 paid nothing.',UNCLEAR:'vet402 could not get a clear answer this time. Nothing is held against the seller.'}[j.class]||j.class;
-      p(outRun,'big '+(CLS[j.class]||''),[head]);
-      if(j.declared&&j.declared.description)p(outRun,'sub',['The listing said: '+j.declared.description]);
-      if(j.delivery)p(outRun,'sub',['What came back: '+j.delivery.shape+'.']);
-      if(j.sellerTxUrl)p(outRun,null,['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
-      if(j.class!=='DELIVERED')p(outRun,'sub',['Reason code: '+j.reason+(j.detail?' ('+j.detail+')':'')]);
-      if(cfg.wallet)buyButton(outRun,'See what it actually returned — buy it through vet402 with your wallet');
-      else p(outRun,'next',['Want what it returned? Pay the seller\'s price through ',link('/#developers','/v1/buy'),' (no vet402 fee on your first purchase).']);
-      roles(c);
+      p(outRun,'big '+(CLS[j.class]||''),[{DELIVERED:'Delivered.',MISMATCH:'Paid, and it did not match the listing.',UNREACHABLE:'Nothing to buy here.',UNCLEAR:'No clear answer this time.'}[j.class]||j.class]);
+      var d=j.declared||{};
+      var promised=[];if(d.description)promised.push(d.description);
+      if(d.expectedKeys&&d.expectedKeys.length)promised.push('Required fields: '+d.expectedKeys.join(', '));
+      else if(d.exampleKeys&&d.exampleKeys.length)promised.push('Example fields: '+d.exampleKeys.join(', '));
+      outRun.appendChild(el('h3','lbl','The listing promised'));
+      p(outRun,null,[promised.length?promised.join(' · '):'Nothing specific (no description or output schema).']);
+      outRun.appendChild(el('h3','lbl','What actually came back'+(j.price?' (vet402 paid '+price+')':'')));
+      if(j.delivery){
+        if(j.delivery.text!=null){var pre=el('pre');pre.textContent=j.delivery.text+(j.delivery.truncated?'\n…(truncated, '+j.delivery.bytes+' bytes)':'');outRun.appendChild(pre)}
+        p(outRun,'sub',[(j.delivery.contentType||'no content-type')+' · '+j.delivery.bytes+' bytes · HTTP '+j.delivery.status]);
+      }else p(outRun,null,['Nothing: the seller was not paid.']);
+      outRun.appendChild(el('h3','lbl','So vet402 says'));
+      p(outRun,null,[j.verdict+' because '+j.because+'.']);
+      if(j.sellerTxUrl)p(outRun,'sub',['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
+      nextSteps(c);
     }).catch(function(e){outRun.textContent='';p(outRun,'err',['Something went wrong: '+e.message])}).then(function(){sync()});
   });
-  function roles(c){
+  function nextSteps(c){
     var box=el('div','roles');
-    var s=el('a');s.href='/cert/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'I sell an x402 API'));s.appendChild(document.createTextNode('Get a delivery certificate for my endpoint →'));
-    var d=el('a');d.href='/#developers';d.appendChild(el('b',null,'I build agents'));d.appendChild(document.createTextNode('Check before you buy, in one line: /v1/verdict for 0.001 USDC, or the MCP server →'));
-    box.appendChild(s);box.appendChild(d);outRun.appendChild(box);
+    var b=el('a');b.href=cfg.wallet?'#wallet':'/#developers';b.appendChild(el('b',null,'Try another seller or your own input'));b.appendChild(document.createTextNode('Your first purchase with your own wallet has no vet402 fee →'));
+    if(cfg.wallet)b.addEventListener('click',function(e){e.preventDefault();openWallet()});
+    var d=el('a');d.href='https://github.com/kzmttkc/vet402-algorand/tree/main/mcp';d.rel='noopener';d.appendChild(el('b',null,'Add it to your agent in one line'));d.appendChild(document.createTextNode('The MCP server, or /v1/verdict for 0.001 USDC before each purchase →'));
+    var s=el('a');s.href='/cert/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('Get a delivery certificate for your endpoint →'));
+    box.appendChild(b);box.appendChild(d);box.appendChild(s);outRun.appendChild(box);
   }
-
   /* ---- pay with your own wallet (loaded on demand) ---- */
   var quoted=null;
   function wReset(){quoted=null;if(wQuote)wQuote.textContent='';if(wOut)wOut.textContent=''}

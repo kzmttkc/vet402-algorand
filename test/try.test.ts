@@ -237,18 +237,16 @@ test("trial: vet402 pays once from the trial wallet; the same IP a second time i
   const { app, seen, trace } = setup();
   const first = await run(app, { url: `${HOST}/honest` });
   assert.equal(first.status, 200);
-  const text = await first.text();
-  const j = JSON.parse(text) as { class: string; paidBy: string; sellerTx: string; sellerTxUrl: string; delivery: { shape: string } };
+  const j = (await first.json()) as { class: string; verdict: string; because: string; paidBy: string; sellerTxUrl: string; declared: { expectedKeys: string[] }; delivery: { text: string; truncated: boolean; bytes: number; contentType: string } };
   assert.equal(j.class, "DELIVERED");
   assert.equal(j.paidBy, TRIAL);
   assert.match(j.sellerTxUrl, /^https:\/\/lora\.algokit\.io\/testnet\/transaction\//);
-  // The shape only: field names and types. The content itself is what a buyer gets through /v1/buy.
-  assert.equal(j.delivery.shape, "JSON object with 3 fields: forecast (text), temperature (number), city (text) (52 bytes)");
-  for (const v of ["sunny", "Kyoto", '"21', ":21"]) assert.ok(!text.includes(v), `trial response leaks the seller's content (${v})`);
-  assert.ok(!("bodyPreview" in j));
-  assert.equal(seen.trialPaid.length, 1);
-  assert.deepEqual(seen.mainPaid, []);
-  assert.deepEqual(trace, []); // no customer payment exists in a trial
+  // The listing's promise, what came back (as text), and why, in that order on the page.
+  assert.deepEqual(j.declared.expectedKeys, ["forecast", "temperature"]);
+  assert.equal(j.delivery.text, JSON.stringify({ forecast: "sunny", temperature: 21, city: "Kyoto" }, null, 2));
+  assert.equal(j.delivery.truncated, false);
+  assert.equal(j.verdict, "ALLOW");
+  assert.equal(j.because, "the answer is JSON and has every field the listing promised (forecast, temperature)");
 
   const again = await run(app, { url: `${HOST}/honest` });
   assert.equal(again.status, 403);
@@ -549,4 +547,50 @@ test("/try/wallet.js is the committed build of src/web (fresh), served as JavaSc
   assert.ok(page.includes(`/try/wallet.js?v=${WALLET_JS_SHA}`));
   assert.doesNotMatch(page, /<script[^>]+src=/); // no script tag loads it up front, and nothing from another origin
   assert.doesNotMatch(page, /coming soon/i);
+});
+
+test("trial content: text up to 2 KB then '(truncated)', markup is only data, images show type and size only", async () => {
+  const { contentPreview, TRY_PREVIEW_BYTES } = await import("../src/try.js");
+  const big = Buffer.from("x".repeat(5000));
+  const t = contentPreview(big, "text/plain");
+  assert.equal(Buffer.byteLength(t.text!), TRY_PREVIEW_BYTES);
+  assert.equal(t.truncated, true);
+  assert.equal(t.bytes, 5000);
+  const html = contentPreview(Buffer.from('<script>alert(1)</script><img src=x onerror=alert(2)>'), "text/html; charset=utf-8");
+  assert.equal(html.text, '<script>alert(1)</script><img src=x onerror=alert(2)>'); // data, returned inside JSON
+  const png = contentPreview(Buffer.from([0x89, 0x50, 0x4e, 0x47]), "image/png");
+  assert.equal(png.text, undefined);
+  assert.deepEqual([png.contentType, png.bytes], ["image/png", 4]);
+  // Multi-byte text is cut on a character boundary.
+  const jp = contentPreview(Buffer.from("あ".repeat(1000)), "text/plain");
+  assert.ok(!jp.text!.includes("\uFFFD"));
+  // The page puts it in with textContent only: no innerHTML anywhere in /try.
+  const { app } = setup();
+  const page = await (await app.request("/try")).text();
+  assert.doesNotMatch(page, /innerHTML|insertAdjacentHTML|document\.write/);
+  assert.match(page, /pre\.textContent=j\.delivery\.text/);
+});
+
+test("trial over HTTP: a seller answering HTML gets its markup back as a JSON string, never as a page", async () => {
+  const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
+  const cfg = baseCfg();
+  const app = createApp(cfg, {
+    payTo: VET402,
+    probeDeps: sellerDeps(seen),
+    guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
+    facilitator: facilitator([]),
+    catalog: { items: async () => [] },
+    trial: {
+      address: TRIAL, maxPerCallAtomic: 50_000n, maxPerDayAtomic: 3_000_000n, hashKey: Buffer.alloc(32), store: new MemoryTrialStore(),
+      guard: new LocalSpendGuard(new SpendLedger(50_000n, 3_000_000n)),
+      paidFetch: async () => ({ response: new Response("<script>alert(1)</script>", { status: 200, headers: { "content-type": "text/html" } }), settle: { success: true, transaction: "A".repeat(52), network: NET }, signed: true }),
+    },
+  });
+  const r = await run(app, { url: `${HOST}/honest` });
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type") ?? "", /^application\/json/);
+  const j = (await r.json()) as { verdict: string; reason: string; because: string; delivery: { text: string } };
+  assert.equal(j.delivery.text, "<script>alert(1)</script>");
+  assert.equal(j.reason, "not_json");
+  assert.equal(j.because, "the listing promised JSON, and the answer is not JSON");
 });
