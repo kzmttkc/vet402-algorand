@@ -7,6 +7,10 @@ export function landingHtml(o: { network: string; priceUsdc: string; perCallUsdc
 <title>vet402</title>
 <meta name="description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
+<meta property="og:site_name" content="vet402">
+<meta property="og:title" content="vet402 — pays the x402 endpoint you name and checks the delivery">
+<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
+<meta property="og:image" content="https://vet402.com/icon.png">
 <style>body{font:16px/1.55 system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 16px;color:#111;background:#fff}code{background:#f3f3f3;padding:1px 4px;border-radius:3px}a{color:#0645ad}@media (prefers-color-scheme:dark){body{color:#eee;background:#111}code{background:#222}a{color:#8ab4f8}}</style>
 </head><body>
 <h1>vet402 on Algorand</h1>
