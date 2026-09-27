@@ -11,7 +11,8 @@
     "server": "tsx src/server.ts",
     "sellers": "tsx src/sellers.ts",
     "demo": "tsx src/client-demo.ts",
-    "probe:once": "tsx scripts/probe-once.ts"
+    "probe:once": "tsx scripts/probe-once.ts",
+    "keys:gen:mainnet": "tsx scripts/gen-payer-mainnet.ts"
   },
   "license": "ISC",
   "type": "module",

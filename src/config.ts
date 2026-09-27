@@ -6,7 +6,19 @@ import {
   USDC_TESTNET_ASA_ID,
 } from "@x402/avm";
 
-loadDotenv({ quiet: true });
+/**
+ * Env files: `.env`, then `.env.<network>.local` (e.g. `.env.mainnet.local`, which
+ * holds the MainNet payer mnemonic). Both gitignored. Real env vars always win.
+ */
+export function loadEnvFiles(): void {
+  loadDotenv({ quiet: true });
+  const net = (process.env.X402_NETWORK ?? "testnet").toLowerCase();
+  loadDotenv({ path: `.env.${net}.local`, quiet: true });
+}
+loadEnvFiles();
+
+/** Owner's Pera wallet: receives customer payments on MainNet (USDC opted in). */
+export const MAINNET_DEFAULT_PAY_TO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
 
 export type NetworkName = "testnet" | "mainnet";
 
@@ -34,6 +46,7 @@ export interface AppConfig {
   network: string; // CAIP-2
   usdcAsaId: string;
   facilitatorUrl: string;
+  indexerUrl: string;
   port: number;
   /** Price the customer pays vet402 per check, in USDC (e.g. "0.05"). */
   checkPriceUsdc: string;
@@ -45,10 +58,18 @@ export interface AppConfig {
   allowPrivateTargets: boolean;
   /** Tag put into accepts[].extra for the Algorand x402 Global Challenge. */
   challengeTag: string;
+  /** Where customers pay vet402. undefined = TestNet keys file (vet402 account). */
+  payTo?: string;
   keysFile: string;
-  spendLedgerFile: string;
+  /** Local spend ledger (backup to the indexer). undefined = in-memory only (serverless). */
+  spendLedgerFile?: string;
   probeTimeoutMs: number;
 }
+
+const DEFAULT_CAPS: Record<NetworkName, { perCall: string; perDay: string }> = {
+  testnet: { perCall: "0.04", perDay: "1.00" },
+  mainnet: { perCall: "0.10", perDay: "3.00" },
+};
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const networkName = (env.X402_NETWORK ?? "testnet").toLowerCase();
@@ -61,25 +82,28 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
   const isMain = networkName === "mainnet";
-  const maxPerCall = usdcToAtomic(env.PROBE_MAX_PER_CALL_USDC ?? "0.04");
-  const checkPrice = env.CHECK_PRICE_USDC ?? "0.05";
-  if (maxPerCall > usdcToAtomic(checkPrice)) {
-    // vet402 must never pay a seller more than the customer paid vet402.
-    throw new Error("PROBE_MAX_PER_CALL_USDC must not exceed CHECK_PRICE_USDC");
-  }
+  const caps = DEFAULT_CAPS[networkName];
+  const maxPerCall = usdcToAtomic(env.PROBE_MAX_PER_CALL_USDC ?? caps.perCall);
+  const maxPerDay = usdcToAtomic(env.PROBE_MAX_PER_DAY_USDC ?? caps.perDay);
+  if (maxPerCall > maxPerDay) throw new Error("PROBE_MAX_PER_CALL_USDC must not exceed PROBE_MAX_PER_DAY_USDC");
+  const allowPrivate = env.ALLOW_PRIVATE_TARGETS === "1";
+  if (isMain && allowPrivate) throw new Error("ALLOW_PRIVATE_TARGETS=1 is not allowed on MainNet");
+  const onServerless = !!env.VERCEL;
   return {
     networkName,
     network: isMain ? ALGORAND_MAINNET_CAIP2 : ALGORAND_TESTNET_CAIP2,
     usdcAsaId: String(isMain ? USDC_MAINNET_ASA_ID : USDC_TESTNET_ASA_ID),
     facilitatorUrl: env.FACILITATOR_URL ?? "https://facilitator.goplausible.xyz",
+    indexerUrl: env.INDEXER_URL ?? (isMain ? "https://mainnet-idx.algonode.cloud" : "https://testnet-idx.algonode.cloud"),
     port: Number(env.PORT ?? 4021),
-    checkPriceUsdc: checkPrice,
+    checkPriceUsdc: env.CHECK_PRICE_USDC ?? "0.05",
     maxPerCallAtomic: maxPerCall,
-    maxPerDayAtomic: usdcToAtomic(env.PROBE_MAX_PER_DAY_USDC ?? "1.00"),
-    allowPrivateTargets: env.ALLOW_PRIVATE_TARGETS === "1",
+    maxPerDayAtomic: maxPerDay,
+    allowPrivateTargets: allowPrivate,
     challengeTag: "x402-global-challenge",
+    payTo: env.VET402_PAY_TO ?? (isMain ? MAINNET_DEFAULT_PAY_TO : undefined),
     keysFile: env.KEYS_FILE ?? `.keys/${networkName}.json`,
-    spendLedgerFile: env.SPEND_LEDGER_FILE ?? `state/spend-${networkName}.json`,
+    spendLedgerFile: env.SPEND_LEDGER_FILE ?? (onServerless ? undefined : `state/spend-${networkName}.json`),
     probeTimeoutMs: Number(env.PROBE_TIMEOUT_MS ?? 20000),
   };
 }

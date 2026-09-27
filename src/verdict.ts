@@ -9,6 +9,8 @@ export const REASONS = [
   "no_supported_accept", // no accepts[] entry on our network + USDC
   "price_over_cap", // price above per-call cap: we did not pay
   "daily_cap_reached", // paying would exceed the daily cap: we did not pay
+  "cap_check_unavailable", // today's spend could not be read from the chain: we did not pay
+  "self_dealing", // seller payTo is one of vet402's own wallets: we never pay ourselves
   "invalid_target", // URL rejected before any request (scheme, private host, ...)
   "payment_failed", // we tried to pay but settlement did not succeed
   "http_error", // paid, but the seller answered non-2xx

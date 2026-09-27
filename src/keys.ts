@@ -44,3 +44,24 @@ export function loadKeys(path: string): KeysFile {
   }
   return JSON.parse(readFileSync(path, "utf8")) as KeysFile;
 }
+
+export interface Payer {
+  address: string;
+  secretKeyB64: string;
+}
+
+/**
+ * The wallet vet402 pays sellers from.
+ * PAYER_MNEMONIC (env, e.g. from .env.mainnet.local or Vercel env) wins;
+ * on TestNet it falls back to the `vet402` account in the keys file.
+ */
+export function loadPayer(networkName: string, keysFile: string, env: NodeJS.ProcessEnv = process.env): Payer {
+  const m = env.PAYER_MNEMONIC?.trim();
+  if (m) {
+    const seed = seedFromMnemonic(m);
+    return { address: addressFromSeed(seed), secretKeyB64: secretKeyB64FromMnemonic(m) };
+  }
+  if (networkName === "mainnet") throw new Error("PAYER_MNEMONIC is required on MainNet (.env.mainnet.local or deploy env)");
+  const k = loadKeys(keysFile).vet402;
+  return { address: k.address, secretKeyB64: secretKeyB64FromMnemonic(k.mnemonic) };
+}

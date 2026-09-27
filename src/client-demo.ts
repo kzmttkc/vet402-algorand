@@ -4,13 +4,16 @@
  *
  *   npm run demo -- http://localhost:4031/honest
  *
- * Payment 1 (customer -> vet402) comes back in the PAYMENT-RESPONSE header.
- * Payment 2 (vet402 -> seller) is inside the JSON body (downstreamPayment).
+ * Payment 1 (customer -> vet402) settles first; its tx id is in the body
+ * (customerPayment) and in the PAYMENT-RESPONSE header.
+ * Payment 2 (vet402 -> seller) happens only after that (downstreamPayment).
  */
 import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
 import { toClientAvmSigner, ExactAvmScheme } from "@x402/avm";
 import { loadConfig, usdcToAtomic } from "./config.js";
 import { loadKeys, secretKeyB64FromMnemonic } from "./keys.js";
+
+// Customer role is TestNet-only in this repo (MainNet customers bring their own wallet).
 
 const cfg = loadConfig();
 const keys = loadKeys(cfg.keysFile);
@@ -47,6 +50,7 @@ async function main() {
     verdict?: string;
     reason?: string;
     detail?: string;
+    customerPayment?: { transaction?: string };
     downstreamPayment?: { transaction?: string; success?: boolean };
     delivery?: { summary?: string; missingKeys?: string[] };
     price?: { usdc?: string };
@@ -66,6 +70,7 @@ async function main() {
   }
   console.log(`verdict           ${body.verdict ?? "-"}  reason=${body.reason ?? "-"}${body.detail ? `  (${body.detail})` : ""}`);
   console.log(`seller price      ${body.price?.usdc ?? "-"} USDC`);
+  customerTx = body.customerPayment?.transaction ?? customerTx;
   console.log(`payment 1 (you -> vet402)    ${customerTx ?? "(not settled)"}  ${explorer(customerTx)}`);
   console.log(`payment 2 (vet402 -> seller) ${body.downstreamPayment?.transaction ?? "(not paid)"}  ${explorer(body.downstreamPayment?.transaction)}`);
   if (body.delivery) {

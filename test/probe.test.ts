@@ -5,6 +5,7 @@ import { ALGORAND_TESTNET_CAIP2, USDC_TESTNET_ASA_ID } from "@x402/avm";
 import { mnemonicFromSeed } from "@algorandfoundation/algokit-utils/algo25";
 import { probe, makePaidFetch, type ProbeDeps, type PaidFetchResult } from "../src/probe.js";
 import { SpendLedger } from "../src/caps.js";
+import { LocalSpendGuard } from "../src/spend.js";
 import { loadConfig } from "../src/config.js";
 import { secretKeyB64FromMnemonic } from "../src/keys.js";
 import type { AcceptLike } from "../src/declaration.js";
@@ -69,12 +70,14 @@ function fakeDeps(pr: unknown, delivered: unknown, settle: PaidFetchResult["sett
   return { deps, calls };
 }
 
-const ledger = () => new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
+const rawLedger = () => new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
+const guardOf = (l: SpendLedger) => new LocalSpendGuard(l);
+const ledger = () => guardOf(rawLedger());
 
 test("honest seller: pays once, ALLOW delivered, downstream tx id returned", async () => {
   const { deps, calls } = fakeDeps(paymentRequired("10000"), { forecast: "sunny", temperature: 21 });
-  const l = ledger();
-  const r = await probe("http://localhost:4031/honest", cfg, l, deps);
+  const l = rawLedger();
+  const r = await probe("http://localhost:4031/honest", cfg, guardOf(l), deps);
   assert.equal(r.verdict, "ALLOW");
   assert.equal(r.reason, "delivered");
   assert.equal(r.downstreamPayment?.transaction, "TX_SELLER_1");
@@ -95,8 +98,8 @@ test("lying seller: REFUSE delivery_missing_keys with evidence", async () => {
 
 test("price over cap: REFUSE price_over_cap and never calls the paying fetch", async () => {
   const { deps, calls } = fakeDeps(paymentRequired("500000"), { forecast: "x", temperature: 1 });
-  const l = ledger();
-  const r = await probe("http://localhost:4031/pricey", cfg, l, deps);
+  const l = rawLedger();
+  const r = await probe("http://localhost:4031/pricey", cfg, guardOf(l), deps);
   assert.equal(r.reason, "price_over_cap");
   assert.equal(calls.paid.length, 0);
   assert.equal(l.spentTodayAtomic(), 0n);
@@ -105,7 +108,7 @@ test("price over cap: REFUSE price_over_cap and never calls the paying fetch", a
 
 test("daily cap: stops paying once the day's budget is used", async () => {
   const { deps, calls } = fakeDeps(paymentRequired("40000"), { forecast: "x", temperature: 1 });
-  const l = new SpendLedger(40_000n, 80_000n);
+  const l = guardOf(new SpendLedger(40_000n, 80_000n));
   assert.equal((await probe("http://localhost:4031/honest", cfg, l, deps)).reason, "delivered");
   assert.equal((await probe("http://localhost:4031/honest", cfg, l, deps)).reason, "delivered");
   assert.equal((await probe("http://localhost:4031/honest", cfg, l, deps)).reason, "daily_cap_reached");
@@ -149,7 +152,8 @@ test("payment_failed when settlement is not successful", async () => {
 });
 
 test("payment_failed before signing gives the budget back", async () => {
-  const l = ledger();
+  const raw = rawLedger();
+  const l = guardOf(raw);
   const deps: ProbeDeps = {
     fetchImpl: async () => res402(paymentRequired("10000")),
     paidFetch: async () => {
@@ -157,7 +161,7 @@ test("payment_failed before signing gives the budget back", async () => {
     },
   };
   assert.equal((await probe("http://localhost:4031/x", cfg, l, deps)).reason, "payment_failed");
-  assert.equal(l.spentTodayAtomic(), 0n);
+  assert.equal(raw.spentTodayAtomic(), 0n);
 });
 
 test("invalid_target in strict mode (no private hosts)", async () => {
@@ -199,4 +203,11 @@ test("real paying client: over-cap requirement is refused before signing", async
     () => paidFetch("http://localhost:4031/x", approved, { method: "GET" }),
     (e: Error & { signed?: boolean }) => e.signed === false && /filtered out by policies/.test(e.message),
   );
+});
+
+test("self_dealing: never pays a seller whose payTo is one of our own wallets", async () => {
+  const { deps, calls } = fakeDeps(paymentRequired("10000"), { forecast: "a", temperature: 1 });
+  const r = await probe("http://localhost:4031/x", cfg, ledger(), { ...deps, ownAddresses: [SELLER] });
+  assert.equal(r.reason, "self_dealing");
+  assert.equal(calls.paid.length, 0);
 });

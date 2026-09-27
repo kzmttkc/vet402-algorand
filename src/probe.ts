@@ -10,7 +10,7 @@
 import { x402Client, x402HTTPClient, wrapFetchWithPayment } from "@x402/fetch";
 import { ExactAvmScheme, toClientAvmSigner, ALGORAND_TESTNET_GENESIS_HASH, ALGORAND_MAINNET_GENESIS_HASH } from "@x402/avm";
 import { atomicToUsdc, type AppConfig } from "./config.js";
-import type { SpendLedger } from "./caps.js";
+import type { SpendGuard } from "./spend.js";
 import { declarationFrom, sameNetwork, selectAccept, type AcceptLike, type PaymentRequiredLike } from "./declaration.js";
 import { checkTarget } from "./target.js";
 import { expectedKeys, judgeDelivery, type Reason, type Verdict } from "./verdict.js";
@@ -41,6 +41,8 @@ export interface ProbeDeps {
   /** Pays exactly `approved` and returns the paid response. */
   paidFetch: (url: string, approved: AcceptLike, init: RequestInit) => Promise<PaidFetchResult>;
   resolveHost?: (host: string) => Promise<string[]>;
+  /** vet402's own addresses (customer payTo, payer). Sellers paying into these are refused. */
+  ownAddresses?: string[];
 }
 
 async function readCapped(res: Response): Promise<string> {
@@ -76,7 +78,7 @@ function parsePaymentRequired(res: Response, bodyText: string): PaymentRequiredL
   }
 }
 
-export async function probe(target: string, cfg: AppConfig, ledger: SpendLedger, deps: ProbeDeps): Promise<ProbeResult> {
+export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, deps: ProbeDeps): Promise<ProbeResult> {
   const t = await checkTarget(target, cfg.allowPrivateTargets, deps.resolveHost);
   if (!t.ok) return { verdict: "REFUSE", reason: "invalid_target", target, detail: t.detail };
   const url = t.url.toString();
@@ -108,7 +110,10 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendLedger,
   }
   const amount = BigInt(accept.amount);
   const price = { amountAtomic: accept.amount, usdc: atomicToUsdc(amount), payTo: accept.payTo, network: accept.network, asset: String(accept.asset) };
-  const cap = ledger.reserve(amount);
+  if (deps.ownAddresses?.includes(accept.payTo)) {
+    return { verdict: "REFUSE", reason: "self_dealing", target: url, declared, price, detail: "seller payTo is a vet402 wallet; vet402 never pays itself" };
+  }
+  const cap = await ledger.reserve(amount);
   if (!cap.ok) return { verdict: "REFUSE", reason: cap.reason, target: url, declared, price, detail: cap.detail };
 
   // 3) Pay and fetch.

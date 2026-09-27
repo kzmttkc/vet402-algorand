@@ -65,13 +65,24 @@ test("ledger persists across restarts and fails closed on corruption", () => {
   assert.equal(c.reserve(1n).ok, false);
 });
 
-test("config: per-call cap may not exceed the check price; mainnet is locked", () => {
-  assert.throws(() => loadConfig({ PROBE_MAX_PER_CALL_USDC: "0.06", CHECK_PRICE_USDC: "0.05" }));
+test("config: network defaults, mainnet lock, mainnet payTo and caps", () => {
+  assert.throws(() => loadConfig({ PROBE_MAX_PER_CALL_USDC: "2", PROBE_MAX_PER_DAY_USDC: "1" }));
   assert.throws(() => loadConfig({ X402_NETWORK: "mainnet" }), /locked/);
   const c = loadConfig({});
   assert.equal(c.networkName, "testnet");
   assert.equal(c.usdcAsaId, "10458941");
   assert.equal(c.maxPerCallAtomic, 40_000n);
+  assert.equal(c.indexerUrl, "https://testnet-idx.algonode.cloud");
   const m = loadConfig({ X402_NETWORK: "mainnet", I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" });
   assert.equal(m.usdcAsaId, "31566704");
+  assert.equal(m.payTo, "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q");
+  assert.equal(m.maxPerCallAtomic, 100_000n);
+  assert.equal(m.maxPerDayAtomic, 3_000_000n);
+  assert.equal(m.checkPriceUsdc, "0.05");
+  assert.equal(m.indexerUrl, "https://mainnet-idx.algonode.cloud");
+  assert.throws(() => loadConfig({ X402_NETWORK: "mainnet", I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes", ALLOW_PRIVATE_TARGETS: "1" }));
+  const m2 = loadConfig({ X402_NETWORK: "mainnet", I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes", PROBE_MAX_PER_CALL_USDC: "0.2", PROBE_MAX_PER_DAY_USDC: "5", VERCEL: "1" });
+  assert.equal(m2.maxPerCallAtomic, 200_000n);
+  assert.equal(m2.maxPerDayAtomic, 5_000_000n);
+  assert.equal(m2.spendLedgerFile, undefined);
 });
