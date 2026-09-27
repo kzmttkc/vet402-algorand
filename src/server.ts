@@ -40,7 +40,7 @@ import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { neverPaidVet402, registerBuy } from "./buy.js";
 import { BaseCustomerReader, withBase } from "./base.js";
 import { registerTry, type TrialDeps } from "./try.js";
-import { ChainTrialStore, loadTrialConfig } from "./trial.js";
+import { ChainTrialStore, loadTrialConfig, normalizeFrom } from "./trial.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 import { ALGOD_URLS, issueCertificate, makeCertAnchor, registerCert, type CertAnchor, type CertReaderOptions, type IssueOptions } from "./cert.js";
 
@@ -290,7 +290,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
         caps,
       });
     }
-    return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps, buyFeeUsdc: atomicToUsdc(cfg.buyFeeAtomic), verdictPriceUsdc: VERDICT_PRICE_USDC, auditPriceUsdc: cfg.auditPriceUsdc, trial: !!deps.trial }));
+    return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps, buyFeeUsdc: atomicToUsdc(cfg.buyFeeAtomic), verdictPriceUsdc: VERDICT_PRICE_USDC, auditPriceUsdc: cfg.auditPriceUsdc, trial: !!deps.trial, from: normalizeFrom(c.req.query("from")) }));
   });
 
   // Public, free, read-only: mounted before the payment middleware so it is never charged.
@@ -445,6 +445,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
         store: new ChainTrialStore({ networkName: cfg.networkName, indexerUrl: cfg.indexerUrl, trial: t }),
         guard: new IndexedSpendGuard(new SpendLedger(t.maxPerCallAtomic, t.maxPerDayAtomic), () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: t.address, asaId: cfg.usdcAsaId })),
         paidFetch: makePaidFetch({ ...cfg, maxPerCallAtomic: t.maxPerCallAtomic, maxPerDayAtomic: t.maxPerDayAtomic }, t.secretKeyB64),
+        hiddenHandles: (env.TRY_HIDDEN_HANDLES ?? "").split(",").map((h) => h.trim()).filter(Boolean),
       }
     : undefined;
   // Public addresses only: the activity page never needs the payer's secret.

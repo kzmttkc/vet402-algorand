@@ -32,6 +32,19 @@ export const TRY_DEFAULT_PER_DAY_USDC = "3.00";
 export const TRY_NOTE_PREFIX = "vet402-try:v1:";
 const CLAIM = `${TRY_NOTE_PREFIX}c:`;
 const RESULT = `${TRY_NOTE_PREFIX}r:`;
+const HANDLE = `${TRY_NOTE_PREFIX}h:`;
+
+/** An X handle as the visitor typed it: optional "@", then 1-15 of A-Z a-z 0-9 _. Returns "@name" or null. */
+export function normalizeHandle(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const m = /^@?([A-Za-z0-9_]{1,15})$/.exec(v.trim());
+  return m ? `@${m[1]}` : null;
+}
+
+/** Proof, given only to the visitor whose try made `recordId`, that lets them attach a handle to it. */
+export function handleToken(hashKey: Buffer, recordId: string): string {
+  return createHmac("sha256", hashKey).update(`handle:${recordId}`).digest("hex").slice(0, 32);
+}
 
 export interface TrialConfig {
   chain: "algorand";
@@ -91,6 +104,15 @@ export interface TrialLogEntry {
   sellerTx?: string;
   /** The tx that carries this record (chain store). */
   recordTx?: string;
+  /** X handle the visitor chose to add (only when they typed one). */
+  handle?: string;
+  /** Where the visitor came from (?from= on /try or /): a short campaign tag, never personal data. */
+  from?: string;
+}
+
+/** A ?from= tag: letters, digits and "-" only, up to 20. Anything else is dropped. */
+export function normalizeFrom(v: unknown): string | undefined {
+  return typeof v === "string" && /^[A-Za-z0-9-]{1,20}$/.test(v) ? v.toLowerCase() : undefined;
 }
 
 export interface TrialLog {
@@ -103,7 +125,10 @@ export interface TrialLog {
 export interface TrialStore {
   isClaimed(keys: string[]): Promise<boolean>;
   claim(keys: string[]): Promise<void>;
-  record(e: TrialLogEntry): Promise<void>;
+  /** Writes the result; returns its id (the chain store: the record tx). */
+  record(e: TrialLogEntry): Promise<string>;
+  /** Attaches the visitor's X handle to their record. "exists" if that record already has one. */
+  attachHandle(recordId: string, handle: string): Promise<"ok" | "exists">;
   log(): Promise<TrialLog>;
 }
 
@@ -118,10 +143,19 @@ export class MemoryTrialStore implements TrialStore {
     for (const k of keys) this.claimed.add(k);
   }
   async record(e: TrialLogEntry) {
-    this.entries.unshift(e);
+    const id = `MEM${this.entries.length + 1}`;
+    this.entries.unshift({ ...e, recordTx: id });
+    return id;
+  }
+  async attachHandle(recordId: string, handle: string): Promise<"ok" | "exists"> {
+    const e = this.entries.find((x) => x.recordTx === recordId);
+    if (!e) throw new Error("no such record");
+    if (e.handle) return "exists";
+    e.handle = handle;
+    return "ok";
   }
   async log(): Promise<TrialLog> {
-    return { entries: [...this.entries], people: [...this.claimed].filter((k) => k.startsWith("ip:")).length };
+    return { entries: this.entries.map((e) => ({ ...e })), people: [...this.claimed].filter((k) => k.startsWith("ip:")).length };
   }
 }
 
@@ -141,6 +175,7 @@ const iso = (sec: number) => new Date(sec * 1000).toISOString().replace(".000Z",
 export class ChainTrialStore implements TrialStore {
   private readonly f: typeof fetch;
   private readonly local = new Set<string>(); // claims this instance made (the indexer lags a few seconds)
+  private readonly handled = new Set<string>(); // records this instance attached a handle to
   private cache: { at: number; log: Promise<TrialLog> } | null = null;
   private algorand: AlgorandClient | null = null;
 
@@ -195,19 +230,34 @@ export class ChainTrialStore implements TrialStore {
     this.cache = null;
   }
 
-  async record(e: TrialLogEntry): Promise<void> {
-    const rec = { u: e.url.slice(0, 600), h: e.host.slice(0, 120), c: e.class, r: e.reason.slice(0, 60), p: e.priceUsdc, s: e.sellerTx };
+  async record(e: TrialLogEntry): Promise<string> {
+    const rec = { u: e.url.slice(0, 600), h: e.host.slice(0, 120), c: e.class, r: e.reason.slice(0, 60), p: e.priceUsdc, s: e.sellerTx, ...(e.from ? { f: e.from } : {}) };
     let note = `${RESULT}${JSON.stringify(rec)}`;
     if (Buffer.byteLength(note) > 1000) note = `${RESULT}${JSON.stringify({ ...rec, u: rec.u.slice(0, 200) })}`;
-    await this.client().send.payment({ sender: this.o.trial.address, receiver: this.o.trial.address, amount: microAlgo(0), note: new TextEncoder().encode(note) });
+    const sent = await this.client().send.payment({ sender: this.o.trial.address, receiver: this.o.trial.address, amount: microAlgo(0), note: new TextEncoder().encode(note) });
     this.cache = null;
+    return sent.txIds[0];
+  }
+
+  /** Handle note: "vet402-try:v1:h:<record tx>:@name" (public and permanent on the chain; /try shows it unless hidden). */
+  async attachHandle(recordId: string, handle: string): Promise<"ok" | "exists"> {
+    if (this.handled.has(recordId) || (await this.notes(`${HANDLE}${recordId}:`, 1)).length) return "exists";
+    await this.client().send.payment({ sender: this.o.trial.address, receiver: this.o.trial.address, amount: microAlgo(0), note: new TextEncoder().encode(`${HANDLE}${recordId}:${handle}`) });
+    this.handled.add(recordId);
+    this.cache = null;
+    return "ok";
   }
 
   log(): Promise<TrialLog> {
     const now = Date.now();
     if (this.cache && now - this.cache.at < (this.o.ttlMs ?? 60_000)) return this.cache.log;
     const log = (async () => {
-      const [claims, results] = await Promise.all([this.notes(`${CLAIM}ip:`), this.notes(RESULT)]);
+      const [claims, results, handles] = await Promise.all([this.notes(`${CLAIM}ip:`), this.notes(RESULT), this.notes(HANDLE)]);
+      const handleOf = new Map<string, string>();
+      for (const t of [...handles].sort((a, b) => a["round-time"] - b["round-time"])) {
+        const m = /^([A-Z2-7]{52}):(@[A-Za-z0-9_]{1,15})$/.exec(Buffer.from(t.note ?? "", "base64").toString("utf8").slice(HANDLE.length));
+        if (m && !handleOf.has(m[1])) handleOf.set(m[1], m[2]); // the first handle for a record wins
+      }
       const entries: TrialLogEntry[] = [];
       for (const t of results) {
         try {
@@ -220,7 +270,9 @@ export class ChainTrialStore implements TrialStore {
             reason: String(r.r ?? ""),
             ...(typeof r.p === "string" ? { priceUsdc: r.p } : {}),
             ...(typeof r.s === "string" ? { sellerTx: r.s } : {}),
+            ...(normalizeFrom(r.f) ? { from: normalizeFrom(r.f) } : {}),
             recordTx: t.id,
+            ...(handleOf.has(t.id) ? { handle: handleOf.get(t.id) } : {}),
           });
         } catch {
           /* not a record this version wrote */

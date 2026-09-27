@@ -594,3 +594,89 @@ test("trial over HTTP: a seller answering HTML gets its markup back as a JSON st
   assert.equal(j.reason, "not_json");
   assert.equal(j.because, "the listing promised JSON, and the answer is not JSON");
 });
+
+test("first people: only the visitor who ran a try can add an X handle to it, once; bad handles, wrong tokens and hidden handles never show", async () => {
+  const { app } = setup();
+  const r = await run(app, { url: `${HOST}/honest`, from: "x-reply" });
+  const j = (await r.json()) as { record: { id: string; token: string } };
+  assert.ok(j.record.id && j.record.token);
+  const add = (body: unknown) => app.request("/try/handle", { method: "POST", headers: { "content-type": "application/json", "x-real-ip": "198.51.100.1" }, body: JSON.stringify(body) });
+  assert.equal((await add({ record: j.record.id, token: "0".repeat(32), handle: "@alice" })).status, 403);
+  assert.equal((await add({ record: j.record.id, token: j.record.token, handle: "<script>" })).status, 400);
+  assert.equal((await add({ record: j.record.id, token: j.record.token, handle: "@toolonghandle_16" })).status, 400);
+  const ok = await add({ record: j.record.id, token: j.record.token, handle: "alice_01" });
+  assert.equal(ok.status, 200);
+  assert.equal(((await ok.json()) as { handle: string }).handle, "@alice_01");
+  assert.equal((await add({ record: j.record.id, token: j.record.token, handle: "@bob" })).status, 409);
+  const log = (await (await app.request("/try/log.json")).json()) as { entries: { handle?: string; from?: string }[] };
+  assert.deepEqual([log.entries[0].handle, log.entries[0].from], ["@alice_01", "x-reply"]);
+  assert.match(await (await app.request("/try/log")).text(), /https:\/\/x\.com\/alice_01/);
+});
+
+test("first people: a handle listed in TRY_HIDDEN_HANDLES is not shown", async () => {
+  const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
+  const cfg = baseCfg();
+  const store = new MemoryTrialStore();
+  const app = createApp(cfg, {
+    payTo: VET402,
+    probeDeps: sellerDeps(seen),
+    guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
+    facilitator: facilitator([]),
+    catalog: { items: async () => [] },
+    trial: { address: TRIAL, maxPerCallAtomic: 50_000n, maxPerDayAtomic: 3_000_000n, hashKey: Buffer.alloc(32, 3), store, guard: new LocalSpendGuard(new SpendLedger(50_000n, 3_000_000n)), paidFetch: trialPaidFetch(seen), hiddenHandles: ["@Alice"] },
+  });
+  const id = await store.record({ at: "2026-09-27T10:00:00Z", url: `${HOST}/honest`, host: "localhost:4031", class: "DELIVERED", reason: "delivered" });
+  await store.attachHandle(id, "@alice");
+  const log = (await (await app.request("/try/log.json")).json()) as { entries: { handle?: string }[] };
+  assert.equal(log.entries[0].handle, undefined);
+  assert.doesNotMatch(await (await app.request("/try/log")).text(), /alice/i);
+});
+
+test("?from= is kept only as a short tag: on the trial record, per day in /try/stats.json, and on the landing page's /try links", async () => {
+  const { app } = setup();
+  await run(app, { url: `${HOST}/honest`, from: "github" }, "203.0.113.20");
+  await run(app, { url: `${HOST}/honest`, from: "<bad tag>" }, "203.0.113.21");
+  await run(app, { url: `${HOST}/honest` }, "203.0.113.22");
+  const st = (await (await app.request("/try/stats.json")).json()) as { triedToday: number; byDay: { date: string; tried: number; from: Record<string, number>; paid: number | null }[] };
+  assert.equal(st.triedToday, 3);
+  assert.equal(st.byDay.length, 14);
+  assert.deepEqual(st.byDay[0].from, { github: 1, direct: 2 });
+  const log = (await (await app.request("/try/log.json")).json()) as { entries: { from?: string }[] };
+  assert.deepEqual(log.entries.map((e) => e.from ?? null).sort(), ["github", null, null].sort());
+  const home = await (await app.request("/?from=sen-x", { headers: { accept: "text/html" } })).text();
+  assert.match(home, /href="\/try\?from=sen-x"/);
+  const bad = await (await app.request("/?from=%22%3E%3Cscript%3E", { headers: { accept: "text/html" } })).text();
+  assert.doesNotMatch(bad, /<script/);
+});
+
+test("/activity: an audit paid between a first purchase at cost and its seller payment does not take that seller payment", async () => {
+  const ASA_M = "31566704";
+  const FEE = "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
+  const PAYTO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+  const MPAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+  const CAROL = "CAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCARO";
+  const EVE = "EVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEV";
+  const T0 = 1790479000;
+  const axfer = (id: string, sender: string, receiver: string, amount: number, round: number, group?: string) => ({
+    id, sender, "tx-type": "axfer", fee: 0, ...(group ? { group } : {}), "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 1,
+    "asset-transfer-transaction": { "asset-id": Number(ASA_M), amount, receiver, "close-amount": 0 },
+  });
+  const feePay = (round: number, group: string) => ({ id: `FEE-${group}`, sender: FEE, "tx-type": "pay", fee: 2000, group, "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 0, "payment-transaction": { amount: 0, receiver: FEE } });
+  const carol = axfer("CAROL1", CAROL, PAYTO, 10_000, 100, "G1");
+  const audit = axfer("EVEAUDIT", EVE, PAYTO, 500_000, 101, "G2");
+  const carolOut = axfer("OUT1", MPAYER, SELLER, 10_000, 102, "G3");
+  const accounts: Record<string, unknown[]> = { [PAYTO]: [carol, audit], [MPAYER]: [carolOut] };
+  const groups: Record<string, unknown[]> = { G1: [feePay(100, "G1"), carol], G2: [feePay(101, "G2"), audit] };
+  const f = (async (url: string) => {
+    const u = new URL(url);
+    const m = u.pathname.match(/^\/v2\/accounts\/([A-Z2-7]+)\/transactions$/);
+    if (m) return accounts[m[1]] ? Response.json({ transactions: accounts[m[1]] }) : new Response("nf", { status: 404 });
+    if (u.pathname === "/v2/transactions") return Response.json({ transactions: groups[u.searchParams.get("group-id")!] ?? [] });
+    return new Response("?", { status: 400 });
+  }) as unknown as typeof fetch;
+  const r = await new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PAYTO, payer: MPAYER, fetchImpl: f, priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: 1_000n, auditPriceAtomic: 500_000n }).get();
+  const byTx = Object.fromEntries(r.rows.map((w) => [w.customerTx, w]));
+  assert.equal(byTx.CAROL1.kind, "buy");
+  assert.equal(byTx.CAROL1.sellerTx, "OUT1");
+  assert.deepEqual(byTx.EVEAUDIT.sellerPayments, []);
+});

@@ -12,6 +12,7 @@
 import type { Context, Hono } from "hono";
 import { atomicToUsdc, type AppConfig } from "./config.js";
 import {
+  BOARD_ISSUES_URL,
   UNCLEAR_NOTE,
   censusFileFor,
   defaultBoardFile,
@@ -33,7 +34,8 @@ import type { Catalog } from "./bazaar.js";
 import type { SpendGuard } from "./spend.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
 import { BASE_CSS, topNav } from "./landing.js";
-import { claimKeys, isAlgorandAddress, type TrialLog, type TrialStore } from "./trial.js";
+import { claimKeys, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type TrialLog, type TrialStore } from "./trial.js";
+import { timingSafeEqual } from "node:crypto";
 import type { SettleFirstEnv } from "./settle-first.js";
 import type { ActivityReport } from "./activity.js";
 import { WALLET_JS, WALLET_JS_SHA } from "./web/wallet-bundle.gen.js";
@@ -106,6 +108,8 @@ export interface TrialDeps {
   guard: SpendGuard;
   /** Pays from the trial wallet. */
   paidFetch: ProbeDeps["paidFetch"];
+  /** X handles not shown (removal requests; env TRY_HIDDEN_HANDLES). Compared case-insensitively. */
+  hiddenHandles?: string[];
 }
 
 export interface TryDeps {
@@ -269,21 +273,69 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     );
   });
 
-  const logOf = async (): Promise<TrialLog | null> => (trial ? trial.store.log() : null);
+  const hidden = new Set((trial?.hiddenHandles ?? []).map((h) => normalizeHandle(h)?.toLowerCase()).filter(Boolean));
+  const logOf = async (): Promise<TrialLog | null> => {
+    if (!trial) return null;
+    const log = await trial.store.log();
+    return { ...log, entries: log.entries.map(({ handle, ...e }) => (handle && !hidden.has(handle.toLowerCase()) ? { ...e, handle } : e)) };
+  };
+  const handles = new QuoteLimiter(5, deps.now);
 
-  // Real numbers only: today's free tries (trial records) and today's paying customers (/activity, operator excluded).
+  // "First people to try vet402": the visitor may add an X handle to their own try, once, with the token /try/run gave them.
+  app.post("/try/handle", async (c) => {
+    if (!trial) return c.json({ error: "trials_off" }, 404);
+    if (!handles.take(clientIp(c))) return c.json({ error: "rate_limited" }, 429);
+    if ((c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase() !== "application/json") return c.json({ error: "unsupported_media_type" }, 415);
+    const read = await readBodyCapped(c.req.raw.body, 1024);
+    if (!read.ok) return c.json({ error: "request_too_large" }, 413);
+    let input: { record?: unknown; token?: unknown; handle?: unknown };
+    try {
+      input = JSON.parse(Buffer.from(read.bytes).toString("utf8") || "{}") as typeof input;
+    } catch {
+      return c.json({ error: "invalid_json" }, 400);
+    }
+    const handle = normalizeHandle(input.handle);
+    if (!handle) return c.json({ error: "invalid_handle", detail: "An X handle: letters, digits and _ only, up to 15." }, 400);
+    const record = typeof input.record === "string" ? input.record : "";
+    const token = typeof input.token === "string" ? input.token : "";
+    const want = Buffer.from(handleToken(trial.hashKey, record));
+    const got = Buffer.from(token);
+    if (!record || got.length !== want.length || !timingSafeEqual(got, want)) return c.json({ error: "not_your_try", detail: "Only the person who ran this try can add a name to it." }, 403);
+    try {
+      const r = await trial.store.attachHandle(record, handle);
+      if (r === "exists") return c.json({ error: "already_named", detail: "This try already has a name." }, 409);
+    } catch (e) {
+      return c.json({ error: "cannot_record", detail: String((e as Error).message ?? e).slice(0, 120) }, 503);
+    }
+    return c.json({ ok: true, handle }, 200);
+  });
+
+  // Real numbers only, per UTC day (last 14): free tries (trial records, by ?from= tag) and paying customers (/activity, operator excluded).
+  // Page views are not counted: there is no free store on the deployment that outlives an instance.
   app.get("/try/stats.json", async (c) => {
-    const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
+    const now = deps.now?.() ?? Date.now();
+    const today = new Date(now).toISOString().slice(0, 10);
     const [log, act] = await Promise.all([logOf().catch(() => null), deps.activity ? deps.activity.get().catch(() => null) : Promise.resolve(null)]);
-    const triedToday = log ? log.entries.filter((e) => e.at.slice(0, 10) === today).length : null;
-    const paidToday = act ? new Set(act.rows.filter((r) => !r.operatorTest && r.time.slice(0, 10) === today).map((r) => r.customer)).size : null;
-    return c.json({ date: today, triedToday, triedTotal: log ? log.people : null, paidToday }, 200, { "cache-control": "public, max-age=60" });
+    const days = Array.from({ length: 14 }, (_, i) => new Date(now - i * 86_400_000).toISOString().slice(0, 10));
+    const byDay = days.map((date) => {
+      const tries = log ? log.entries.filter((e) => e.at.slice(0, 10) === date) : null;
+      const from: Record<string, number> = {};
+      for (const e of tries ?? []) from[e.from ?? "direct"] = (from[e.from ?? "direct"] ?? 0) + 1;
+      const paid = act ? new Set(act.rows.filter((r) => !r.operatorTest && r.time.slice(0, 10) === date).map((r) => r.customer)).size : null;
+      return { date, tried: tries ? tries.length : null, from: tries ? from : null, paid };
+    });
+    const t = byDay[0];
+    return c.json(
+      { date: today, triedToday: t.tried, triedTotal: log ? log.people : null, paidToday: t.paid, byDay, note: "tried = free tries recorded on-chain; paid = distinct addresses that paid vet402 (x402) that day; page views are not counted" },
+      200,
+      { "cache-control": "public, max-age=60" },
+    );
   });
 
   app.get("/try/log.json", async (c) => {
     if (!trial) return c.json({ error: "trials_off" }, 404);
     try {
-      const log = await trial.store.log();
+      const log = (await logOf())!;
       return c.json({ wallet: trial.address, network: cfg.network, people: log.people, trials: log.entries.length, entries: log.entries }, 200, { "cache-control": "public, max-age=60" });
     } catch (e) {
       return c.json({ error: "indexer_unavailable", detail: String((e as Error).message ?? e).slice(0, 200) }, 503, { "cache-control": "no-store" });
@@ -310,7 +362,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     if (ct !== "application/json") return c.json({ error: "unsupported_media_type", detail: "send application/json" }, 415);
     const read = await readBodyCapped(c.req.raw.body, RUN_MAX_BODY);
     if (!read.ok) return c.json({ error: "request_too_large" }, 413);
-    let input: { url?: unknown; address?: unknown };
+    let input: { url?: unknown; address?: unknown; from?: unknown };
     try {
       input = JSON.parse(Buffer.from(read.bytes).toString("utf8") || "{}") as typeof input;
     } catch {
@@ -356,11 +408,12 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
       const paid = !!r.downstreamPayment?.success;
       const cls = displayClass({ verdict: r.verdict, reason: r.reason, detail: r.detail, paid });
       const sellerTx = paid ? r.downstreamPayment?.transaction : undefined;
-      let recorded = true;
+      let recordId: string | undefined;
       try {
-        await trial.store.record({ at: new Date().toISOString(), url, host: t.url.host, class: cls, reason: r.reason, priceUsdc: r.price ? short(r.price.usdc) : undefined, sellerTx });
+        const from = normalizeFrom(input.from);
+        recordId = await trial.store.record({ at: new Date().toISOString(), url, host: t.url.host, class: cls, reason: r.reason, priceUsdc: r.price ? short(r.price.usdc) : undefined, sellerTx, ...(from ? { from } : {}) });
       } catch {
-        recorded = false;
+        recordId = undefined;
       }
       const d = out.delivered;
       return c.json(
@@ -377,7 +430,9 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
           delivery: d ? { status: d.status, missingKeys: r.delivery?.missingKeys ?? [], ...contentPreview(d.bytes, d.contentType) } : undefined,
           because: because({ reason: r.reason, detail: r.detail, declared: r.declared, delivery: d ? { status: d.status, missingKeys: r.delivery?.missingKeys ?? [] } : undefined }),
           declared: r.declared ? { description: r.declared.description, mimeType: r.declared.mimeType, expectedKeys: r.declared.expectedKeys, exampleKeys: r.declared.exampleKeys ?? [] } : undefined,
-          recorded,
+          recorded: !!recordId,
+          // Lets this visitor (and only them) add an X handle to this try: POST /try/handle.
+          ...(recordId ? { record: { id: recordId, token: handleToken(trial.hashKey, recordId) } } : {}),
           note: "A free trial: vet402 paid with its trial wallet. It is not a customer payment.",
         },
         200,
@@ -425,6 +480,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:var(--card2);border:1p
 .next{font-size:15px;color:#cbd5e1}
 h3.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 4px}
 .err{color:var(--mismatch)}
+.card2{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.card2 input{flex:1;min-width:0}
+#firstList{margin:0;padding-left:18px;font-size:14px}
+#firstList li{margin:3px 0}
 `;
 
 /** Client script: no interpolation inside (String.raw); all seller text goes through textContent. */
@@ -435,6 +494,7 @@ const TRY_JS = String.raw`
   var q=$('q'),list=$('list'),hint=$('hint'),bPrev=$('preview'),bRun=$('run'),outPrev=$('outPreview'),outRun=$('outRun'),addr=$('addr');
   var wCard=$('wallet'),wOut=$('wOut'),wQuote=$('wQuote'),wWho=$('wWho');
   var sellers=[],picked=null,walletMod=null;
+  var from=(new URLSearchParams(location.search).get('from')||'');if(!/^[A-Za-z0-9-]{1,20}$/.test(from))from='';
   var CLS={DELIVERED:'delivered',MISMATCH:'mismatch',UNREACHABLE:'unreach',UNCLEAR:'unclear'};
   function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
   function link(href,text){var a=el('a',null,text);a.href=href;a.rel='noopener';return a}
@@ -510,7 +570,7 @@ const TRY_JS = String.raw`
   if(bRun)bRun.addEventListener('click',function(){
     var c=current();if(!c)return;
     bRun.disabled=true;bPrev.disabled=true;outRun.textContent='';p(outRun,'sub',['vet402 is buying it now with its trial wallet. This takes about 10 seconds…']);
-    var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;
+    var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;if(from)body.from=from;
     fetch('/try/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
       outRun.textContent='';var j=x.j;
       if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached')nextSteps(c);return}
@@ -531,6 +591,7 @@ const TRY_JS = String.raw`
       p(outRun,null,[j.verdict+' because '+j.because+'.']);
       if(j.sellerTxUrl)p(outRun,'sub',['Receipt on the blockchain: ',link(j.sellerTxUrl,'vet402 → seller '+j.sellerTx.slice(0,10)+'…')]);
       nextSteps(c);
+      if(j.record)nameForm(j.record);
     }).catch(function(e){outRun.textContent='';p(outRun,'err',['Something went wrong: '+e.message])}).then(function(){sync()});
   });
   function nextSteps(c){
@@ -541,6 +602,32 @@ const TRY_JS = String.raw`
     var s=el('a');s.href='/cert/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('Get a delivery certificate for your endpoint →'));
     box.appendChild(b);box.appendChild(d);box.appendChild(s);outRun.appendChild(box);
   }
+  function nameForm(rec){
+    var box=el('div','card2');box.appendChild(el('h3','lbl','First people to try vet402 on Algorand'));
+    p(box,'sub',['Want your X handle on the list, next to this try? Optional.']);
+    var r=el('div','row');var inp=el('input');inp.type='text';inp.placeholder='@yourhandle';inp.maxLength=16;inp.autocomplete='off';inp.setAttribute('aria-label','X handle');
+    var b=el('button','btn ghost','Add me');r.appendChild(inp);r.appendChild(b);box.appendChild(r);
+    var msg=p(box,'sub',['It is written in a public Algorand transaction note with this try and cannot be erased from the chain; if you ask in a GitHub issue, vet402 stops showing it here.']);
+    b.addEventListener('click',function(){
+      var h=inp.value.trim();if(!/^@?[A-Za-z0-9_]{1,15}$/.test(h)){msg.textContent='Letters, digits and _ only, up to 15.';return}
+      b.disabled=true;
+      fetch('/try/handle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({record:rec.id,token:rec.token,handle:h})}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
+        msg.textContent=x.s===200?('Added '+x.j.handle+'. Thank you for trying vet402.'):(x.j.detail||x.j.error||('HTTP '+x.s));if(x.s!==200)b.disabled=false;else firstPeople();
+      }).catch(function(e){msg.textContent='Not added: '+e.message;b.disabled=false});
+    });
+    outRun.appendChild(box);
+  }
+  function firstPeople(){
+    var list=$('firstList');if(!list)return;
+    fetch('/try/log.json').then(function(r){return r.ok?r.json():null}).then(function(j){
+      if(!j)return;var named=j.entries.filter(function(e){return e.handle}).reverse().slice(0,30);
+      list.textContent='';$('first').hidden=!named.length;
+      named.forEach(function(e){var li=el('li');var a=link('https://x.com/'+e.handle.slice(1),e.handle);a.rel='noopener nofollow';li.appendChild(a);
+        li.appendChild(document.createTextNode(' · '+e.at.slice(0,10)+' · '+e.host+' · '));li.appendChild(el('span',CLS[e.class],e.class));list.appendChild(li)});
+    }).catch(function(){});
+  }
+  if(cfg.trial)firstPeople();
+
   /* ---- pay with your own wallet (loaded on demand) ---- */
   var quoted=null;
   function wReset(){quoted=null;if(wQuote)wQuote.textContent='';if(wOut)wOut.textContent=''}
@@ -640,6 +727,7 @@ ${topNav()}
 </div>
 ${step2}
 ${wallet}
+${o.trial ? `<div class="card" id="first" hidden><h2>First people to try vet402 on Algorand</h2><ol id="firstList"></ol><p class="hint">Listed only when they added their X handle themselves. To have yours removed, <a href="${BOARD_ISSUES_URL}" rel="noopener">open a GitHub issue</a>.</p></div>` : ""}
 <p class="next">Building an agent? The same checks are paid HTTP endpoints: <a href="/#developers">/v1/check, /v1/buy, /v1/verdict, /v1/audit and an MCP server</a>.</p>
 </main>
 <footer>${o.trial ? `Trial wallet <code>${esc(o.trial.address.slice(0, 6))}…${esc(o.trial.address.slice(-6))}</code> · <a href="/try/log">every free try</a> · ` : ""}<a href="/board?view=census">Board</a> · <a href="/activity">Activity</a></footer>
@@ -653,7 +741,7 @@ export function tryLogHtml(log: TrialLog | null, wallet: string, networkName: st
   const rows = (log?.entries ?? [])
     .map((e) => {
       const tx = e.sellerTx ? txLink(e.sellerTx, networkName) : undefined;
-      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small></td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "—"}</td></tr>`;
+      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small></td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "—"}</td><td>${e.handle ? `<a href="https://x.com/${esc(e.handle.slice(1))}" rel="noopener nofollow">${esc(e.handle)}</a>` : ""}</td></tr>`;
     })
     .join("");
   const acct = networkName === "mainnet" ? `https://allo.info/account/${wallet}` : `https://lora.algokit.io/testnet/account/${wallet}`;
@@ -673,8 +761,8 @@ ${topNav()}
 <main>
 <h1>Free tries</h1>
 ${log ? `<p><b>${log.people}</b> ${log.people === 1 ? "person has" : "people have"} tried vet402 · <b>${log.entries.length}</b> ${log.entries.length === 1 ? "purchase" : "purchases"}. vet402 paid for these from its trial wallet <a href="${esc(acct)}" rel="noopener"><code>${esc(wallet)}</code></a>. They are not customer payments and are not counted as customers on <a href="/activity">/activity</a>.</p>` : `<p>The Algorand indexer cannot be read right now. Try again shortly.</p>`}
-<div class="tw"><table><thead><tr><th>time (UTC)</th><th>seller</th><th>result</th><th>USDC</th><th>vet402 → seller tx</th></tr></thead>
-<tbody>${rows || '<tr><td colspan="5"><small>No tries yet.</small></td></tr>'}</tbody></table></div>
-<p><small>Read from the blockchain: each try is written as a note on a 0-ALGO transaction from the trial wallet to itself. No IP address or hash is shown here. <a href="/try/log.json">JSON</a> · <a href="/try">Try it</a></small></p>
+<div class="tw"><table><thead><tr><th>time (UTC)</th><th>seller</th><th>result</th><th>USDC</th><th>vet402 → seller tx</th><th>name</th></tr></thead>
+<tbody>${rows || '<tr><td colspan="6"><small>No tries yet.</small></td></tr>'}</tbody></table></div>
+<p><small>Read from the blockchain: each try is written as a note on a 0-ALGO transaction from the trial wallet to itself. No IP address or hash is shown here. A name appears only when that visitor added it; to have one removed, <a href="${BOARD_ISSUES_URL}" rel="noopener">open a GitHub issue</a>. <a href="/try/log.json">JSON</a> · <a href="/try">Try it</a></small></p>
 </main></body></html>`;
 }

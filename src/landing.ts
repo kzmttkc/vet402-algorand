@@ -42,6 +42,8 @@ export interface LandingOptions {
   auditPriceUsdc?: string;
   /** Free trials are open (/try/run). Off: step 3 points to buying through /v1/buy instead. */
   trial?: boolean;
+  /** ?from= tag of this visit (already validated), carried to the /try links. */
+  from?: string;
 }
 
 const short = (usdc: string) => usdc.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
@@ -50,6 +52,7 @@ const n = (x: number) => x.toLocaleString("en-US");
 export function landingHtml(o: LandingOptions): string {
   const fee = short(o.buyFeeUsdc ?? "0.005");
   const c = FIRST_CENSUS;
+  const tryHref = o.from ? `/try?from=${encodeURIComponent(o.from)}` : "/try";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>vet402</title>
@@ -94,7 +97,7 @@ ${topNav()}
 <section class="hero">
 <h1>Before your AI agent pays for an API, vet402 buys it with its own wallet and tells you if it actually delivered.</h1>
 <p class="lead">Paid APIs for agents take the money first and answer second. The listing says what you will get, and nobody checks. vet402 pays, compares what came back with what was promised, and leaves the payment receipt on the blockchain where anyone can look it up.</p>
-<div class="ctas"><a class="btn" href="/try">Try it free</a><a class="btn ghost" href="/board?view=census">See every result</a></div>
+<div class="ctas"><a class="btn" href="${tryHref}">Try it free</a><a class="btn ghost" href="/board?view=census">See every result</a></div>
 </section>
 
 <section id="try">
@@ -109,7 +112,7 @@ ${
     : `<li><span class="num">3</span><b>Buy it through vet402</b><p>The seller's price + ${fee} USDC. You get the seller's answer, checked, with both receipts.</p></li>`
 }
 </ol>
-<a class="btn" href="/try">Start at step 1</a>
+<a class="btn" href="${tryHref}">Start at step 1</a>
 </section>
 
 <section id="found">
