@@ -8,16 +8,24 @@
  *
  * Limits (all checked before any signature):
  *   - one trial per client IP (keyed hash) and, if the visitor gives one, per Algorand address;
- *   - at most TRY_MAX_PER_CALL (0.05 USDC) per trial and TRY_MAX_PER_DAY_USDC (default 3.00) per UTC day,
- *     read from the chain (the trial wallet's USDC sent today), so every serverless instance agrees;
+ *   - at most TRY_MAX_PER_CALL (0.05 USDC) per trial and TRY_MAX_PER_DAY_USDC (default 3.00, never above
+ *     10.00: a higher value refuses to start) per UTC day, read from the chain (the trial wallet's USDC sent
+ *     today), so every serverless instance agrees;
+ *   - at most TRY_PER_SELLER_PER_DAY paid tries per seller host per UTC day: before paying, /try/run takes
+ *     slot n (1..3) for (host, date) as a leased 0-ALGO note "vet402-try:v1:s:<host key>:<date>:<n>:<nonce>"; the
+ *     chain refuses a second transaction with the same lease, so simultaneous requests cannot share a slot;
  *   - every guard of probe(): private addresses, vet402's own wallets, payTo lock, one payment, caps.
  *
  * Where "once" is remembered: on the chain, as 0-ALGO payments from the trial wallet to itself whose
- * note is "vet402-try:v1:c:<key>" (the key is an HMAC of the IP or address under a secret derived from
+ * note is "vet402-try:v1:c:<key>:<nonce>" (older ones have no nonce; the key is an HMAC of the IP or address under a secret derived from
  * the trial key, so the note does not reveal either). The result of each trial is written the same way
  * ("vet402-try:v1:r:{...}") and /try/log reads it back from the indexer. Each note costs 0.001 ALGO.
+ *
+ * Leases hold only while the leasing transaction is valid, so claims and slots are sent with an explicit
+ * TRY_LEASE_ROUNDS (1000, the protocol maximum, ~45 min) window; algokit's own default is 10 rounds (~30 s)
+ * off LocalNet. After the window the indexer has long shown the note, and isClaimed / the slot read see it.
  */
-import { createHash, createHmac } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { AlgorandClient, microAlgo } from "@algorandfoundation/algokit-utils";
 import { seedFromMnemonic } from "@algorandfoundation/algokit-utils/algo25";
@@ -29,8 +37,13 @@ import type { DisplayClass } from "./board.js";
 /** Most one trial pays a seller (atomic USDC). */
 export const TRY_MAX_PER_CALL_ATOMIC = 50_000n;
 export const TRY_DEFAULT_PER_DAY_USDC = "3.00";
+/** TRY_MAX_PER_DAY_USDC above this refuses to start (a typo must not open the trial wallet wide). */
+export const TRY_MAX_PER_DAY_CEILING_USDC = "10.00";
+/** Validity window of every leased trial note (claims, seller slots): the protocol's maximum. */
+export const TRY_LEASE_ROUNDS = 1000;
 export const TRY_NOTE_PREFIX = "vet402-try:v1:";
 const CLAIM = `${TRY_NOTE_PREFIX}c:`;
+const SLOT = `${TRY_NOTE_PREFIX}s:`;
 const RESULT = `${TRY_NOTE_PREFIX}r:`;
 const HANDLE = `${TRY_NOTE_PREFIX}h:`;
 
@@ -73,6 +86,7 @@ export function loadTrialConfig(env: NodeJS.ProcessEnv = process.env, envFile = 
   // 0.05 is the ceiling; a lower value may be set, never a higher one.
   const perCall = perCallEnv < TRY_MAX_PER_CALL_ATOMIC ? perCallEnv : TRY_MAX_PER_CALL_ATOMIC;
   if (perCall <= 0n || perDay < perCall) throw new Error("TRY_MAX_PER_DAY_USDC must be at least the per-trial cap");
+  if (perDay > usdcToAtomic(TRY_MAX_PER_DAY_CEILING_USDC)) throw new Error(`TRY_MAX_PER_DAY_USDC must be at most ${TRY_MAX_PER_DAY_CEILING_USDC}`);
   return {
     chain: "algorand",
     address: addressFromSeed(seed),
@@ -140,9 +154,33 @@ export function countedLog(log: TrialLog): TrialLog & { trials: number } {
   return { entries, people: Math.max(0, log.people - operator), trials: entries.length - operator };
 }
 
+/** The seller host as it goes into a slot note: a hash, so the note stays short and ASCII. */
+export function slotHostKey(host: string): string {
+  return createHash("sha256").update(host.toLowerCase()).digest("hex").slice(0, 24);
+}
+
+/** Name of seller slot n for (host, UTC date "YYYY-MM-DD"). Its SHA-256 is the lease; the note is the name + ":<nonce>". */
+export function slotNote(host: string, date: string, n: number): string {
+  return `${SLOT}${slotHostKey(host)}:${date}:${n}`;
+}
+
+/** The lease for a claim or slot name. */
+export const leaseOf = (name: string) => new Uint8Array(createHash("sha256").update(name).digest()); // algokit wants a plain Uint8Array, not a Buffer
+
+/** algod's answer when a transaction reuses a (sender, lease) that is still valid. */
+export function isLeaseConflict(e: unknown): boolean {
+  return /overlapping lease/i.test(String((e as Error)?.message ?? e));
+}
+
 export interface TrialStore {
   isClaimed(keys: string[]): Promise<boolean>;
   claim(keys: string[]): Promise<void>;
+  /**
+   * Takes the first free seller slot n for (host, date), from `from` + 1 up to `max`, before any payment.
+   * Returns n, or null when every slot is taken. Two callers never get the same n (the chain store: a lease).
+   * `from` = paid tries already recorded for this host today (tries made before slots existed count too).
+   */
+  takeSellerSlot(host: string, date: string, max: number, from?: number): Promise<number | null>;
   /** Writes the result; returns its id (the chain store: the record tx). */
   record(e: TrialLogEntry): Promise<string>;
   /** Attaches the visitor's X handle to their record. "exists" if that record already has one. */
@@ -153,12 +191,23 @@ export interface TrialStore {
 /** In-process store (tests, local runs without a funded trial wallet). */
 export class MemoryTrialStore implements TrialStore {
   readonly claimed = new Set<string>();
+  readonly slots = new Set<string>();
   readonly entries: TrialLogEntry[] = [];
   async isClaimed(keys: string[]) {
     return keys.some((k) => this.claimed.has(k));
   }
   async claim(keys: string[]) {
     for (const k of keys) this.claimed.add(k);
+  }
+  async takeSellerSlot(host: string, date: string, max: number, from = 0) {
+    // No await between the check and the add: one caller at a time, like the lease on the chain.
+    for (let n = from + 1; n <= max; n++) {
+      const note = slotNote(host, date, n);
+      if (this.slots.has(note)) continue;
+      this.slots.add(note);
+      return n;
+    }
+    return null;
   }
   async record(e: TrialLogEntry) {
     const id = `MEM${this.entries.length + 1}`;
@@ -198,14 +247,14 @@ export class ChainTrialStore implements TrialStore {
   private algorand: AlgorandClient | null = null;
 
   constructor(
-    private readonly o: { networkName: NetworkName; indexerUrl: string; trial: TrialConfig; fetchImpl?: typeof fetch; timeoutMs?: number; ttlMs?: number },
+    private readonly o: { networkName: NetworkName; indexerUrl: string; trial: TrialConfig; fetchImpl?: typeof fetch; timeoutMs?: number; ttlMs?: number; algorand?: AlgorandClient },
   ) {
     this.f = o.fetchImpl ?? ((u, i) => fetch(u, i));
   }
 
   private client(): AlgorandClient {
     if (!this.algorand) {
-      this.algorand = this.o.networkName === "mainnet" ? AlgorandClient.mainNet() : AlgorandClient.testNet();
+      this.algorand = this.o.algorand ?? (this.o.networkName === "mainnet" ? AlgorandClient.mainNet() : AlgorandClient.testNet());
       this.algorand.account.fromMnemonic(this.o.trial.mnemonic);
     }
     return this.algorand;
@@ -238,15 +287,61 @@ export class ChainTrialStore implements TrialStore {
     return false;
   }
 
-  async claim(keys: string[]): Promise<void> {
-    const algorand = this.client();
+  /**
+   * A 0-ALGO self-payment leased by the hash of `name`, valid for TRY_LEASE_ROUNDS rounds. The note is `name:<nonce>`:
+   * without the nonce, two instances taking the same name in the same round build the very same transaction (same id,
+   * checked on TestNet), which the chain treats as one, and both could see it confirmed. With it, the ids differ, the
+   * lease is the same, and the chain lets only one through.
+   */
+  private leased(name: string) {
     const sender = this.o.trial.address;
-    let g = algorand.newGroup();
-    // The lease makes a second claim of the same key within ~1000 rounds fail on the chain itself, whatever instance sends it.
-    for (const k of keys) g = g.addPayment({ sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${CLAIM}${k}`), lease: new Uint8Array(createHash("sha256").update(`${CLAIM}${k}`).digest()) }); // algokit wants a plain Uint8Array, not a Buffer
-    await g.send();
+    return { sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${name}:${randomBytes(6).toString("hex")}`), lease: leaseOf(name), validityWindow: TRY_LEASE_ROUNDS };
+  }
+
+  /** The claim group (not sent). Exposed so a test can read its validity window. */
+  claimGroup(keys: string[]) {
+    let g = this.client().newGroup();
+    // The lease makes a second claim of the same key fail on the chain itself, whatever instance sends it, for as long
+    // as this transaction is valid: TRY_LEASE_ROUNDS (1000) rounds, set explicitly (algokit's default is 10 off LocalNet).
+    for (const k of keys) g = g.addPayment(this.leased(`${CLAIM}${k}`));
+    return g;
+  }
+
+  /** The slot transaction (not sent). Exposed so a test can read its validity window. */
+  slotGroup(host: string, date: string, n: number) {
+    return this.client().newGroup().addPayment(this.leased(slotNote(host, date, n)));
+  }
+
+  async claim(keys: string[]): Promise<void> {
+    await this.claimGroup(keys).send();
     for (const k of keys) this.local.add(k);
     this.cache = null;
+  }
+
+  /**
+   * Slots already on the chain for (host, date) are skipped; a slot another instance is taking right now (not yet
+   * on the indexer) is refused by its lease and the next n is tried. Any other failure throws: the caller does not pay.
+   */
+  async takeSellerSlot(host: string, date: string, max: number, from = 0): Promise<number | null> {
+    const prefix = `${SLOT}${slotHostKey(host)}:${date}:`;
+    const used = new Set<number>();
+    for (const t of await this.notes(prefix, 1)) {
+      const n = Number(Buffer.from(t.note ?? "", "base64").toString("utf8").slice(prefix.length).split(":")[0]);
+      if (Number.isInteger(n)) used.add(n);
+    }
+    for (let n = from + 1; n <= max; n++) {
+      const note = slotNote(host, date, n);
+      if (used.has(n) || this.local.has(note)) continue;
+      try {
+        await this.slotGroup(host, date, n).send();
+      } catch (e) {
+        if (isLeaseConflict(e)) continue;
+        throw e;
+      }
+      this.local.add(note);
+      return n;
+    }
+    return null;
   }
 
   async record(e: TrialLogEntry): Promise<string> {
@@ -298,7 +393,9 @@ export class ChainTrialStore implements TrialStore {
         }
       }
       entries.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
-      return { entries, people: new Set(claims.map((t) => t.note)).size };
+      // One person = one claim key ("ip:<hash>"), whether or not the note carries a nonce after it.
+      const keyOf = (t: IdxTxn) => Buffer.from(t.note ?? "", "base64").toString("utf8").slice(CLAIM.length).split(":").slice(0, 2).join(":");
+      return { entries, people: new Set(claims.map(keyOf)).size };
     })();
     this.cache = { at: now, log };
     log.catch(() => {

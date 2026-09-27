@@ -954,3 +954,18 @@ test("W5: the /try page tags list rows the free try cannot buy in plain words", 
   assert.match(page, /Search the sellers vet402 has paid/);
   assert.doesNotMatch(page, /Search the sellers vet402 has bought from/);
 });
+
+/* ---------- W1: the per-seller daily cap holds under simultaneous requests ---------- */
+
+test("W1: five simultaneous free tries of one seller pay at most 3 (a slot per (host, date) is taken before paying)", async () => {
+  const { app, seen, store } = setup();
+  const res = await Promise.all([1, 2, 3, 4, 5].map((i) => run(app, { url: `${HOST}/honest` }, `203.0.113.${60 + i}`)));
+  const codes = res.map((r) => r.status).sort();
+  assert.deepEqual(codes, [200, 200, 200, 429, 429]);
+  assert.equal(seen.trialPaid.length, 3);
+  const refused = await Promise.all(res.filter((r) => r.status === 429).map((r) => r.json() as Promise<{ error: string; used: boolean }>));
+  assert.deepEqual(refused.map((j) => [j.error, j.used]), [["seller_tried_enough", false], ["seller_tried_enough", false]]);
+  // A refused visitor's try is not used: the IPs refused for a full seller hold no claim.
+  assert.equal(store.claimed.size, 3);
+  assert.equal(store.slots.size, 3);
+});

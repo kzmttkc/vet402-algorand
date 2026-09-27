@@ -454,12 +454,14 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
       listedPayTo = recordedPayTo([census, daily]).get(url);
       if (!listedPayTo) return c.json({ error: "not_listed", detail: "The free try covers sellers vet402 paid successfully last time, with a plain GET: pick one marked \"free try\" in the list. Any other URL can be checked for free or bought with your own wallet.", used: false }, 422);
     }
+    const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
+    const sellerFull = () => c.json({ error: "seller_tried_enough", detail: `This seller has had ${TRY_PER_SELLER_PER_DAY} free tries today. Pick another one, or come back tomorrow (UTC).`, used: false }, 429);
+    /** Paid tries recorded for this host today (the slot count starts after them, so tries made before slots existed count). */
+    let recordedToday: number;
     try {
-      const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
       const log = await trial.store.log();
-      if (log.entries.filter((e) => e.host === t.url.host && e.at.slice(0, 10) === today).length >= TRY_PER_SELLER_PER_DAY) {
-        return c.json({ error: "seller_tried_enough", detail: `This seller has had ${TRY_PER_SELLER_PER_DAY} free tries today. Pick another one, or come back tomorrow (UTC).` }, 429);
-      }
+      recordedToday = log.entries.filter((e) => e.host === t.url.host && e.at.slice(0, 10) === today).length;
+      if (recordedToday >= TRY_PER_SELLER_PER_DAY) return sellerFull();
     } catch {
       return c.json({ error: "cannot_check", detail: "vet402 cannot read today's free tries, so it will not pay now. Try again shortly." }, 503);
     }
@@ -488,6 +490,16 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
         return c.json({ error: "not_buyable", reason: "payto_changed", detail: "This seller now asks to be paid to a different address than when vet402 bought from it, so the free try does not pay it.", used: false }, 422);
       }
       if (q.sellerAtomic > h.remainingAtomic) return c.json({ error: "daily_cap_reached", detail: "Today's free tries are used up. Come back tomorrow (UTC)." }, 503);
+      // The per-seller cap under simultaneous requests: slot n of (host, today) is taken on the chain before paying,
+      // and the chain refuses a second taker of the same slot. Taken before the visitor's claim, so a full seller
+      // does not use up their try; if the claim then fails, the slot stays used (one payment fewer, never one more).
+      let slot: number | null;
+      try {
+        slot = await trial.store.takeSellerSlot(t.url.host, today, TRY_PER_SELLER_PER_DAY, recordedToday);
+      } catch (e) {
+        return c.json({ error: "cannot_record", detail: `vet402 could not reserve this seller's free try, so it did not pay (${String((e as Error).message ?? e).slice(0, 120)}).`, used: false }, 503);
+      }
+      if (slot === null) return sellerFull();
       try {
         await trial.store.claim(keys);
       } catch (e) {
