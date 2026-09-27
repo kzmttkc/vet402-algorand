@@ -38,6 +38,7 @@ import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { registerBuy } from "./buy.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
+import { issueCertificate, makeCertAnchor, registerCert, type CertAnchor, type CertReaderOptions } from "./cert.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -68,6 +69,7 @@ export const AUDIT_OUTPUT_EXAMPLE = {
     },
   ],
   plan: { found: 3, checking: 3, paying: 2, plannedSpendUsdc: "0.020000", auditBudgetUsdc: "0.400000", notChecked: { total: 0, counts: {}, items: [] } },
+  certificateUrl: "https://vet402-algorand.vercel.app/cert/TXID_CUSTOMER...",
 };
 
 export interface AppDeps {
@@ -80,6 +82,8 @@ export interface AppDeps {
   activity?: { get(): Promise<ActivityReport> };
   /** Where /v1/audit reads a seller's resources. Default: the Bazaar feed at cfg.bazaarUrl (cached). */
   catalog?: Catalog;
+  /** Delivery certificates (cert.ts): anchor written after each paid audit, free GET /cert/:id. Omitted = off. */
+  cert?: { anchor: CertAnchor; reader: CertReaderOptions };
 }
 
 /**
@@ -292,6 +296,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     });
   }
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
+  if (deps.cert) registerCert(app, deps.cert.reader); // free: GET /cert/:id, /cert/:id/badge.svg (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
   registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
   registerBuy(app, cfg, resourceServer, { payTo: deps.payTo, guard: deps.guard, probeDeps, catalog }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
@@ -373,7 +378,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     const planOut = { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note };
     try {
       const run = await runAudit(plan, { cfg, guard: deps.guard, probeDeps, customerTx: customerPayment.transaction, maxPayments, deadlineMs: cfg.auditDeadlineMs });
-      return c.json({ seller: plan.seller, network: cfg.network, customerPayment, summary: run.summary, results: run.results, plan: planOut }, 200);
+      const cert = deps.cert ? await issueCertificate(deps.cert.anchor, cfg.networkName, plan, run, customerPayment.transaction, new URL(c.req.url).origin) : {};
+      return c.json({ seller: plan.seller, network: cfg.network, customerPayment, summary: run.summary, results: run.results, plan: planOut, ...cert }, 200);
     } catch (e) {
       // The customer has paid: always answer.
       return c.json({ seller: plan.seller, network: cfg.network, customerPayment, error: "audit_error", detail: String((e as Error).message ?? e).slice(0, 200), plan: planOut }, 200);
@@ -414,7 +420,11 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
   const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (catalogUrls.length && !cfg.allowPrivateTargets) throw new Error("AUDIT_CATALOG_URLS is for the local TestNet run only (needs ALLOW_PRIVATE_TARGETS=1)");
   const catalog = catalogUrls.length ? new UrlListCatalog(catalogUrls) : undefined;
-  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog }) };
+  const cert = {
+    anchor: makeCertAnchor(cfg.networkName, payer.secretKeyB64),
+    reader: { networkName: cfg.networkName, indexerUrl: cfg.indexerUrl, asaId: cfg.usdcAsaId, payTo, payer: payer.address, auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc) },
+  };
+  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog, cert }) };
 }
 
 // Vercel entry (zero-config Hono): build lazily so importing this module has no side effects.

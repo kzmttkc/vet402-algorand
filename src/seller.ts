@@ -25,6 +25,7 @@ import {
   type DisplayClass,
   UNCLEAR_NOTE,
 } from "./board.js";
+import { certificateCtaHtml } from "./cert.js";
 
 /** Public base URL used in the badge Markdown. */
 export const SELLER_PAGE_BASE = "https://vet402-algorand.vercel.app";
@@ -225,8 +226,7 @@ ul{list-style:none;padding:0;margin:0}
 ${summary}
 ${
   o.auditLinkEnabled
-    ? `<div class="box">
-<p>Check this seller again now: <code>GET /v1/audit?seller=${h}</code> (${esc(o.auditPriceUsdc)} USDC). Your payment settles first; only then does vet402 pay the seller.</p>
+    ? `${certificateCtaHtml(v.host, o.auditPriceUsdc).replace(/<\/div>$/, "")}
 <p><small>No USDC on Algorand? In the Pera Wallet app you can buy USDC with a card: <a href="${PERA_URL}" rel="noopener">perawallet.app</a></small></p>
 </div>
 `
