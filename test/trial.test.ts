@@ -123,3 +123,18 @@ test("W1: the memory store gives each slot once, per host and per date", async (
   assert.equal(await m.takeSellerSlot("b.example", "2026-09-27", 3), 1);
   assert.equal(await m.takeSellerSlot("a.example", "2026-09-28", 3), 1);
 });
+
+test("people on /try/log counts one per claim key, for claim notes written before (no nonce) and after (with nonce) this change", async () => {
+  const cfg = trialCfg()!;
+  const note = (s: string) => Buffer.from(s).toString("base64");
+  const tx = (id: string, n: string) => ({ id, sender: cfg.address, "round-time": 1, "tx-type": "pay", note: note(n), "payment-transaction": { receiver: cfg.address, amount: 0 } });
+  const f = (async (url: string) => {
+    const p = Buffer.from(new URL(url).searchParams.get("note-prefix")!, "base64").toString("utf8");
+    const all = [tx("A", "vet402-try:v1:c:ip:aaaa"), tx("B", "vet402-try:v1:c:ip:bbbb:0123456789ab"), tx("C", "vet402-try:v1:c:ip:bbbb:ba9876543210"), tx("D", "vet402-try:v1:c:ip:cccc:0123456789ab")];
+    return Response.json({ transactions: all.filter((t) => Buffer.from(t.note, "base64").toString("utf8").startsWith(p)) });
+  }) as unknown as typeof fetch;
+  const log = await chainStore(cfg, { fetchImpl: f }).log();
+  assert.equal(log.people, 3);
+  assert.equal(await chainStore(cfg, { fetchImpl: f }).isClaimed(["ip:bbbb"]), true);
+  assert.equal(await chainStore(cfg, { fetchImpl: f }).isClaimed(["ip:dddd"]), false);
+});
