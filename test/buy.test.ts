@@ -683,3 +683,32 @@ test("/activity: the fee rule is exact (payment - fee == seller payment pairs; o
   assert.equal(no.rows.length, 0);
   assert.deepEqual(no.unmatchedPayouts.map((p) => p.tx), ["O"]);
 });
+
+test("/activity A1: a small payment slipped between a check and its seller payment does not take it (+1 customer)", async () => {
+  const r = await ledgerOf(
+    [["CHECK1", BOB, 50_000, 100], ["X1", MALLORY, 20_000, 101]],
+    [["OUT1", 10_000, 103]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["CHECK1", "check", "OUT1"]]);
+  assert.deepEqual(r.notCounted.map((n) => [n.tx, n.reason]), [["X1", "below_price"]]);
+  assert.equal(r.totals.customers.payments, 1);
+});
+
+test("/activity A2: a small payment slipped into an audit does not take one of its seller payments (+1 customer)", async () => {
+  const r = await ledgerOf(
+    [["AUDIT1", BOB, 500_000, 100], ["X2", MALLORY, 20_000, 101]],
+    [["OUT1", 10_000, 103], ["OUT2", 10_000, 104]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerPayments.map((p) => p.tx)]), [["AUDIT1", "audit", ["OUT1", "OUT2"]]]);
+  assert.deepEqual(r.notCounted.map((n) => n.tx), ["X2"]);
+  assert.equal(r.totals.customers.payments, 1);
+});
+
+test("/activity: between two purchases, a seller payment goes to the one whose (payment - fee) equals it", async () => {
+  const r = await ledgerOf(
+    [["BUY1", ALICE, 15_000, 100], ["X3", MALLORY, 40_000, 101]],
+    [["OUT1", 10_000, 103]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["BUY1", "buy", "OUT1"]]);
+  assert.deepEqual(r.notCounted.map((n) => n.tx), ["X3"]);
+});

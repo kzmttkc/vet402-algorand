@@ -27,6 +27,8 @@ import { sameNetwork, normalizeNetwork } from "./declaration.js";
 export const VET402_DEFAULT_URL = "https://vet402-algorand.vercel.app";
 /** vet402's published price per check. The client refuses to pay more unless raised. */
 export const VET402_DEFAULT_MAX_USDC = "0.05";
+/** Most one purchase through vet402 (/v1/buy: seller price + fee) may cost by default. */
+export const VET402_DEFAULT_MAX_BUY_USDC = "0.10";
 
 export type CheckNetwork = "mainnet" | "testnet";
 
@@ -128,18 +130,20 @@ export function makeCheckClient(scheme: SchemeNetworkClient, network: CheckNetwo
  * Pay vet402 to check `targetUrl` and return its verdict. vet402 pays the target
  * itself only after your payment has settled, and answers with both tx ids.
  */
-export async function checkBeforeBuy(targetUrl: string, opts: CheckOptions): Promise<CheckResult> {
-  if (!targetUrl || typeof targetUrl !== "string") throw new CheckError("targetUrl is required");
+/** The paying scheme for `opts` (injected in tests, else ExactAvmScheme with the given key). */
+function payingScheme(opts: CheckOptions): { scheme: SchemeNetworkClient; network: CheckNetwork } {
   const network = opts.network ?? "mainnet";
   if (!(network in NETWORKS)) throw new CheckError(`network must be mainnet or testnet, got ${String(network)}`);
+  if (opts.scheme) return { scheme: opts.scheme, network };
+  const sk = opts.secretKey?.trim() || (opts.mnemonic?.trim() ? secretKeyB64FromMnemonic(opts.mnemonic.trim()) : "");
+  if (!sk) throw new CheckError("a paying key is required: pass mnemonic or secretKey");
+  const algorandClient = network === "testnet" ? AlgorandClient.testNet() : AlgorandClient.mainNet();
+  return { scheme: new ExactAvmScheme(toClientAvmSigner(sk), { algorandClient }), network };
+}
 
-  let scheme = opts.scheme;
-  if (!scheme) {
-    const sk = opts.secretKey?.trim() || (opts.mnemonic?.trim() ? secretKeyB64FromMnemonic(opts.mnemonic.trim()) : "");
-    if (!sk) throw new CheckError("a paying key is required: pass mnemonic or secretKey");
-    const algorandClient = network === "testnet" ? AlgorandClient.testNet() : AlgorandClient.mainNet();
-    scheme = new ExactAvmScheme(toClientAvmSigner(sk), { algorandClient });
-  }
+export async function checkBeforeBuy(targetUrl: string, opts: CheckOptions): Promise<CheckResult> {
+  if (!targetUrl || typeof targetUrl !== "string") throw new CheckError("targetUrl is required");
+  const { scheme, network } = payingScheme(opts);
 
   const maxAtomic = usdcToAtomic(opts.maxPriceUsdc ?? VET402_DEFAULT_MAX_USDC);
   const { client, state } = makeCheckClient(scheme, network, maxAtomic);
@@ -185,4 +189,119 @@ export async function checkBeforeBuy(targetUrl: string, opts: CheckOptions): Pro
     }
   }
   return result;
+}
+
+export function buyUrl(vet402Url: string, targetUrl: string): string {
+  return `${vet402Url.replace(/\/+$/, "")}/v1/buy?url=${encodeURIComponent(targetUrl)}`;
+}
+
+export interface BuyOptions extends CheckOptions {
+  /** Request to the seller: GET (default) or POST with a JSON body. */
+  method?: "GET" | "POST";
+  /** POST body: a JSON string, or a value that is serialised with JSON.stringify. */
+  body?: unknown;
+  /** Most this purchase may cost in total (seller price + vet402's fee), in USDC. Default "0.10". */
+  maxPriceUsdc?: string;
+}
+
+export interface BuyResult {
+  /** false = nothing was paid (vet402 refused for free, or the price was above maxPriceUsdc). */
+  paid: boolean;
+  /** HTTP status from vet402 (of the free quote when paid is false). */
+  httpStatus: number;
+  /** The free quote from vet402's unpaid 402 (`buy`: seller price, fee, total). */
+  quote?: { total?: { amountAtomic?: string; usdc?: string }; sellerPrice?: { usdc?: string; payTo?: string }; fee?: { usdc?: string }; [k: string]: unknown };
+  /** Why nothing was paid (vet402's refusal body, or `price_above_max`). */
+  refusal?: { reason?: string; detail?: string; [k: string]: unknown };
+  verdict?: string;
+  reason?: string;
+  customerTx?: string;
+  sellerTx?: string;
+  sellerStatus?: string;
+  contentType?: string | null;
+  /** The seller's body as vet402 returned it: text for text/JSON types, else base64. */
+  body?: string;
+  bodyEncoding?: "utf8" | "base64";
+}
+
+const isTextType = (ct: string | null) => !ct || /^(text\/|application\/(json|[a-z0-9.+-]*\+json|xml|javascript))/i.test(ct);
+
+/**
+ * Buy an x402 resource through vet402 (GET|POST /v1/buy): read the free price first, pay only if
+ * the total (seller price + fee) is within `maxPriceUsdc`, and return the seller's body as vet402
+ * delivered it, with vet402's verdict and both tx ids (x-vet402-* headers). No refunds.
+ */
+export async function buyThrough(targetUrl: string, opts: BuyOptions): Promise<BuyResult> {
+  if (!targetUrl || typeof targetUrl !== "string") throw new CheckError("targetUrl is required");
+  const { scheme, network } = payingScheme(opts);
+  const method = opts.method ?? "GET";
+  if (method !== "GET" && method !== "POST") throw new CheckError(`method must be GET or POST, got ${String(method)}`);
+  const body = method === "POST" ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body ?? {})) : undefined;
+  const init = (): RequestInit => ({ method, ...(body !== undefined ? { body, headers: { "content-type": "application/json" } } : {}) });
+  const url = buyUrl(opts.vet402Url ?? VET402_DEFAULT_URL, targetUrl);
+  const baseFetch = opts.fetchImpl ?? fetch;
+  const maxAtomic = usdcToAtomic(opts.maxPriceUsdc ?? VET402_DEFAULT_MAX_BUY_USDC);
+
+  // 1) Free quote: nothing is signed.
+  let free: Response;
+  try {
+    free = await baseFetch(url, init());
+  } catch (e) {
+    throw new CheckError(`vet402 could not be reached: ${(e as Error).message ?? String(e)}`);
+  }
+  const freeText = await free.text();
+  let freeBody: Record<string, unknown> = {};
+  try {
+    freeBody = freeText ? (JSON.parse(freeText) as Record<string, unknown>) : {};
+  } catch {
+    /* keep empty */
+  }
+  if (free.status !== 402) {
+    return { paid: false, httpStatus: free.status, refusal: { reason: String(freeBody.reason ?? freeBody.error ?? `HTTP ${free.status}`), detail: freeBody.detail as string | undefined } };
+  }
+  const quote = freeBody.buy as BuyResult["quote"];
+  const totalRaw = quote?.total?.amountAtomic;
+  if (!totalRaw || !/^\d+$/.test(totalRaw)) throw new CheckError("vet402's 402 has no buy.total price");
+  const total = BigInt(totalRaw);
+  if (total > maxAtomic) {
+    return { paid: false, httpStatus: 402, quote, refusal: { reason: "price_above_max", detail: `total ${quote?.total?.usdc} USDC is above maxPriceUsdc ${opts.maxPriceUsdc ?? VET402_DEFAULT_MAX_BUY_USDC}` } };
+  }
+
+  // 2) Pay at most the quoted total (a higher price at payment time is not paid).
+  const { client, state } = makeCheckClient(scheme, network, total);
+  let res: Response;
+  try {
+    res = await wrapFetchWithPayment(baseFetch, client)(url, init());
+  } catch (e) {
+    throw new CheckError(`vet402 purchase failed before an answer: ${(e as Error).message ?? String(e)}`, undefined, state.signed > 0);
+  }
+  if (res.status === 402) {
+    throw new CheckError("vet402 did not accept the payment (the price may have changed; ask again)", 402, state.signed > 0);
+  }
+  const h = (n: string) => res.headers.get(n) ?? undefined;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const contentType = res.headers.get("content-type");
+  const text = isTextType(contentType);
+  let customerTx = h("x-vet402-customer-tx");
+  if (!customerTx) {
+    try {
+      const s = new x402HTTPClient(client).getPaymentSettleResponse((n) => res.headers.get(n));
+      if (s.success) customerTx = s.transaction;
+    } catch {
+      /* no settle header */
+    }
+  }
+  return {
+    paid: true,
+    httpStatus: res.status,
+    quote,
+    verdict: h("x-vet402-verdict"),
+    reason: h("x-vet402-reason"),
+    customerTx,
+    sellerTx: h("x-vet402-seller-tx"),
+    sellerStatus: h("x-vet402-seller-status"),
+    contentType,
+    body: text ? bytes.toString("utf8") : bytes.toString("base64"),
+    bodyEncoding: text ? "utf8" : "base64",
+  };
 }

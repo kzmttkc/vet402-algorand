@@ -130,11 +130,12 @@ On `/activity`, a purchase is one customer payment (seller price + fee) paired w
 
 ## Use from an agent (MCP)
 
-An agent that pays Algorand x402 endpoints can ask vet402 first. `mcp/` is a stdio MCP server with two tools:
+An agent that pays Algorand x402 endpoints can ask vet402 first. `mcp/` is a stdio MCP server with three tools:
 
 | tool | input | cost |
 |---|---|---|
 | `vet402_check` | `{ url }` | **pays 0.05 USDC** per call to vet402 from the wallet in `ALGORAND_MNEMONIC`. Returns the verdict, the reason, both tx ids and the delivery summary |
+| `vet402_buy` | `{ url, method?, body? }` | **pays the seller's price + 0.005 USDC** through `/v1/buy`, only after reading the price for free and only if the total is at most `VET402_MAX_BUY_USDC` (default 0.10). Returns the seller's body, the verdict, the reason and both tx ids. No refunds |
 | `algorand_x402_endpoints` | `{ query?, network?, limit? }` | free. Lists Algorand x402 endpoints from the Bazaar feed. All pages are read, because one page holds at most 200 of the 2,000+ entries |
 
 ```bash
@@ -244,7 +245,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 `GET /activity` (HTML) and `GET /activity.json` list every x402 payment vet402 has received, each next to the payment vet402 then made to the seller. Both are free (mounted before the payment middleware), read live from the Algorand indexer, and cached for 60 s (`Cache-Control: public, max-age=60, s-maxage=60`). Every tx id links to an explorer (allo.info on MainNet), so each row can be checked on-chain. If the indexer cannot be read, the routes answer 503; they never show an empty ledger in its place.
 
-- **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON. A payment below the check price counts only as (a) a `/v1/verdict` lookup, when it is exactly the verdict price (`kind: "verdict"`; it never takes a seller payment), or (b) a `/v1/buy` purchase (`kind: "buy"`), when a seller payment pairs with it and (payment − `BUY_FEE_USDC`) ≥ that seller payment. Any other small payment, including one no seller payment follows, is `below_price` and not a customer, so small deposits cannot inflate the customer count.
+- **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON. A payment below the check price counts only as (a) a `/v1/verdict` lookup, when it is exactly the verdict price (`kind: "verdict"`; it never takes a seller payment), or (b) a `/v1/buy` purchase (`kind: "buy"`), when a seller payment pairs with it and (payment − `BUY_FEE_USDC`) ≥ that seller payment. Any other small payment, including one no seller payment follows, is `below_price` and not a customer, so small deposits cannot inflate the customer count. When several customer payments could take a seller payment, a check or an audit wins over a purchase, and a purchase whose (payment − fee) equals the seller payment wins over one it only covers, so a small payment slipped in between cannot take another customer's seller payment.
 - **Operator test**: the customer is vet402's own `payTo` or payer wallet (exact address match). These rows are marked `operator test` and are left out of the customer totals. The two MainNet checks in the run record below are operator tests.
 - **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room. A check or a purchase (`/v1/buy`) has room for one seller payment (within 300 s); a lookup (`/v1/verdict`) has none. A seller audit (a customer payment of at least the audit price) has room for up to `AUDIT_MAX_TARGETS` (within 900 s), because one audit buys several resources. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
 - **Audits are one row.** An audit is one customer payment: it is counted once in the customer totals, marked `audit`, and its seller payments are listed under it (`sellerPayments[]` in the JSON; `seller`/`sellerTx` repeat the first one). The headline says how many seller payments were inside audits (`totals.audits`), so several seller payments per audit do not read as several customers.
@@ -290,6 +291,10 @@ MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ
 `OZZH2TRA3MANN55OTTWOXVBDHRRYIJ52IBXEPVBBE4BNQUOR6CCQ` (04:42 UTC, 0.01 USDC to canix402) had no customer payment in front of it. An unpaid `HEAD /v1/check` skipped the payment check and reached the handler, which paid the seller. Fixed at 05:28 UTC in 3d1377f: HEAD is priced like GET, and the handler refuses without a settled customer payment. It shows on `/activity` under unmatched seller payments.
 
 ## TestNet run record
+
+### 2026-09-27 JST: `vet402_buy` through the MCP server (stdio)
+
+Local vet402 and test sellers; an MCP client started `mcp/src/index.ts` with the TestNet client wallet and called `vet402_buy {url: http://localhost:4131/honest}`. Free price 0.01 + 0.005 = 0.015 USDC (within `VET402_MAX_BUY_USDC` 0.10), then paid: `ALLOW delivered`, body `{"forecast":"sunny","temperature":21,"city":"Tokyo"}`, customer → vet402 `7NGHDKTBN4CZH5SQTPWMYAFA3QIRUC7LL3WSXAGGXPRTH63564EQ` (round 67711416), vet402 → seller `GNDFRAX4AAEWGEJQ6CZP3SYCPXPYPOPH5MMVENCKMKJKPLGQHOVA` (round 67711418). `/activity.json`: `kind: "buy"`, 0.015 paired with 0.01.
 
 ### 2026-09-27 19:4x JST: `/v1/buy` after review fixes (reservation before settle, 2xx as 200, v2 only)
 

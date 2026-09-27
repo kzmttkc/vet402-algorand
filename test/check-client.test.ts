@@ -161,3 +161,101 @@ test("invalid maxPriceUsdc is rejected before any request", async () => {
   await assert.rejects(checkBeforeBuy(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, maxPriceUsdc: "abc" }), /invalid USDC amount/);
   assert.equal(f.calls.urls.length, 0);
 });
+
+// ---- buyThrough (/v1/buy) ------------------------------------------------------------------------
+
+import { buyThrough, buyUrl } from "../src/check-client.js";
+
+function buyFake(opts: { total?: string; unpaidStatus?: number; unpaidBody?: unknown; paidStatus?: number; paidBody?: Uint8Array<ArrayBuffer> | string; paidHeaders?: Record<string, string>; priceAtPayment?: string } = {}) {
+  const calls = { requests: [] as { url: string; method: string; body: string; signed: boolean }[], payloads: 0, amounts: [] as string[] };
+  const total = opts.total ?? "15000";
+  const pr = (amount: string) => ({
+    x402Version: 2,
+    resource: { url: buyUrl(VET402, TARGET), description: "vet402 buy", mimeType: "application/octet-stream" },
+    accepts: [{ scheme: "exact", network: ALGORAND_MAINNET_CAIP2, asset: String(USDC_MAINNET_ASA_ID), amount, payTo: PAY_TO, maxTimeoutSeconds: 60, extra: { sellerAmount: "10000", sellerPayTo: "S", buyFee: "5000" } }],
+  });
+  const scheme: SchemeNetworkClient = {
+    scheme: "exact",
+    createPaymentPayload: async (x402Version, req) => {
+      calls.payloads += 1;
+      calls.amounts.push(String(req.amount));
+      return { x402Version, payload: { paymentGroup: ["FAKE"], paymentIndex: 0 } };
+    },
+  };
+  let unpaidSeen = 0;
+  const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const req = input instanceof Request ? input : new Request(input, init);
+    const sig = req.headers.get("PAYMENT-SIGNATURE");
+    calls.requests.push({ url: req.url, method: req.method, body: await req.clone().text(), signed: !!sig });
+    if (!sig) {
+      unpaidSeen++;
+      if (opts.unpaidStatus && opts.unpaidStatus !== 402) return Response.json(opts.unpaidBody ?? {}, { status: opts.unpaidStatus });
+      const amount = unpaidSeen > 1 && opts.priceAtPayment ? opts.priceAtPayment : total;
+      const body = { buy: { total: { amountAtomic: amount, usdc: `0.${amount.padStart(6, "0")}` }, sellerPrice: { usdc: "0.010000" }, fee: { usdc: "0.005000" }, refund: "none" } };
+      return new Response(JSON.stringify(body), { status: 402, headers: { "PAYMENT-REQUIRED": b64(pr(amount)), "content-type": "application/json" } });
+    }
+    const b = opts.paidBody ?? '{ "forecast":"sunny" }\n';
+    return new Response(b, {
+      status: opts.paidStatus ?? 200,
+      headers: {
+        "content-type": "application/json",
+        "x-vet402-verdict": "ALLOW",
+        "x-vet402-reason": "delivered",
+        "x-vet402-customer-tx": "TX_CUSTOMER",
+        "x-vet402-seller-tx": "TX_SELLER",
+        "x-vet402-seller-status": "200",
+        ...(opts.paidHeaders ?? {}),
+      },
+    });
+  }) as typeof fetch;
+  return { scheme, fetchImpl, calls };
+}
+
+test("buyThrough: free price first, pays exactly the quoted total once, returns the body and both tx ids", async () => {
+  const f = buyFake();
+  const r = await buyThrough(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, vet402Url: VET402 });
+  assert.equal(r.paid, true);
+  assert.equal(r.httpStatus, 200);
+  assert.equal(r.body, '{ "forecast":"sunny" }\n');
+  assert.equal(r.bodyEncoding, "utf8");
+  assert.deepEqual([r.verdict, r.reason, r.customerTx, r.sellerTx], ["ALLOW", "delivered", "TX_CUSTOMER", "TX_SELLER"]);
+  assert.equal(r.quote?.total?.amountAtomic, "15000");
+  assert.equal(f.calls.payloads, 1);
+  assert.deepEqual(f.calls.amounts, ["15000"]);
+  assert.equal(f.calls.requests[0].signed, false, "the first request is the free price read");
+  assert.equal(f.calls.requests[0].url, `${VET402}/v1/buy?url=${encodeURIComponent(TARGET)}`);
+});
+
+test("buyThrough: a total above maxPriceUsdc (default 0.10) is not paid; the price is returned", async () => {
+  const f = buyFake({ total: "105000" });
+  const r = await buyThrough(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, vet402Url: VET402 });
+  assert.equal(r.paid, false);
+  assert.equal(r.refusal?.reason, "price_above_max");
+  assert.equal(r.quote?.total?.amountAtomic, "105000");
+  assert.equal(f.calls.payloads, 0);
+  assert.equal(f.calls.requests.length, 1);
+  const raised = buyFake({ total: "105000" });
+  assert.equal((await buyThrough(TARGET, { scheme: raised.scheme, fetchImpl: raised.fetchImpl, vet402Url: VET402, maxPriceUsdc: "0.2" })).paid, true);
+});
+
+test("buyThrough: vet402's free refusal is returned unpaid", async () => {
+  const f = buyFake({ unpaidStatus: 422, unpaidBody: { verdict: "REFUSE", reason: "price_over_cap", detail: "seller price 0.5", charged: false } });
+  const r = await buyThrough(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, vet402Url: VET402 });
+  assert.deepEqual([r.paid, r.httpStatus, r.refusal?.reason], [false, 422, "price_over_cap"]);
+  assert.equal(f.calls.payloads, 0);
+});
+
+test("buyThrough: a price raised between the free read and the payment is not signed", async () => {
+  const f = buyFake({ total: "15000", priceAtPayment: "16000" });
+  await assert.rejects(buyThrough(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, vet402Url: VET402 }), CheckError);
+  assert.equal(f.calls.payloads, 0);
+});
+
+test("buyThrough: POST sends the JSON body; binary bodies come back as base64", async () => {
+  const bin = new Uint8Array([0, 255, 1, 2]);
+  const f = buyFake({ paidBody: bin, paidHeaders: { "content-type": "application/octet-stream" } });
+  const r = await buyThrough(TARGET, { scheme: f.scheme, fetchImpl: f.fetchImpl, vet402Url: VET402, method: "POST", body: { city: "Tokyo" } });
+  assert.deepEqual(f.calls.requests.map((q) => [q.method, q.body]), [["POST", '{"city":"Tokyo"}'], ["POST", '{"city":"Tokyo"}'], ["POST", '{"city":"Tokyo"}']]);
+  assert.equal(r.bodyEncoding, "base64");
+  assert.deepEqual(Buffer.from(r.body!, "base64"), Buffer.from(bin));
+});

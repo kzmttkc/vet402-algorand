@@ -5,6 +5,7 @@ A stdio MCP server that lets an agent check an x402 endpoint with vet402 before 
 | tool | input | cost | returns |
 |---|---|---|---|
 | `vet402_check` | `{ url }` | **0.05 USDC per call**, paid on Algorand from `ALGORAND_MNEMONIC` | `ALLOW`/`REFUSE`, reason, tx id of your payment to vet402, tx id of vet402's payment to the seller, delivery summary |
+| `vet402_buy` | `{ url, method?: "GET"\|"POST", body? }` | **the seller's price + 0.005 USDC**, paid on Algorand from `ALGORAND_MNEMONIC`, only after a free price read and only up to `VET402_MAX_BUY_USDC` | the seller's body as delivered, `ALLOW`/`REFUSE` and reason (`x-vet402-verdict`), tx id of your payment to vet402, tx id of vet402's payment to the seller. No refunds; above the limit, nothing is paid and the price is returned |
 | `algorand_x402_endpoints` | `{ query?, network?: "mainnet"\|"testnet"\|"any", limit? }` | free | Algorand x402 endpoints from the Bazaar feed (`facilitator.goplausible.xyz`), most-settled first |
 
 vet402 pays the seller only after your payment has settled. Requests vet402 refuses up front (invalid URL, daily cap reached) come back as `REFUSE` without charging you.
@@ -34,10 +35,11 @@ cd mcp && npm ci
 
 | env | default | notes |
 |---|---|---|
-| `ALGORAND_MNEMONIC` | none | required for `vet402_check`. Without it the tool returns an error and pays nothing. Keep it in the client config's `env`, not on a command line |
+| `ALGORAND_MNEMONIC` | none | required for `vet402_check` and `vet402_buy`. Without it the tool returns an error and pays nothing. Keep it in the client config's `env`, not on a command line |
 | `VET402_NETWORK` | `mainnet` | `mainnet` or `testnet` |
 | `VET402_URL` | `https://vet402-algorand.vercel.app` | vet402 base URL |
-| `VET402_MAX_PRICE_USDC` | `0.05` | the most one call pays vet402. A higher price is refused before signing |
+| `VET402_MAX_PRICE_USDC` | `0.05` | the most one `vet402_check` call pays vet402. A higher price is refused before signing |
+| `VET402_MAX_BUY_USDC` | `0.10` | the most one `vet402_buy` call pays in total (seller price + 0.005 fee). Above it nothing is paid and the price is returned; a price raised between the free read and the payment is not signed |
 | `BAZAAR_URL` | `https://facilitator.goplausible.xyz/discovery/resources` | discovery feed |
 
 The paying wallet needs USDC (ASA 31566704 on MainNet, 10458941 on TestNet). Fees are covered by the facilitator.
