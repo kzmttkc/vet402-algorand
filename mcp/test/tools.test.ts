@@ -96,7 +96,7 @@ const VET = "https://vet402.test";
 /** A throwaway wallet made for this test run (never funded). */
 const THROWAWAY = mnemonicFromSeed(new Uint8Array(randomBytes(32)));
 
-function buyVet402(opts: { total?: string; refuse?: { status: number; body: unknown } } = {}) {
+function buyVet402(opts: { total?: string; refuse?: { status: number; body: unknown }; brokenAnswer?: boolean } = {}) {
   const calls = { free: 0, paid: 0, payloads: 0 };
   const total = opts.total ?? "15000";
   const pr = {
@@ -122,7 +122,12 @@ function buyVet402(opts: { total?: string; refuse?: { status: number; body: unkn
       });
     }
     calls.paid++;
-    return new Response('{"forecast":"sunny"}', {
+    const broken = new ReadableStream<Uint8Array>({
+      start(ctl) {
+        ctl.error(new Error("connection reset"));
+      },
+    });
+    return new Response(opts.brokenAnswer ? broken : '{"forecast":"sunny"}', {
       status: 200,
       headers: { "content-type": "application/json", "x-vet402-verdict": "ALLOW", "x-vet402-reason": "delivered", "x-vet402-customer-tx": "TX_C", "x-vet402-seller-tx": "TX_S" },
     });
@@ -175,4 +180,13 @@ test("vet402_buy without ALGORAND_MNEMONIC: isError, nothing requested", async (
   const r = await runBuy({ url: "https://seller.example/x" }, {}, { fetchImpl: neverFetch });
   assert.equal(r.isError, true);
   assert.match(r.content[0].text, /ALGORAND_MNEMONIC is not set\. vet402_buy pays the seller's price \+ 0\.005 USDC/);
+});
+
+test("vet402_buy: an answer that cannot be read after paying says a payment was signed (not 'Nothing was paid')", async () => {
+  const v = buyVet402({ brokenAnswer: true });
+  const r = await runBuy({ url: "https://seller.example/x" }, buyEnv(), { fetchImpl: v.fetchImpl, scheme: v.scheme });
+  assert.equal(r.isError, true);
+  assert.match(r.content[0].text, /A payment was signed/);
+  assert.ok(!r.content[0].text.includes("Nothing was paid"));
+  assert.equal(v.calls.payloads, 1);
 });

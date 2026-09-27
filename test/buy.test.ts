@@ -712,3 +712,15 @@ test("/activity: between two purchases, a seller payment goes to the one whose (
   assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["BUY1", "buy", "OUT1"]]);
   assert.deepEqual(r.notCounted.map((n) => n.tx), ["X3"]);
 });
+
+test("/activity regression: a purchase's seller payment is not taken by an earlier check that still has room", async () => {
+  // check 100 -> buy 101 -> the buy's seller payment 10000 (102) -> the check's seller payment 30000 (104)
+  const r = await ledgerOf(
+    [["CHECK1", BOB, 50_000, 100], ["BUY1", ALICE, 15_000, 101]],
+    [["OUT_BUY", 10_000, 102], ["OUT_CHECK", 30_000, 104]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["BUY1", "buy", "OUT_BUY"], ["CHECK1", "check", "OUT_CHECK"]]);
+  assert.deepEqual(r.notCounted, []);
+  assert.equal(r.unmatchedPayouts.length, 0);
+  assert.equal(r.totals.customers.payments, 2);
+});

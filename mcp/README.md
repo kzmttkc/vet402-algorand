@@ -39,7 +39,7 @@ cd mcp && npm ci
 | `VET402_NETWORK` | `mainnet` | `mainnet` or `testnet` |
 | `VET402_URL` | `https://vet402-algorand.vercel.app` | vet402 base URL |
 | `VET402_MAX_PRICE_USDC` | `0.05` | the most one `vet402_check` call pays vet402. A higher price is refused before signing |
-| `VET402_MAX_BUY_USDC` | `0.10` | the most one `vet402_buy` call pays in total (seller price + 0.005 fee). Above it nothing is paid and the price is returned; a price raised between the free read and the payment is not signed |
+| `VET402_MAX_BUY_USDC` | `0.10` | the most one `vet402_buy` call pays in total (seller price + 0.005 fee). Above it nothing is paid and the price is returned; a price raised between the free read and the payment is not signed. The payment is signed only to the address named in vet402's free 402, never to the seller's address; with the default `VET402_URL` on MainNet only to vet402's own address `RMMD7KW5…PIY33Q` (also for `vet402_check`) |
 | `BAZAAR_URL` | `https://facilitator.goplausible.xyz/discovery/resources` | discovery feed |
 
 The paying wallet needs USDC (ASA 31566704 on MainNet, 10458941 on TestNet). Fees are covered by the facilitator.

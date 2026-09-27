@@ -49,6 +49,7 @@ export const BUY_TOOL = {
       `VET402_MAX_BUY_USDC (default ${VET402_DEFAULT_MAX_BUY_USDC}); otherwise nothing is paid and the price is returned. After your payment settles, ` +
       "vet402 pays the seller with its own wallet and returns the seller's response body as delivered, with vet402's verdict (ALLOW, or REFUSE when " +
       "the delivery does not match what the seller declared), the reason, the tx id of your payment to vet402 and of vet402's payment to the seller. " +
+      "It signs only a payment to the address named in vet402's free 402 (with the default VET402_URL on MainNet: vet402's own address), never to the seller directly. " +
       "There are no refunds: if the seller cannot be paid after your payment settled, you get the reason and your tx id. Sellers vet402 will not buy " +
       "(above its per-call cap, not USDC on Algorand, private addresses) are refused before any payment. " +
       "Env: ALGORAND_MNEMONIC (required), VET402_NETWORK=mainnet|testnet (default mainnet), VET402_URL (default " +

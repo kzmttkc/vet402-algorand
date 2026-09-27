@@ -28,8 +28,8 @@
  *   - otherwise a purchase ("buy", /v1/buy = seller price + `buyFeeAtomic`) only if a seller
  *     payment pairs with it and (payment - fee) >= that seller payment. A small deposit with no
  *     such seller payment is listed as below_price, so it cannot inflate the customer count.
- * When several customer payments could take a seller payment, a check or an audit wins over a
- * purchase, and a purchase whose (payment - fee) equals the seller payment wins over one it only fits.
+ * When several customer payments could take a seller payment: first a purchase whose
+ * (payment - fee) is exactly that seller payment, then a check or an audit, then a purchase it only fits.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
 
@@ -299,13 +299,14 @@ export class ActivityLedger {
     const pairedWith = new Map<string, Transfer[]>();
     const unmatched: Transfer[] = [];
     // Among the eligible customer payments (earlier, in the window, with room), the latest one of the
-    // best rank: a check or an audit first, then a purchase whose (payment - fee) is exactly this seller
-    // payment, then any other purchase it fits. So a small payment slipped in between cannot take a
-    // check's or an audit's seller payment, nor a real purchase's.
+    // best rank: a purchase whose (payment - fee) is exactly this seller payment (that is what /v1/buy
+    // pays), then a check or an audit, then any other purchase it fits. So a check's seller payment is
+    // not taken by a purchase that does not match it exactly, and a purchase's own seller payment is not
+    // taken by an earlier check that still has room.
     const rank = (c: Transfer, p: Transfer) => {
       const k = kindOf(c);
-      if (k === "check" || k === "audit") return 0;
-      return c.amount - (this.o.buyFeeAtomic ?? 0n) === p.amount ? 1 : 2;
+      if (k === "buy" && c.amount - (this.o.buyFeeAtomic ?? 0n) === p.amount) return 0;
+      return k === "check" || k === "audit" ? 1 : 2;
     };
     for (const p of payouts) {
       let pick: Transfer | undefined;
@@ -379,7 +380,7 @@ export class ActivityLedger {
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
-        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a check or an audit is preferred over a purchase, and a purchase whose payment minus the fee equals the seller payment over one it merely covers.`,
+        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee). Any other small payment is listed as below_price and is not counted. When several customer payments could take a seller payment, a purchase whose payment minus the fee equals the seller payment comes first, then a check or an audit, then a purchase the seller payment merely fits.`,
         `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check or a purchase (/v1/buy, whose price is the seller's price + vet402's fee) has room for one seller payment (within ${this.windowSec} s)${
           this.o.auditPriceAtomic !== undefined
             ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`
