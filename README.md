@@ -31,7 +31,7 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 
 | reason | verdict | seller paid? |
 |---|---|---|
-| `delivered` | ALLOW | yes |
+| `delivered` | ALLOW (`detail` may say `example keys not seen: …`) | yes |
 | `delivery_missing_keys` | REFUSE | yes |
 | `not_json` / `empty_body` / `http_error` | REFUSE | yes |
 | `payment_failed` | REFUSE | attempted |
@@ -39,10 +39,16 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 | `daily_cap_reached` | REFUSE | no |
 | `cap_check_unavailable` | REFUSE | no |
 | `self_dealing` | REFUSE | no |
+| `requirements_body_only` | REFUSE | no |
 | `no_supported_accept` / `not_x402` / `probe_error` | REFUSE | no |
 | `invalid_target` | REFUSE (HTTP 400 before settlement, customer not charged) | no |
 
-"Declared keys" = Bazaar `output.schema.required`, else `output.schema.properties`, else the top-level keys of `output.example`. A key that is present but `null` or blank counts as missing.
+What counts as a promise:
+
+- **Promised keys** = the `required` list of the seller's Bazaar output schema. The schema is read from `bazaar.info.output.schema`, else from where `declareDiscoveryExtension` puts it (`bazaar.schema.properties.output.properties.example`). A promised key that is absent from the delivered JSON object is `delivery_missing_keys`.
+- **Example keys** = when nothing is `required`: the keys of `output.schema.properties` and the top-level keys of `output.example`. They illustrate, they do not promise. If some are absent, the verdict stays `ALLOW` / `delivered` and `detail` says `example keys not seen: a, b`.
+- A key counts as present when it exists, whatever its value (`null` and `""` included).
+- `requirements_body_only`: the 402 has valid x402 v2 requirements (`x402Version`, `accepts`) only in its JSON body and no `PAYMENT-REQUIRED` header. vet402 reads them and runs the same accept, cap and `payTo` checks, but the x402 v2 paying client cannot pay this form, so vet402 does not try to pay. A cap or accept problem is still reported first under its own reason.
 
 ## Spending caps and the no-self-dealing policy
 

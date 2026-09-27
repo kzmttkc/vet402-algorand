@@ -32,18 +32,42 @@ export interface PaymentRequiredLike {
   extensions?: Record<string, unknown>;
 }
 
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * Where a seller's output JSON schema lives in its Bazaar extension.
+ *
+ * Standard (`declareDiscoveryExtension`, x402 Bazaar): the extension carries a JSON schema
+ * of its own `info`, and the output schema is embedded at
+ * `bazaar.schema.properties.output.properties.example`.
+ * Some sellers instead put it next to the example at `bazaar.info.output.schema`.
+ * The explicit `info.output.schema` wins when both exist.
+ */
+export function outputSchemaFrom(bazaar: unknown): Obj | undefined {
+  if (!isObj(bazaar)) return undefined;
+  const info = isObj(bazaar.info) ? bazaar.info : undefined;
+  const infoOutput = info && isObj(info.output) ? info.output : undefined;
+  if (infoOutput && isObj(infoOutput.schema)) return infoOutput.schema;
+  const schema = isObj(bazaar.schema) ? bazaar.schema : undefined;
+  const props = schema && isObj(schema.properties) ? schema.properties : undefined;
+  const output = props && isObj(props.output) ? props.output : undefined;
+  const outProps = output && isObj(output.properties) ? output.properties : undefined;
+  const example = outProps && isObj(outProps.example) ? outProps.example : undefined;
+  return example;
+}
+
 /** Pull the seller's promise out of its 402 (resource info + Bazaar extension). */
 export function declarationFrom(pr: PaymentRequiredLike): Declaration {
-  const bazaar = (pr.extensions?.bazaar ?? undefined) as
-    | { info?: { output?: { example?: unknown; schema?: Record<string, unknown> } } }
-    | undefined;
-  const output = bazaar?.info?.output;
+  const bazaar = pr.extensions?.bazaar;
+  const info = isObj(bazaar) && isObj(bazaar.info) ? bazaar.info : undefined;
+  const output = info && isObj(info.output) ? info.output : undefined;
   return {
     resourceUrl: pr.resource?.url,
     description: pr.resource?.description,
     mimeType: pr.resource?.mimeType,
     outputExample: output?.example,
-    outputSchema: output?.schema && typeof output.schema === "object" ? output.schema : undefined,
+    outputSchema: outputSchemaFrom(bazaar),
   };
 }
 

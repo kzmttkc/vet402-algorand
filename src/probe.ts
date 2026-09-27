@@ -9,12 +9,13 @@
  */
 import { AlgorandClient } from "@algorandfoundation/algokit-utils";
 import { x402Client, x402HTTPClient, wrapFetchWithPayment } from "@x402/fetch";
+import { PaymentRequiredV2Schema } from "@x402/core/schemas";
 import { ExactAvmScheme, toClientAvmSigner, ALGORAND_TESTNET_GENESIS_HASH, ALGORAND_MAINNET_GENESIS_HASH } from "@x402/avm";
 import { atomicToUsdc, type AppConfig } from "./config.js";
 import type { SpendGuard } from "./spend.js";
 import { declarationFrom, sameNetwork, selectAccept, type AcceptLike, type PaymentRequiredLike } from "./declaration.js";
 import { checkTarget } from "./target.js";
-import { expectedKeys, judgeDelivery, type Reason, type Verdict } from "./verdict.js";
+import { exampleKeys, expectedKeys, judgeDelivery, type Reason, type Verdict } from "./verdict.js";
 
 const MAX_BODY_BYTES = 1_000_000;
 
@@ -23,7 +24,8 @@ export interface ProbeResult {
   reason: Reason;
   target: string;
   detail?: string;
-  declared?: { description?: string; mimeType?: string; expectedKeys: string[] };
+  /** expectedKeys = schema.required (a miss is a REFUSE); exampleKeys = hints used only when nothing is required. */
+  declared?: { description?: string; mimeType?: string; expectedKeys: string[]; exampleKeys?: string[] };
   price?: { amountAtomic: string; usdc: string; payTo: string; network: string; asset: string };
   downstreamPayment?: { success: boolean; transaction?: string; network?: string; payer?: string; errorReason?: string };
   delivery?: { status: number; contentType: string | null; bytes: number; summary: string; missingKeys: string[] };
@@ -64,7 +66,19 @@ async function readCapped(res: Response): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function parsePaymentRequired(res: Response, bodyText: string): PaymentRequiredLike | null {
+/**
+ * Where the seller's payment requirements were read from.
+ * - "client": the way the x402 paying client reads them (PAYMENT-REQUIRED header, or a v1 JSON body).
+ * - "body": x402 v2 requirements found only in the JSON body, with no PAYMENT-REQUIRED header.
+ *   The paying client (@x402/fetch 2.11 / @x402/core getPaymentRequiredResponse) rejects this
+ *   shape, so vet402 can read it but cannot pay it.
+ */
+export type RequirementsSource = "client" | "body";
+
+export function parsePaymentRequired(
+  res: Response,
+  bodyText: string,
+): { pr: PaymentRequiredLike; source: RequirementsSource } | null {
   let body: unknown;
   try {
     body = bodyText ? JSON.parse(bodyText) : undefined;
@@ -73,10 +87,14 @@ function parsePaymentRequired(res: Response, bodyText: string): PaymentRequiredL
   }
   try {
     const pr = new x402HTTPClient(new x402Client()).getPaymentRequiredResponse((n) => res.headers.get(n), body);
-    return pr as unknown as PaymentRequiredLike;
+    return { pr: pr as unknown as PaymentRequiredLike, source: "client" };
   } catch {
-    return null;
+    // fall through to the body-only v2 form
   }
+  if (res.headers.get("PAYMENT-REQUIRED")) return null; // a header that does not decode is not replaced by the body
+  const v2 = PaymentRequiredV2Schema.safeParse(body);
+  if (!v2.success) return null;
+  return { pr: v2.data as unknown as PaymentRequiredLike, source: "body" };
 }
 
 export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, deps: ProbeDeps): Promise<ProbeResult> {
@@ -97,12 +115,13 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
   if (first.status !== 402) {
     return { verdict: "REFUSE", reason: "not_x402", target: url, detail: `expected 402, got ${first.status}` };
   }
-  const pr = parsePaymentRequired(first, firstBody);
-  if (!pr || !Array.isArray(pr.accepts)) {
+  const parsed = parsePaymentRequired(first, firstBody);
+  if (!parsed || !Array.isArray(parsed.pr.accepts)) {
     return { verdict: "REFUSE", reason: "not_x402", target: url, detail: "402 without parseable x402 payment requirements" };
   }
+  const pr = parsed.pr;
   const decl = declarationFrom(pr);
-  const declared = { description: decl.description, mimeType: decl.mimeType, expectedKeys: expectedKeys(decl) };
+  const declared = { description: decl.description, mimeType: decl.mimeType, expectedKeys: expectedKeys(decl), exampleKeys: exampleKeys(decl) };
 
   // 2) Choose what we would pay, and check caps before any signature exists.
   const accept = selectAccept(pr.accepts, cfg.network, cfg.usdcAsaId);
@@ -116,6 +135,18 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
   }
   const cap = await ledger.reserve(amount);
   if (!cap.ok) return { verdict: "REFUSE", reason: cap.reason, target: url, declared, price, detail: cap.detail };
+  if (parsed.source === "body") {
+    // Readable and within every check, but the paying client cannot pay a body-only v2 402. Do not try.
+    ledger.release(cap.reservationId);
+    return {
+      verdict: "REFUSE",
+      reason: "requirements_body_only",
+      target: url,
+      declared,
+      price,
+      detail: "x402 v2 requirements are in the 402 body only (no PAYMENT-REQUIRED header); the x402 paying client cannot pay this, so vet402 did not pay",
+    };
+  }
 
   // 3) Pay and fetch.
   let paid: PaidFetchResult;
@@ -151,6 +182,7 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
     verdict: j.verdict,
     reason: j.reason,
     target: url,
+    ...(j.note ? { detail: j.note } : {}),
     declared,
     price,
     downstreamPayment,

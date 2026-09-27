@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { ALGORAND_TESTNET_CAIP2, USDC_TESTNET_ASA_ID } from "@x402/avm";
 import { mnemonicFromSeed } from "@algorandfoundation/algokit-utils/algo25";
-import { probe, makePaidFetch, type ProbeDeps, type PaidFetchResult } from "../src/probe.js";
+import { declareDiscoveryExtension } from "@x402-avm/extensions";
+import { probe, makePaidFetch, parsePaymentRequired, type ProbeDeps, type PaidFetchResult } from "../src/probe.js";
 import { SpendLedger } from "../src/caps.js";
 import { LocalSpendGuard } from "../src/spend.js";
 import { loadConfig } from "../src/config.js";
@@ -210,4 +211,125 @@ test("self_dealing: never pays a seller whose payTo is one of our own wallets", 
   const r = await probe("http://localhost:4031/x", cfg, ledger(), { ...deps, ownAddresses: [SELLER] });
   assert.equal(r.reason, "self_dealing");
   assert.equal(calls.paid.length, 0);
+});
+
+// --- Bazaar declarations in the standard layout (declareDiscoveryExtension) ---
+
+function withExtensions(pr: ReturnType<typeof paymentRequired>, extensions: unknown) {
+  return { ...pr, extensions } as unknown as ReturnType<typeof paymentRequired>;
+}
+const stdRequired = declareDiscoveryExtension({
+  output: {
+    example: { forecast: "sunny", temperature: 21 },
+    schema: { type: "object", properties: { forecast: { type: "string" }, temperature: { type: "number" } }, required: ["forecast", "temperature"] },
+  },
+} as never);
+const stdExampleOnly = declareDiscoveryExtension({ output: { example: { forecast: "sunny", temperature: 21 } } } as never);
+
+test("standard-layout schema.required: liar is REFUSE delivery_missing_keys, honest is ALLOW", async () => {
+  const pr = withExtensions(paymentRequired("10000"), stdRequired);
+  const liar = await probe("http://localhost:4031/liar", cfg, ledger(), fakeDeps(pr, { message: "thanks for paying" }).deps);
+  assert.equal(liar.reason, "delivery_missing_keys");
+  assert.deepEqual(liar.delivery?.missingKeys, ["forecast", "temperature"]);
+  const honest = await probe("http://localhost:4031/honest", cfg, ledger(), fakeDeps(pr, { forecast: "sunny", temperature: 21, city: "Tokyo" }).deps);
+  assert.equal(honest.verdict, "ALLOW");
+  assert.equal(honest.detail, undefined);
+});
+
+test("example-only seller: a delivery without the example keys is ALLOW with a note", async () => {
+  const pr = withExtensions(paymentRequired("10000"), stdExampleOnly);
+  const r = await probe("http://localhost:4031/x", cfg, ledger(), fakeDeps(pr, { forecast: "sunny" }).deps);
+  assert.equal(r.verdict, "ALLOW");
+  assert.equal(r.reason, "delivered");
+  assert.equal(r.detail, "example keys not seen: temperature");
+  assert.deepEqual(r.declared?.expectedKeys, []);
+  assert.deepEqual(r.declared?.exampleKeys, ["forecast", "temperature"]);
+});
+
+// --- 402 with x402 v2 requirements in the JSON body only (no PAYMENT-REQUIRED header) ---
+
+const bodyOnly402 = (pr: unknown, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(pr), { status: 402, headers: { "content-type": "application/json", ...headers } });
+
+function bodyOnlyDeps(pr: unknown, headers?: Record<string, string>) {
+  const calls = { paid: 0 };
+  const deps: ProbeDeps = {
+    fetchImpl: async () => bodyOnly402(pr, headers),
+    paidFetch: async () => {
+      calls.paid += 1;
+      return assert.fail("must not pay a body-only 402");
+    },
+  };
+  return { deps, calls };
+}
+
+test("parsePaymentRequired: header first, v2 body only when there is no header", () => {
+  const pr = paymentRequired("10000");
+  const h = parsePaymentRequired(res402(pr), "{}");
+  assert.equal(h?.source, "client");
+  assert.equal(h?.pr.accepts[0].amount, "10000");
+  const b = parsePaymentRequired(bodyOnly402(pr), JSON.stringify(pr));
+  assert.equal(b?.source, "body");
+  assert.equal(b?.pr.accepts[0].payTo, SELLER);
+  assert.deepEqual(b?.pr.extensions, pr.extensions);
+});
+
+test("parsePaymentRequired: body is validated strictly (x402 v2 schema)", () => {
+  const pr = paymentRequired("10000");
+  const bad: unknown[] = [
+    { ...pr, x402Version: 3 },
+    { ...pr, accepts: [] },
+    { ...pr, accepts: [{ ...pr.accepts[0], amount: "" }] },
+    { ...pr, accepts: [{ ...pr.accepts[0], maxTimeoutSeconds: undefined }] },
+    { ...pr, accepts: [{ ...pr.accepts[0], network: "algorand" }] },
+    { ...pr, resource: undefined },
+    [pr],
+    "x402Version",
+  ];
+  for (const b of bad) assert.equal(parsePaymentRequired(bodyOnly402(b), JSON.stringify(b)), null, JSON.stringify(b).slice(0, 80));
+  assert.equal(parsePaymentRequired(bodyOnly402(pr), JSON.stringify(pr).slice(0, -1)), null, "truncated JSON");
+  assert.equal(parsePaymentRequired(bodyOnly402(pr), ""), null);
+});
+
+test("parsePaymentRequired: a PAYMENT-REQUIRED header that does not decode is not replaced by the body", () => {
+  const pr = paymentRequired("10000");
+  assert.equal(parsePaymentRequired(bodyOnly402(pr, { "PAYMENT-REQUIRED": "%%%not-base64%%%" }), JSON.stringify(pr)), null);
+});
+
+test("body-only v2 402: readable, passes every check, REFUSE requirements_body_only, never pays, budget untouched", async () => {
+  const { deps, calls } = bodyOnlyDeps(paymentRequired("10000"));
+  const raw = rawLedger();
+  const r = await probe("http://localhost:4031/x", cfg, guardOf(raw), deps);
+  assert.equal(r.verdict, "REFUSE");
+  assert.equal(r.reason, "requirements_body_only");
+  assert.equal(r.price?.amountAtomic, "10000");
+  assert.equal(r.price?.payTo, SELLER);
+  assert.deepEqual(r.declared?.expectedKeys, ["forecast", "temperature"]);
+  assert.equal(calls.paid, 0);
+  assert.equal(raw.spentTodayAtomic(), 0n);
+});
+
+test("body-only v2 402 goes through the same selectAccept / cap / payTo checks first", async () => {
+  assert.equal((await probe("http://localhost:4031/x", cfg, ledger(), bodyOnlyDeps(paymentRequired("500000")).deps)).reason, "price_over_cap");
+  assert.equal((await probe("http://localhost:4031/x", cfg, ledger(), bodyOnlyDeps(paymentRequired("10000", { network: "eip155:8453" })).deps)).reason, "no_supported_accept");
+  assert.equal((await probe("http://localhost:4031/x", cfg, ledger(), bodyOnlyDeps(paymentRequired("10000", { asset: "31566704" })).deps)).reason, "no_supported_accept");
+  const own = await probe("http://localhost:4031/x", cfg, ledger(), { ...bodyOnlyDeps(paymentRequired("10000")).deps, ownAddresses: [SELLER] });
+  assert.equal(own.reason, "self_dealing");
+  const full = guardOf(new SpendLedger(40_000n, 5_000n));
+  assert.equal((await probe("http://localhost:4031/x", cfg, full, bodyOnlyDeps(paymentRequired("10000")).deps)).reason, "daily_cap_reached");
+});
+
+test("real paying client (@x402/fetch) cannot pay a body-only v2 402: rejects before any signature", async () => {
+  const seed = new Uint8Array(randomBytes(32));
+  const sk = secretKeyB64FromMnemonic(mnemonicFromSeed(seed));
+  const baseFetch = (async (req: Request) => {
+    if (req.headers.has("PAYMENT-SIGNATURE") || req.headers.has("X-PAYMENT")) assert.fail("must not send a payment");
+    return bodyOnly402(paymentRequired("10000"));
+  }) as unknown as typeof fetch;
+  const paidFetch = makePaidFetch(cfg, sk, baseFetch);
+  const approved = paymentRequired("10000").accepts[0] as AcceptLike;
+  await assert.rejects(
+    () => paidFetch("http://localhost:4031/x", approved, { method: "GET" }),
+    (e: Error & { signed?: boolean }) => e.signed === false && /Failed to parse payment requirements/.test(e.message),
+  );
 });
