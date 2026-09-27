@@ -81,11 +81,35 @@ export class SpendLedger {
   }
 
   reserve(amountAtomic: bigint): CapDecision {
+    return this.reserveAtLeast(amountAtomic, 0n);
+  }
+
+  /**
+   * Raise today's spent total to at least `floorAtomic` (e.g. the on-chain total read at start).
+   * Never lowers it.
+   */
+  raiseFloor(floorAtomic: bigint): void {
+    this.roll();
+    if (floorAtomic > BigInt(this.state.spentAtomic)) {
+      this.state.spentAtomic = floorAtomic.toString();
+      this.persist();
+    }
+  }
+
+  /**
+   * One synchronous step: spent = max(ledger, floor) -> compare with the daily cap ->
+   * ledger = spent + amount. `floor` is what the chain says was sent today. Because the
+   * ledger keeps max(...) + amount, a reservation made after an await on the indexer still
+   * sees every earlier reservation of this process, and a payment the indexer has not
+   * shown yet is not forgotten.
+   */
+  reserveAtLeast(amountAtomic: bigint, floorAtomic: bigint): CapDecision {
     if (amountAtomic < 0n) throw new Error("negative amount");
     const perCall = this.checkPerCall(amountAtomic);
     if (perCall) return perCall;
     this.roll();
-    const spent = BigInt(this.state.spentAtomic);
+    const local = BigInt(this.state.spentAtomic);
+    const spent = floorAtomic > local ? floorAtomic : local;
     if (spent + amountAtomic > this.maxPerDayAtomic) {
       return {
         ok: false,

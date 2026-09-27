@@ -87,13 +87,15 @@ export class IndexedSpendGuard implements SpendGuard {
   async reserve(amountAtomic: bigint): Promise<GuardDecision> {
     const perCall = this.ledger.checkPerCall(amountAtomic);
     if (perCall) return perCall;
-    const s = await this.spent();
-    if (!s.ok) return { ok: false, reason: "cap_check_unavailable", detail: s.detail };
-    if (s.spent + amountAtomic > this.ledger.maxPerDayAtomic) {
-      return { ok: false, reason: "daily_cap_reached", detail: `spent ${s.spent} + price ${amountAtomic} > daily cap ${this.ledger.maxPerDayAtomic} (atomic USDC)` };
+    let chain: bigint;
+    try {
+      chain = await this.readChainSpent();
+    } catch (e) {
+      return { ok: false, reason: "cap_check_unavailable", detail: `cannot read today's spend: ${(e as Error).message}`.slice(0, 200) };
     }
-    // Local ledger records the reservation (and re-checks its own view synchronously).
-    return this.ledger.reserve(amountAtomic);
+    // Compare and record in one synchronous step, after the await: max(ledger, chain) + price.
+    // Concurrent reserves that all read the same chain total are serialized here.
+    return this.ledger.reserveAtLeast(amountAtomic, chain);
   }
 
   release(id: string) {

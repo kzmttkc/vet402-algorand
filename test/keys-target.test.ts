@@ -39,3 +39,50 @@ test("checkTarget rejects bad schemes, credentials, http and private hosts in st
   assert.equal((await checkTarget("https://example.com/x", false, pub)).ok, true);
   assert.equal((await checkTarget("http://localhost:4031/honest", true)).ok, true);
 });
+
+// SSRF regression (review 2026-09-27): IPv4 hidden inside IPv6 in any spelling.
+test("isPrivateAddress: IPv4-mapped/translated/NAT64/6to4/Teredo forms and metadata are private", () => {
+  for (const ip of [
+    "::ffff:7f00:1",
+    "::ffff:127.0.0.1",
+    "::FFFF:A9FE:A9FE",
+    "::ffff:169.254.169.254",
+    "::ffff:a00:1",
+    "::127.0.0.1",
+    "::ffff:0:7f00:1",
+    "64:ff9b::7f00:1",
+    "64:ff9b::a9fe:a9fe",
+    "2002:7f00:1::",
+    "2001:0:4136:e378:8000:63bf:3fff:fdd2",
+    "fd00:ec2::254",
+    "fe80::1",
+    "fe80::1%eth0",
+    "ff02::1",
+    "100.100.100.200",
+    "100.64.0.1",
+    "255.255.255.255",
+    "0:0:0:0:0:ffff:7f00:0001",
+  ]) {
+    assert.equal(isPrivateAddress(ip), true, ip);
+  }
+  for (const ip of ["::ffff:8.8.8.8", "::ffff:808:808", "2606:4700:4700::1111", "2a00:1450:4001::200e", "93.184.216.34"]) {
+    assert.equal(isPrivateAddress(ip), false, ip);
+  }
+});
+
+test("checkTarget: IPv6 literals that embed a private IPv4 are refused", async () => {
+  for (const u of [
+    "https://[::ffff:127.0.0.1]/",
+    "https://[::ffff:169.254.169.254]/latest/meta-data",
+    "https://[::ffff:7f00:1]/",
+    "https://[64:ff9b::a9fe:a9fe]/",
+    "https://[2002:a9fe:a9fe::]/",
+    "https://[::1]/",
+  ]) {
+    const r = await checkTarget(u, false, async () => assert.fail("literal IPs are not resolved"));
+    assert.equal(r.ok, false, u);
+  }
+  // A hostname resolving to a mapped private address is refused too.
+  const r = await checkTarget("https://seller.example/x", false, async () => ["93.184.216.34", "::ffff:7f00:1"]);
+  assert.equal(r.ok, false);
+});

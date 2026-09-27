@@ -469,13 +469,18 @@ async function main(argv: string[]): Promise<void> {
   const limit = argValue(argv, "--limit");
   if (limit) candidates = candidates.slice(0, Number(limit));
 
+  // The day is fixed at start: file names, the indexer's "sent today" window and the ledger's
+  // day all use it, even if the run crosses 00:00 UTC.
   const date = now.toISOString().slice(0, 10);
   const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
   const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
   const latest = join(outDir, census ? "census-latest.json" : "latest.json");
   const readSpent = boardPayerAddress
-    ? () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: boardPayerAddress!, asaId: cfg.usdcAsaId })
+    ? () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: boardPayerAddress!, asaId: cfg.usdcAsaId, now })
     : undefined;
+  // Daily and census share one "bought today" record and one ledger for the day.
+  const otherFile = join(outDir, census ? `${date}.json` : `census-${date}.json`);
+  const ledgerFile = join(outDir, `spend-${cfg.networkName}.json`);
 
   const estimate = candidates.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
   const hosts = new Set(candidates.map((c) => c.host)).size;
@@ -509,9 +514,19 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
-
-  const prev = existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { rows?: BoardRow[]; attempts?: string[] }) : null;
+  if (!census && !targets && existsSync(otherFile)) {
+    console.log(`census already ran on ${date} (${otherFile}); the daily sweep does not run on a census day.`);
+    return;
+  }
+  const readJson = (f: string) => (existsSync(f) ? (JSON.parse(readFileSync(f, "utf8")) as { rows?: BoardRow[]; attempts?: string[] }) : null);
+  const prev = readJson(file);
   const { keep, done, interrupted } = resumeState(prev);
+  if (!targets) {
+    const other = resumeState(readJson(otherFile)).done;
+    const already = candidates.filter((c) => other.has(c.key) && !done.has(c.key)).length;
+    for (const k of other) done.add(k);
+    if (already > 0) selection.excluded[census ? "bought_by_daily_today" : "bought_by_census_today"] = already;
+  }
   const rows: BoardRow[] = [...keep];
   const attempts: string[] = [...new Set([...(prev?.attempts ?? [])])];
   for (const k of interrupted) {
@@ -540,7 +555,14 @@ async function main(argv: string[]): Promise<void> {
     attempts,
   });
 
-  const guard = new IndexedSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, boardPerDay, join("state", `board-spend-${cfg.networkName}.json`)), readSpent!);
+  // Ledger lives in board/ (committed by the workflow), so the next run starts from today's total.
+  const ledger = new SpendLedger(cfg.maxPerCallAtomic, boardPerDay, ledgerFile, () => now);
+  const guard = new IndexedSpendGuard(ledger, readSpent!);
+  try {
+    ledger.raiseFloor(await readSpent!()); // on-chain total at start is the floor for this run
+  } catch {
+    /* headroom() below reports cap_check_unavailable and nothing is bought */
+  }
   const baseDeps: ProbeDeps = {
     fetchImpl: (u, i) => fetch(u, i),
     paidFetch: makePaidFetch(boardCfg, boardPayer!.secretKeyB64),

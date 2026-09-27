@@ -1,13 +1,14 @@
 # Delivery board sweep on Algorand MainNet (scripts/board-sweep.ts).
 # Buys with the payer wallet in secrets; commits only board/*.json.
-# Secrets: BOARD_PAYER_MNEMONIC (required on MainNet: a wallet used only by the board;
-# the script refuses the /v1/check payer wallet). PAYER_MNEMONIC is passed so the
-# script can recognise the /v1/check payer address and exclude it.
+# Secrets live in the GitHub environment "mainnet-board" (restrict it to the main branch):
+#   BOARD_PAYER_MNEMONIC  required on MainNet: a wallet used only by the board
+#                         (the script refuses the /v1/check payer wallet)
+#   PAYER_MNEMONIC        so the script can recognise the /v1/check payer address and exclude it
 name: board
 
 on:
   schedule:
-    - cron: "30 23 * * *" # 23:30 UTC = 08:30 JST
+    - cron: "0 21 * * *" # 21:00 UTC = 06:00 JST (well before 00:00 UTC, the cap's day boundary)
   workflow_dispatch:
     inputs:
       mode:
@@ -20,8 +21,7 @@ on:
         type: boolean
         default: false
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: board
@@ -30,6 +30,9 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
+    environment: mainnet-board
+    permissions:
+      contents: write
     timeout-minutes: 240
     env:
       X402_NETWORK: mainnet
@@ -43,7 +46,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Record the run date (UTC)
         run: echo "BOARD_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
       - name: Sweep
@@ -57,6 +60,7 @@ jobs:
           npx tsx scripts/board-sweep.ts "${args[@]}"
       # Runs even when the sweep failed: the script writes each row as it goes,
       # so a partial day is kept and the next run resumes (never buys a URL twice a day).
+      # board/*.json includes spend-mainnet.json (the board's ledger for the day), read by the next run.
       - name: Commit board/*.json
         if: always() && env.DRY_RUN != 'true'
         run: |
