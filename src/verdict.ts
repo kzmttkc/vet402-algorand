@@ -58,8 +58,8 @@ export interface DeliveryJudgement {
 
 function requiredOf(decl: Declaration): string[] {
   const req = (decl.outputSchema as { required?: unknown } | undefined)?.required;
-  if (Array.isArray(req) && req.length > 0 && req.every((k) => typeof k === "string")) return [...new Set(req as string[])];
-  return [];
+  if (!Array.isArray(req)) return [];
+  return [...new Set(req.filter((k): k is string => typeof k === "string"))].slice(0, 50);
 }
 
 /**
@@ -148,6 +148,10 @@ export function judgeDelivery(decl: Declaration, d: Delivery): DeliveryJudgement
     return { ...base, missingKeys: missing, verdict: "REFUSE", reason: "delivery_missing_keys", summary: summarize(parsed) };
   }
   const unseen = hints.filter((k) => !hasKey(obj, k));
+  // No required list, but the seller showed an example: a response with none of its keys (e.g. an error object) is not the product.
+  if (keys.length === 0 && hints.length > 0 && unseen.length === hints.length) {
+    return { ...base, missingKeys: unseen.slice(0, 50), verdict: "REFUSE", reason: "delivery_missing_keys", summary: summarize(parsed) };
+  }
   const note = unseen.length > 0 ? `example keys not seen: ${keyList(unseen)}` : undefined;
   return { ...base, unseenExampleKeys: unseen, ...(note ? { note } : {}), verdict: "ALLOW", reason: "delivered", summary: summarize(parsed) };
 }

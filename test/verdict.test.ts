@@ -88,10 +88,15 @@ test("properties without required are hints, not promises", () => {
   assert.equal(j.note, "example keys not seen: b");
 });
 
-test("example-only declaration: a non-object delivery is still ALLOW with a note", () => {
+test("example-only declaration: a non-object delivery has none of the example keys, so it is REFUSE", () => {
   const j = judgeDelivery({ outputExample: { a: 1 } }, ok([1, 2]));
+  assert.equal(j.reason, "delivery_missing_keys");
+});
+
+test("example-only declaration: some example keys missing is ALLOW with a note", () => {
+  const j = judgeDelivery({ outputExample: { a: 1, b: 2 } }, ok({ a: 3 }));
   assert.equal(j.reason, "delivered");
-  assert.equal(j.note, "example keys not seen: a");
+  assert.equal(j.note, "example keys not seen: b");
 });
 
 test("declarationFrom reads the output schema where declareDiscoveryExtension puts it", () => {
@@ -141,4 +146,13 @@ test("no declaration: any non-empty JSON is delivered", () => {
 test("summary is bounded", () => {
   const big = Object.fromEntries(Array.from({ length: 200 }, (_, i) => [`k${i}`, "v".repeat(100)]));
   assert.ok(judgeDelivery({}, ok(big)).summary.length <= 240);
+});
+
+test("example-only seller: a 200 JSON with none of the example keys is REFUSE", () => {
+  const decl = { description: "d", mimeType: "application/json", outputExample: { price: 1, symbol: "X" } } as any;
+  const v = judgeDelivery(decl, { status: 200, contentType: "application/json", bodyText: JSON.stringify({ error: "rate limited" }) } as any);
+  assert.equal(v.verdict, "REFUSE");
+  assert.equal(v.reason, "delivery_missing_keys");
+  const ok = judgeDelivery(decl, { status: 200, contentType: "application/json", bodyText: JSON.stringify({ price: 2 }) } as any);
+  assert.equal(ok.verdict, "ALLOW");
 });

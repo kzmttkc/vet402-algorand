@@ -46,7 +46,7 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 What counts as a promise:
 
 - **Promised keys** = the `required` list of the seller's Bazaar output schema. The schema is read from `bazaar.info.output.schema`, else from where `declareDiscoveryExtension` puts it (`bazaar.schema.properties.output.properties.example`). A promised key that is absent from the delivered JSON object is `delivery_missing_keys`.
-- **Example keys** = when nothing is `required`: the keys of `output.schema.properties` and the top-level keys of `output.example`. They illustrate, they do not promise. If some are absent, the verdict stays `ALLOW` / `delivered` and `detail` says `example keys not seen: a, b`.
+- **Example keys** = when nothing is `required`: the keys of `output.schema.properties` and the top-level keys of `output.example`. They illustrate, they do not promise. If some are absent, the verdict stays `ALLOW` / `delivered` and `detail` says `example keys not seen: a, b`. If **none** of them is present (for example the seller returned an error object with status 200), the verdict is `REFUSE` / `delivery_missing_keys`.
 - A key counts as present when it exists, whatever its value (`null` and `""` included).
 - `requirements_body_only`: the 402 has valid x402 v2 requirements (`x402Version`, `accepts`) only in its JSON body and no `PAYMENT-REQUIRED` header. vet402 reads them and runs the same accept, cap and `payTo` checks, but the x402 v2 paying client cannot pay this form, so vet402 does not try to pay. A cap or accept problem is still reported first under its own reason.
 
