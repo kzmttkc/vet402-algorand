@@ -157,6 +157,17 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `scripts/` | key generation (TestNet, MainNet payer), balances, TestNet setup, single probe |
 | `test/` | offline unit tests (`node:test`) |
 
+## Public activity ledger
+
+`GET /activity` (HTML) and `GET /activity.json` list every x402 payment vet402 has received, each next to the payment vet402 then made to the seller. Both are free (mounted before the payment middleware), read live from the Algorand indexer, and cached for 60 s (`Cache-Control: public, max-age=60, s-maxage=60`). Every tx id links to an explorer (allo.info on MainNet), so each row can be checked on-chain. If the indexer cannot be read, the routes answer 503; they never show an empty ledger in its place.
+
+- **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON.
+- **Operator test**: the customer is vet402's own `payTo` or payer wallet (exact address match). These rows are marked `operator test` and are left out of the customer totals. The two MainNet checks in the run record below are operator tests.
+- **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment (within 300 s) that has no seller payment yet. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
+- Totals: distinct paying customer addresses (operator excluded), customer payments and USDC, seller payments and USDC, operator tests.
+
+The page needs only public addresses. The payer address is taken from `PAYER_MNEMONIC` as before, or from `VET402_PAYER_ADDRESS` if set.
+
 ## MainNet run record
 
 ### 2026-09-27 12:1x JST: first MainNet checks (operator smoke test)
