@@ -14,7 +14,7 @@
     "probe:once": "tsx scripts/probe-once.ts",
     "keys:gen:mainnet": "tsx scripts/gen-payer-mainnet.ts"
   },
-  "license": "ISC",
+  "license": "MIT",
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.6.3",
@@ -35,5 +35,6 @@
   "private": true,
   "engines": {
     "node": ">=22"
-  }
+  },
+  "author": "Sen"
 }
