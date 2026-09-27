@@ -168,6 +168,20 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 The page needs only public addresses. The payer address is taken from `PAYER_MNEMONIC` as before, or from `VET402_PAYER_ADDRESS` if set.
 
+## Daily delivery board
+
+`GET /board` (HTML) and `GET /board.json` (free) show whether Algorand x402 sellers delivered what they declared, when vet402 bought from them with its own money. `?view=census` shows the census run.
+
+- **Daily** (`npx tsx scripts/board-sweep.ts`): from the Bazaar feed, MainNet USDC resources priced at or under the per-call cap, seen in the last 7 days, **one per host (the cheapest)**. vet402's own hosts and any resource paying one of vet402's addresses are excluded. Results go to `board/YYYY-MM-DD.json` and `board/latest.json`.
+- **Census** (`--census`): every listed resource under the per-call cap, once each. Results go to `board/census-YYYY-MM-DD.json` and `board/census-latest.json`. Concurrency is 1–4 (default 3).
+- `--dry-run` lists the targets and the cost estimate, and pays nothing. It needs no key. `--targets <url,...>` runs an explicit list (TestNet test sellers).
+- Each purchase goes through the normal `probe()`: per-call cap before any signature, and a daily cap read from the chain (indexer) with a local backup ledger. The board has its own daily cap, `BOARD_MAX_PER_DAY_USDC` (default = `PROBE_MAX_PER_DAY_USDC`), and its own ledger file. The `/v1/check` caps are unchanged. When the cap is hit, the remaining rows are written as `SKIPPED daily_cap` and the run stops.
+- A resource is bought at most once per UTC day. Each attempt is recorded before paying, so a rerun resumes and never buys the same URL twice that day.
+- vet402 sends the example input the seller published in the Bazaar (query or JSON body). `PUT`/`DELETE`, form bodies and path templates are not bought.
+- Reason codes are shown as they are. One result does not rate a seller. Mistakes: GitHub issues.
+- These purchases are vet402's own, made to publish the board. They are the one exception to "every downstream payment follows a real customer payment" above, and every one is listed on `/board` with its tx id. On MainNet they are paid from a separate wallet, `BOARD_PAYER_MNEMONIC`. The script refuses to run with the `/v1/check` payer wallet unless `--share-payer-wallet` is given. On a shared wallet, board spending would count toward the customers' daily cap (same on-chain total), and `/activity` could pair a board purchase with a customer payment.
+- `.github/workflows/board.yml` runs the daily sweep at 23:30 UTC (`workflow_dispatch`: `daily` or `census`, optional dry run) and commits `board/*.json`, including a partial day if the run failed.
+
 ## MainNet run record
 
 ### 2026-09-27 12:1x JST: first MainNet checks (operator smoke test)

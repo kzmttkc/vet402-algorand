@@ -1,0 +1,579 @@
+/**
+ * Daily delivery board sweep: vet402 buys once from x402 sellers with its own
+ * payer wallet, judges each delivery with the normal probe(), and writes
+ * board/YYYY-MM-DD.json + board/latest.json for GET /board.
+ *
+ *   npx tsx scripts/board-sweep.ts --dry-run                 # MainNet needs X402_NETWORK=mainnet; no key, no payment
+ *   npx tsx scripts/board-sweep.ts                           # daily: one resource per host (the cheapest)
+ *   npx tsx scripts/board-sweep.ts --census                  # every resource once (board/census-YYYY-MM-DD.json)
+ *   npx tsx scripts/board-sweep.ts --targets <url,url,...>   # explicit list (TestNet sellers)
+ *
+ * Options: --out <dir> --limit <n> --concurrency <1-4> --max-age-days <n> --bazaar <url> --share-payer-wallet
+ *
+ * Money rules:
+ * - vet402 pays sellers directly. It never pays its own hosts or its own addresses
+ *   (filtered here, and refused again inside probe() as self_dealing).
+ * - Every payment goes through probe(): per-call cap before any signature, and a
+ *   daily cap that is max(indexer "USDC sent today by the payer", local ledger).
+ *   The board has its own daily cap (BOARD_MAX_PER_DAY_USDC, default = PROBE_MAX_PER_DAY_USDC)
+ *   and its own ledger file. The /v1/check caps are not touched.
+ * - When the cap is hit, the rest is written as SKIPPED daily_cap and the run stops.
+ * - Each resource is bought at most once per UTC day: an attempt is journaled
+ *   before paying, and a rerun skips anything already attempted (resume).
+ * - Sellers get the example input they published in the Bazaar. PUT/DELETE,
+ *   form bodies and path templates are not probed.
+ */
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { seedFromMnemonic } from "@algorandfoundation/algokit-utils/algo25";
+import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "../src/config.js";
+import { SpendLedger } from "../src/caps.js";
+import { IndexedSpendGuard, usdcSentToday } from "../src/spend.js";
+import { makePaidFetch, probe, type ProbeDeps, type ProbeResult } from "../src/probe.js";
+import { selectAccept, type AcceptLike } from "../src/declaration.js";
+import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
+import type { BoardFile, BoardRow } from "../src/board.js";
+
+export const DEFAULT_BAZAAR = "https://facilitator.goplausible.xyz/discovery/resources";
+export const OWN_HOSTS = ["vet402-algorand.vercel.app", "vet402.com"];
+/** MainNet payer wallet (public address, README "MainNet run record"). Used only when no key is loaded. */
+export const KNOWN_MAINNET_PAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+const MAX_BODY_CHARS = 8192;
+
+export interface BazaarItem {
+  resourceUrl: string;
+  method?: string;
+  description?: string;
+  mimeType?: string;
+  accepts: AcceptLike[];
+  discoveryInfo?: {
+    input?: { method?: string; queryParams?: Record<string, unknown>; body?: unknown; bodyType?: string; pathParams?: unknown };
+  };
+  lastSeen?: string;
+  settleCount?: number;
+}
+
+export interface Candidate {
+  /** `${method} ${url}`: one purchase per key per UTC day. */
+  key: string;
+  url: string;
+  host: string;
+  method: "GET" | "POST";
+  body?: string;
+  contentType?: string;
+  /** What we send, for the board ("?a=1", "body {...}", "(none)"). */
+  input: string;
+  priceAtomic?: bigint;
+  payTo?: string;
+  description?: string;
+  lastSeen?: string;
+  settleCount?: number;
+}
+
+export interface SelectOptions {
+  network: string;
+  usdcAsaId: string;
+  maxPerCallAtomic: bigint;
+  now: Date;
+  /** null = no freshness filter (census). */
+  maxAgeDays: number | null;
+  ownAddresses: string[];
+  ownHosts?: string[];
+  allowPrivate: boolean;
+  /** true = keep only the cheapest resource per host (daily board). */
+  perHost: boolean;
+}
+
+export function isOwnHost(host: string, ownHosts: string[] = OWN_HOSTS): boolean {
+  const h = host.toLowerCase();
+  return ownHosts.some((o) => h === o || h.endsWith(`.${o}`));
+}
+
+function clip(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+type Built = { ok: true; url: string; method: "GET" | "POST"; body?: string; contentType?: string; input: string } | { ok: false; reason: string };
+
+/** Turn a Bazaar item into the request vet402 will send (the seller's own example input). */
+export function buildRequest(item: BazaarItem): Built {
+  const inp = item.discoveryInfo?.input ?? {};
+  const method = String(inp.method ?? item.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "POST") return { ok: false, reason: "method_not_probed" };
+  let u: URL;
+  try {
+    u = new URL(item.resourceUrl);
+  } catch {
+    return { ok: false, reason: "bad_url" };
+  }
+  let path = u.pathname;
+  try {
+    path = decodeURI(u.pathname);
+  } catch {
+    /* keep raw */
+  }
+  if (/\{[^}]*\}|\/:[A-Za-z_]/.test(path)) return { ok: false, reason: "path_params" };
+  let q = inp.queryParams as Record<string, unknown> | undefined;
+  // Some listings nest the whole input object inside queryParams; unwrap it.
+  if (q && typeof q === "object" && q.type === "http" && q.queryParams && typeof q.queryParams === "object") {
+    q = q.queryParams as Record<string, unknown>;
+  }
+  if (q && typeof q === "object" && !Array.isArray(q)) {
+    for (const [k, raw] of Object.entries(q)) {
+      // A schema-style value ({type, description, example|default}) contributes its example/default only.
+      const v = raw && typeof raw === "object" ? ((raw as Record<string, unknown>).example ?? (raw as Record<string, unknown>).default) : raw;
+      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") u.searchParams.set(k, String(v));
+    }
+  }
+  let body: string | undefined;
+  let contentType: string | undefined;
+  if (method === "POST" && inp.body !== undefined) {
+    if (inp.bodyType && inp.bodyType !== "json") return { ok: false, reason: "body_not_json" };
+    body = JSON.stringify(inp.body);
+    if (body.length > MAX_BODY_CHARS) return { ok: false, reason: "body_too_large" };
+    contentType = "application/json";
+  }
+  const input = [u.search ? clip(u.search, 140) : "", body ? `body ${clip(body, 140)}` : ""].filter(Boolean).join(" ") || "(none)";
+  return { ok: true, url: u.toString(), method, body, contentType, input };
+}
+
+export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candidates: Candidate[]; excluded: Record<string, number> } {
+  const excluded: Record<string, number> = {};
+  const out = (r: string) => {
+    excluded[r] = (excluded[r] ?? 0) + 1;
+  };
+  const cutoff = o.maxAgeDays === null ? null : o.now.getTime() - o.maxAgeDays * 86_400_000;
+  const own = new Set(o.ownAddresses.filter(Boolean));
+  const seen = new Set<string>();
+  const list: Candidate[] = [];
+  for (const it of items) {
+    if (!it || typeof it.resourceUrl !== "string" || !Array.isArray(it.accepts)) {
+      out("malformed");
+      continue;
+    }
+    const accept = selectAccept(it.accepts, o.network, o.usdcAsaId);
+    if (!accept) {
+      out("other_network_or_asset");
+      continue;
+    }
+    if (it.accepts.some((a) => own.has(a.payTo))) {
+      out("own_address");
+      continue;
+    }
+    let host: string;
+    let protocol: string;
+    try {
+      const u = new URL(it.resourceUrl);
+      host = u.hostname.toLowerCase();
+      protocol = u.protocol;
+    } catch {
+      out("bad_url");
+      continue;
+    }
+    if (isOwnHost(host, o.ownHosts)) {
+      out("own_host");
+      continue;
+    }
+    const price = BigInt(accept.amount);
+    if (price > o.maxPerCallAtomic) {
+      out("price_over_cap");
+      continue;
+    }
+    if (cutoff !== null) {
+      const t = it.lastSeen ? Date.parse(it.lastSeen) : NaN;
+      if (!Number.isFinite(t) || t < cutoff) {
+        out("stale");
+        continue;
+      }
+    }
+    if (!o.allowPrivate && protocol !== "https:") {
+      out("not_https");
+      continue;
+    }
+    const b = buildRequest(it);
+    if (!b.ok) {
+      out(b.reason);
+      continue;
+    }
+    const key = `${b.method} ${b.url}`;
+    if (seen.has(key)) {
+      out("duplicate_url");
+      continue;
+    }
+    seen.add(key);
+    list.push({
+      key,
+      url: b.url,
+      host,
+      method: b.method,
+      body: b.body,
+      contentType: b.contentType,
+      input: b.input,
+      priceAtomic: price,
+      payTo: accept.payTo,
+      description: it.description,
+      lastSeen: it.lastSeen,
+      settleCount: it.settleCount,
+    });
+  }
+  let chosen = list;
+  if (o.perHost) {
+    const best = new Map<string, Candidate>();
+    for (const c of list) {
+      const b = best.get(c.host);
+      const better =
+        !b ||
+        c.priceAtomic! < b.priceAtomic! ||
+        (c.priceAtomic === b.priceAtomic && ((c.settleCount ?? 0) > (b.settleCount ?? 0) || ((c.settleCount ?? 0) === (b.settleCount ?? 0) && c.url < b.url)));
+      if (better) best.set(c.host, c);
+    }
+    chosen = [...best.values()];
+    const n = list.length - chosen.length;
+    if (n > 0) excluded.not_cheapest_on_host = n;
+  }
+  chosen.sort((a, b) => (a.priceAtomic! < b.priceAtomic! ? -1 : a.priceAtomic! > b.priceAtomic! ? 1 : a.host.localeCompare(b.host) || a.url.localeCompare(b.url)));
+  return { candidates: chosen, excluded };
+}
+
+export async function fetchBazaar(base = DEFAULT_BAZAAR, fetchImpl: typeof fetch = fetch): Promise<BazaarItem[]> {
+  const items: BazaarItem[] = [];
+  for (let page = 0, offset = 0; page < 40; page++) {
+    const res = await fetchImpl(`${base}?limit=500&offset=${offset}`, { redirect: "follow", signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw new Error(`bazaar ${res.status}`);
+    const body = (await res.json()) as { items?: BazaarItem[]; pagination?: { total?: number } };
+    if (!Array.isArray(body.items)) throw new Error("bazaar: malformed response");
+    items.push(...body.items);
+    offset += body.items.length;
+    const total = body.pagination?.total ?? 0;
+    if (body.items.length === 0 || offset >= total) return items;
+  }
+  throw new Error("bazaar: too many pages");
+}
+
+/** Send the candidate's method/body through the normal probe() request path. */
+export function withInput(deps: ProbeDeps, c: Candidate): ProbeDeps {
+  const shape = (init: RequestInit): RequestInit => ({
+    ...init,
+    method: c.method,
+    ...(c.body !== undefined ? { body: c.body, headers: { "content-type": c.contentType ?? "application/json" } } : {}),
+  });
+  return {
+    ...deps,
+    fetchImpl: (url, init) => deps.fetchImpl(url, shape(init)),
+    paidFetch: (url, approved, init) => deps.paidFetch(url, approved, shape(init)),
+  };
+}
+
+const CAP_STOP: Record<string, string> = { daily_cap_reached: "daily_cap", cap_check_unavailable: "cap_check_unavailable" };
+
+function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host" | "method" | "input" | "payTo" | "priceUsdc" | "declared"> {
+  return {
+    at,
+    url: c.url,
+    host: c.host,
+    method: c.method,
+    input: c.input,
+    payTo: c.payTo,
+    priceUsdc: c.priceAtomic !== undefined ? atomicToUsdc(c.priceAtomic) : undefined,
+    declared: c.description ? { description: clip(c.description, 200) } : undefined,
+  };
+}
+
+export function skippedRow(c: Candidate, reason: string, at: string, detail?: string): BoardRow {
+  return { ...baseRow(c, at), verdict: "SKIPPED", reason, detail, paid: false };
+}
+
+export function rowFromResult(c: Candidate, r: ProbeResult, at: string): BoardRow {
+  const b = baseRow(c, at);
+  const tx = r.downstreamPayment?.transaction || undefined;
+  return {
+    ...b,
+    priceUsdc: r.price?.usdc ?? b.priceUsdc,
+    payTo: r.price?.payTo ?? b.payTo,
+    declared: r.declared
+      ? { description: r.declared.description ? clip(r.declared.description, 200) : b.declared?.description, mimeType: r.declared.mimeType, expectedKeys: r.declared.expectedKeys }
+      : b.declared,
+    verdict: r.verdict,
+    reason: r.reason,
+    detail: r.detail ? clip(r.detail, 300) : undefined,
+    paid: r.downstreamPayment?.success === true,
+    tx,
+    delivery: r.delivery ? clip(`${r.delivery.status} ${r.delivery.contentType ?? ""} ${r.delivery.summary}`, 300) : undefined,
+  };
+}
+
+export interface RunOptions {
+  probeOne: (c: Candidate) => Promise<ProbeResult>;
+  headroom?: () => Promise<{ ok: true } | { ok: false; reason: string; detail?: string }>;
+  concurrency?: number;
+  /** Keys already attempted today (never bought twice). */
+  done?: Set<string>;
+  onAttempt?: (key: string) => void;
+  onRow?: (row: BoardRow) => void;
+  now?: () => Date;
+}
+
+/**
+ * Buy each candidate once through probeOne. Stops at the first cap refusal:
+ * that candidate and every one not yet started become SKIPPED.
+ */
+export async function runSweep(cands: Candidate[], o: RunOptions): Promise<BoardRow[]> {
+  const now = o.now ?? (() => new Date());
+  const pending = cands.filter((c) => !o.done?.has(c.key));
+  const rows: BoardRow[] = [];
+  const emit = (r: BoardRow) => {
+    rows.push(r);
+    o.onRow?.(r);
+  };
+  let stop: { reason: string; detail?: string } | null = null;
+  if (o.headroom) {
+    const h = await o.headroom();
+    if (!h.ok) stop = { reason: CAP_STOP[h.reason] ?? h.reason, detail: h.detail };
+  }
+  let next = 0;
+  const worker = async () => {
+    while (!stop && next < pending.length) {
+      const c = pending[next++];
+      o.onAttempt?.(c.key);
+      let r: ProbeResult;
+      try {
+        r = await o.probeOne(c);
+      } catch (e) {
+        r = { verdict: "REFUSE", reason: "probe_error", target: c.url, detail: String((e as Error).message ?? e).slice(0, 200) };
+      }
+      const capStop = CAP_STOP[r.reason];
+      if (capStop) {
+        stop ??= { reason: capStop, detail: r.detail };
+        const row = skippedRow(c, capStop, now().toISOString(), r.detail);
+        if (r.price) row.priceUsdc = r.price.usdc;
+        emit(row);
+      } else {
+        emit(rowFromResult(c, r, now().toISOString()));
+      }
+    }
+  };
+  const n = Math.max(1, Math.min(4, o.concurrency ?? 1));
+  await Promise.all(Array.from({ length: n }, worker));
+  const s = stop as { reason: string; detail?: string } | null;
+  if (s) for (; next < pending.length; next++) emit(skippedRow(pending[next], s.reason, now().toISOString()));
+  return rows;
+}
+
+export function totalsOf(rows: BoardRow[]): BoardFile["totals"] {
+  let paid = 0n;
+  for (const r of rows) if (r.paid && r.priceUsdc) paid += usdcToAtomic(r.priceUsdc);
+  return {
+    rows: rows.length,
+    allow: rows.filter((r) => r.verdict === "ALLOW").length,
+    refuse: rows.filter((r) => r.verdict === "REFUSE").length,
+    skipped: rows.filter((r) => r.verdict === "SKIPPED").length,
+    paidUsdc: atomicToUsdc(paid),
+  };
+}
+
+/** Keys that must not be bought again today, and attempts that never produced a row (crash mid-purchase). */
+export function resumeState(prev: { rows?: BoardRow[]; attempts?: string[] } | null): { keep: BoardRow[]; done: Set<string>; interrupted: string[] } {
+  const rows = prev?.rows ?? [];
+  const keep = rows.filter((r) => r.verdict !== "SKIPPED" || r.reason === "interrupted");
+  const done = new Set(keep.map((r) => `${r.method} ${r.url}`));
+  const withRow = new Set(rows.map((r) => `${r.method} ${r.url}`));
+  const interrupted = (prev?.attempts ?? []).filter((k) => !withRow.has(k) && !done.has(k));
+  for (const k of interrupted) done.add(k);
+  return { keep, done, interrupted };
+}
+
+function writeJsonAtomic(file: string, data: unknown): void {
+  mkdirSync(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n");
+  renameSync(tmp, file);
+}
+
+function argValue(argv: string[], name: string): string | undefined {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+function addressOfMnemonic(m: string | undefined): string | undefined {
+  const s = m?.trim();
+  return s ? addressFromSeed(seedFromMnemonic(s)) : undefined;
+}
+
+async function main(argv: string[]): Promise<void> {
+  const dryRun = argv.includes("--dry-run");
+  const census = argv.includes("--census");
+  const env = process.env;
+  // A dry run never builds a signer, so it does not need the MainNet unlock.
+  const cfg: AppConfig = loadConfig(dryRun ? { ...env, I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" } : env);
+  const boardPerDay = env.BOARD_MAX_PER_DAY_USDC ? usdcToAtomic(env.BOARD_MAX_PER_DAY_USDC) : cfg.maxPerDayAtomic;
+  if (boardPerDay < cfg.maxPerCallAtomic) throw new Error("BOARD_MAX_PER_DAY_USDC must be >= the per-call cap");
+  const boardCfg: AppConfig = { ...cfg, maxPerDayAtomic: boardPerDay };
+
+  const testnetKeys = cfg.networkName === "testnet" && existsSync(cfg.keysFile) ? loadKeys(cfg.keysFile) : undefined;
+  const customerPayTo = cfg.payTo ?? testnetKeys?.vet402.address;
+  const customerPayer =
+    addressOfMnemonic(env.PAYER_MNEMONIC) ?? (cfg.networkName === "mainnet" ? KNOWN_MAINNET_PAYER : testnetKeys?.vet402.address);
+  let boardPayer: Payer | undefined;
+  let boardPayerAddress: string | undefined;
+  if (!dryRun) {
+    const m = env.BOARD_PAYER_MNEMONIC?.trim();
+    boardPayer = m ? { address: addressOfMnemonic(m)!, secretKeyB64: secretKeyB64FromMnemonic(m) } : loadPayer(cfg.networkName, cfg.keysFile, env);
+    boardPayerAddress = boardPayer.address;
+  } else {
+    boardPayerAddress = addressOfMnemonic(env.BOARD_PAYER_MNEMONIC) ?? env.BOARD_PAYER_ADDRESS ?? customerPayer;
+  }
+  const sharedWallet = !!boardPayerAddress && boardPayerAddress === customerPayer;
+  // On the /v1/check payer wallet, board purchases would (1) use up the customers' daily cap (same
+  // on-chain total) and (2) show up in /activity, which pairs any payer payout with the latest
+  // unpaid customer payment within 300 s: a board purchase could be credited to a customer.
+  if (!dryRun && cfg.networkName === "mainnet" && sharedWallet && !argv.includes("--share-payer-wallet")) {
+    throw new Error(
+      "MainNet board runs need their own wallet: set BOARD_PAYER_MNEMONIC (not the /v1/check payer). --share-payer-wallet overrides this.",
+    );
+  }
+  const ownAddresses = [...new Set([customerPayTo, customerPayer, boardPayerAddress].filter((a): a is string => !!a))];
+  const ownHosts = [...OWN_HOSTS, ...(env.BOARD_OWN_HOSTS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)];
+
+  // --- candidates
+  const now = new Date();
+  let candidates: Candidate[];
+  let selection: NonNullable<BoardFile["selection"]>;
+  const targets = argValue(argv, "--targets");
+  if (targets) {
+    candidates = targets
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((u) => ({ key: `GET ${u}`, url: u, host: new URL(u).hostname, method: "GET" as const, input: "(none)" }));
+    candidates = candidates.filter((c, i) => candidates.findIndex((d) => d.key === c.key) === i);
+    selection = { source: "targets", candidates: candidates.length, excluded: {} };
+  } else {
+    const bazaar = argValue(argv, "--bazaar") ?? DEFAULT_BAZAAR;
+    const items = await fetchBazaar(bazaar);
+    const maxAge = argValue(argv, "--max-age-days");
+    const r = selectCandidates(items, {
+      network: cfg.network,
+      usdcAsaId: cfg.usdcAsaId,
+      maxPerCallAtomic: cfg.maxPerCallAtomic,
+      now,
+      maxAgeDays: census ? (maxAge ? Number(maxAge) : null) : Number(maxAge ?? 7),
+      ownAddresses,
+      ownHosts,
+      allowPrivate: cfg.allowPrivateTargets,
+      perHost: !census,
+    });
+    candidates = r.candidates;
+    selection = { source: `${bazaar} (${items.length} items)`, candidates: candidates.length, excluded: r.excluded };
+  }
+  const limit = argValue(argv, "--limit");
+  if (limit) candidates = candidates.slice(0, Number(limit));
+
+  const date = now.toISOString().slice(0, 10);
+  const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
+  const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
+  const latest = join(outDir, census ? "census-latest.json" : "latest.json");
+  const readSpent = boardPayerAddress
+    ? () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: boardPayerAddress!, asaId: cfg.usdcAsaId })
+    : undefined;
+
+  const estimate = candidates.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
+  const hosts = new Set(candidates.map((c) => c.host)).size;
+  console.log(`mode ${census ? "census" : targets ? "targets" : "daily"} · ${cfg.networkName} ${cfg.network}`);
+  console.log(`source ${selection.source}`);
+  console.log(`excluded ${JSON.stringify(selection.excluded)}`);
+  console.log(`board payer ${boardPayerAddress ?? "(unknown)"}${sharedWallet ? " (same wallet as /v1/check: its daily cap reads the same on-chain total)" : ""}`);
+  console.log(`own addresses excluded: ${ownAddresses.join(", ")} · own hosts excluded: ${ownHosts.join(", ")}`);
+
+  if (dryRun) {
+    const show = census ? candidates.slice(0, 20) : candidates;
+    for (const c of show) console.log(`  ${c.priceAtomic !== undefined ? atomicToUsdc(c.priceAtomic) : "?"}  ${c.method.padEnd(4)} ${c.url.slice(0, 110)}  ${c.lastSeen?.slice(0, 10) ?? ""}`);
+    if (show.length < candidates.length) console.log(`  … ${candidates.length - show.length} more`);
+    let spent: bigint | undefined;
+    try {
+      spent = readSpent ? await readSpent() : undefined;
+    } catch (e) {
+      console.log(`indexer: ${(e as Error).message}`);
+    }
+    let fit = 0;
+    let acc = spent ?? 0n;
+    for (const c of candidates) {
+      if (acc + (c.priceAtomic ?? 0n) > boardPerDay) break;
+      acc += c.priceAtomic ?? 0n;
+      fit++;
+    }
+    console.log(
+      `candidates ${candidates.length} · hosts ${hosts} · estimate ${atomicToUsdc(estimate)} USDC · board daily cap ${atomicToUsdc(boardPerDay)} USDC · spent today ${spent !== undefined ? atomicToUsdc(spent) : "unknown"} USDC · would buy ${fit}, would skip ${candidates.length - fit} (daily_cap)`,
+    );
+    console.log("dry-run: no payment was made and no file was written.");
+    return;
+  }
+
+
+  const prev = existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { rows?: BoardRow[]; attempts?: string[] }) : null;
+  const { keep, done, interrupted } = resumeState(prev);
+  const rows: BoardRow[] = [...keep];
+  const attempts: string[] = [...new Set([...(prev?.attempts ?? [])])];
+  for (const k of interrupted) {
+    const c = candidates.find((x) => x.key === k);
+    const [method, ...rest] = k.split(" ");
+    rows.push(
+      c
+        ? skippedRow(c, "interrupted", now.toISOString(), "an earlier run stopped during this purchase; not retried today")
+        : { at: now.toISOString(), url: rest.join(" "), host: "", method, verdict: "SKIPPED", reason: "interrupted", paid: false },
+    );
+  }
+  const startedAt = (prev as { startedAt?: string } | null)?.startedAt ?? now.toISOString();
+  const snapshot = (): BoardFile & { attempts: string[]; mode: string } => ({
+    version: 1,
+    mode: census ? "census" : targets ? "targets" : "daily",
+    network: cfg.network,
+    networkName: cfg.networkName,
+    date,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    payer: boardPayerAddress,
+    caps: { perCallUsdc: atomicToUsdc(cfg.maxPerCallAtomic), perDayUsdc: atomicToUsdc(boardPerDay) },
+    selection,
+    totals: totalsOf(rows),
+    rows,
+    attempts,
+  });
+
+  const guard = new IndexedSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, boardPerDay, join("state", `board-spend-${cfg.networkName}.json`)), readSpent!);
+  const baseDeps: ProbeDeps = {
+    fetchImpl: (u, i) => fetch(u, i),
+    paidFetch: makePaidFetch(boardCfg, boardPayer!.secretKeyB64),
+    ownAddresses,
+  };
+  const h0 = await guard.headroom();
+  console.log(`buying ${candidates.filter((c) => !done.has(c.key)).length} (already done today: ${done.size}) · estimate ${atomicToUsdc(estimate)} USDC · headroom ${h0.ok ? atomicToUsdc(h0.remainingAtomic) : h0.reason}`);
+
+  await runSweep(candidates, {
+    probeOne: (c) => probe(c.url, boardCfg, guard, withInput(baseDeps, c)),
+    headroom: async () => (h0.ok ? { ok: true } : { ok: false, reason: h0.reason, detail: h0.detail }),
+    concurrency: census ? Number(argValue(argv, "--concurrency") ?? 3) : 1,
+    done,
+    onAttempt: (k) => {
+      attempts.push(k);
+      writeJsonAtomic(file, snapshot());
+    },
+    onRow: (r) => {
+      rows.push(r);
+      writeJsonAtomic(file, snapshot());
+      console.log(`${r.verdict.padEnd(7)} ${r.reason.padEnd(22)} ${(r.priceUsdc ?? "").padEnd(9)} ${r.url.slice(0, 90)}${r.tx ? `  tx ${r.tx}` : ""}`);
+    },
+  });
+  const final = snapshot();
+  writeJsonAtomic(file, final);
+  writeJsonAtomic(latest, final);
+  const t = final.totals;
+  console.log(`done: ${t.rows} rows · ALLOW ${t.allow} · REFUSE ${t.refuse} · SKIPPED ${t.skipped} · paid ${t.paidUsdc} USDC → ${file}, ${latest}`);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main(process.argv.slice(2)).catch((e) => {
+    console.error(`board-sweep: ${(e as Error).message}`);
+    process.exit(1);
+  });
+}

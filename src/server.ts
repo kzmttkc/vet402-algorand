@@ -29,6 +29,7 @@ import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
+import { registerBoard } from "./board.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -144,6 +145,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       }
     });
   }
+  registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
 
   app.use(
     settleFirstMiddleware(httpServer, {

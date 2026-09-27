@@ -1,0 +1,72 @@
+# Delivery board sweep on Algorand MainNet (scripts/board-sweep.ts).
+# Buys with the payer wallet in secrets; commits only board/*.json.
+# Secrets: BOARD_PAYER_MNEMONIC (required on MainNet: a wallet used only by the board;
+# the script refuses the /v1/check payer wallet). PAYER_MNEMONIC is passed so the
+# script can recognise the /v1/check payer address and exclude it.
+name: board
+
+on:
+  schedule:
+    - cron: "30 23 * * *" # 23:30 UTC = 08:30 JST
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: daily (one per seller) or census (every listed resource)
+        type: choice
+        options: [daily, census]
+        default: daily
+      dry_run:
+        description: list targets and the cost estimate only (no payment, no commit)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: board
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      X402_NETWORK: mainnet
+      I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes"
+      MODE: ${{ inputs.mode || 'daily' }}
+      DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
+      BOARD_MAX_PER_DAY_USDC: ${{ inputs.mode == 'census' && '60' || '3' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Record the run date (UTC)
+        run: echo "BOARD_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+      - name: Sweep
+        env:
+          PAYER_MNEMONIC: ${{ secrets.PAYER_MNEMONIC }}
+          BOARD_PAYER_MNEMONIC: ${{ secrets.BOARD_PAYER_MNEMONIC }}
+        run: |
+          args=()
+          if [ "$MODE" = "census" ]; then args+=(--census); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          npx tsx scripts/board-sweep.ts "${args[@]}"
+      # Runs even when the sweep failed: the script writes each row as it goes,
+      # so a partial day is kept and the next run resumes (never buys a URL twice a day).
+      - name: Commit board/*.json
+        if: always() && env.DRY_RUN != 'true'
+        run: |
+          shopt -s nullglob
+          files=(board/*.json)
+          if [ ${#files[@]} -eq 0 ]; then echo "no board files"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${files[@]}"
+          if git diff --cached --quiet; then echo "no board changes"; exit 0; fi
+          git commit -m "board: ${BOARD_DATE} ${MODE}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
