@@ -37,7 +37,7 @@ import type { Catalog } from "./bazaar.js";
 import type { SpendGuard } from "./spend.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
 import { BASE_CSS, topNav } from "./landing.js";
-import { TRY_PER_NETWORK, claimKeys, countedLog, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type ClaimOutcome, type TrialLog, type TrialStore } from "./trial.js";
+import { TRY_MAX_TRIES_PER_DAY, TRY_MIN_ALGO_MICRO, TRY_PER_NETWORK, claimKeys, countedLog, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type ClaimOutcome, type TrialLog, type TrialStore } from "./trial.js";
 import { timingSafeEqual } from "node:crypto";
 import type { SettleFirstEnv } from "./settle-first.js";
 import type { ActivityReport } from "./activity.js";
@@ -115,6 +115,8 @@ export interface TrialDeps {
   paidFetch: ProbeDeps["paidFetch"];
   /** X handles not shown (removal requests; env TRY_HIDDEN_HANDLES). Compared case-insensitively. */
   hiddenHandles?: string[];
+  /** The trial wallet's ALGO balance in microALGO (fees). Below TRY_MIN_ALGO_MICRO, or unreadable, nothing is paid. */
+  algoBalance?: () => Promise<bigint>;
 }
 
 export interface TryDeps {
@@ -476,8 +478,22 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
       const log = await trial.store.log();
       recordedToday = log.entries.filter((e) => e.host === t.url.host && e.at.slice(0, 10) === today).length;
       if (recordedToday >= TRY_PER_SELLER_PER_DAY) return sellerFull();
+      // Every try today, every seller, operator tests included: one total, whatever the IPs.
+      if (log.entries.filter((e) => e.at.slice(0, 10) === today).length >= TRY_MAX_TRIES_PER_DAY) {
+        return c.json({ error: "daily_cap_reached", detail: "Today's free tries are used up. Come back tomorrow (UTC).", used: false }, 503);
+      }
     } catch {
       return c.json({ error: "cannot_check", detail: "vet402 cannot read today's free tries, so it will not pay now. Try again shortly." }, 503);
+    }
+
+    if (trial.algoBalance) {
+      let algo: bigint;
+      try {
+        algo = await trial.algoBalance();
+      } catch {
+        return c.json({ error: "cannot_check", detail: "vet402 cannot read its trial wallet right now, so it will not pay. Try again shortly.", used: false }, 503);
+      }
+      if (algo < TRY_MIN_ALGO_MICRO) return c.json({ error: "trials_paused", detail: "Free tries are paused while vet402 tops up its trial wallet. You can still buy with your own wallet.", used: false }, 503);
     }
 
     const [ipKey, addressKey] = claimKeys(trial.hashKey, personKey(ip), address);

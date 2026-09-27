@@ -50,6 +50,10 @@ export const TRY_LEASE_ROUNDS = 1000;
  * a slot or a claim (pays less, never more).
  */
 export const TRY_CONFIRM_ROUNDS = 20;
+/** At most this many free tries a UTC day in total (3.00 USDC / 0.05), whatever the IPs or sellers: bounds the ALGO fees too. */
+export const TRY_MAX_TRIES_PER_DAY = 60;
+/** Free tries pause below this ALGO balance (microALGO), so fees can never empty the trial wallet. */
+export const TRY_MIN_ALGO_MICRO = 500_000n;
 export const TRY_NOTE_PREFIX = "vet402-try:v1:";
 const CLAIM = `${TRY_NOTE_PREFIX}c:`;
 const SLOT = `${TRY_NOTE_PREFIX}s:`;

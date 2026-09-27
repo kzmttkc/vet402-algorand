@@ -112,7 +112,7 @@ const board = (rows: BoardRow[]): BoardFile => ({
 
 const baseCfg = (env: NodeJS.ProcessEnv = {}): AppConfig => loadConfig({ ALLOW_PRIVATE_TARGETS: "1", ...env });
 
-function setup(o: { trial?: boolean; perDay?: bigint; amount?: (path: string) => string; payTo?: string; census?: BoardRow[]; env?: NodeJS.ProcessEnv } = {}) {
+function setup(o: { trial?: boolean; algo?: () => Promise<bigint>; perDay?: bigint; amount?: (path: string) => string; payTo?: string; census?: BoardRow[]; env?: NodeJS.ProcessEnv } = {}) {
   const cfg = baseCfg(o.env);
   const trace: string[] = [];
   const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
@@ -129,6 +129,7 @@ function setup(o: { trial?: boolean; perDay?: bigint; amount?: (path: string) =>
           store,
           guard: new LocalSpendGuard(new SpendLedger(50_000n, o.perDay ?? 3_000_000n)),
           paidFetch: trialPaidFetch(seen),
+          ...(o.algo ? { algoBalance: o.algo } : {}),
         };
   const census = board(o.census ?? [row(`${HOST}/honest`)]);
   // /try reads the board through the shared loader: point it at in-memory files.
@@ -1078,4 +1079,29 @@ test("#7 the /try page shows no path names (/v1/...): not in its text, not in an
   // The page turns the next step into a link that opens the wallet card.
   assert.match(page, /j\.error==='already_tried'&&j\.headline/);
   assert.match(page, /function walletNext\(text\)\{[\s\S]*?openWallet\(\)/);
+});
+
+test("trial: below 0.5 ALGO for fees, or when the balance cannot be read, trials pause and nothing is claimed or paid", async () => {
+  const low = setup({ algo: async () => 499_999n });
+  const r = await run(low.app, { url: `${HOST}/honest` });
+  assert.equal(r.status, 503);
+  assert.equal(((await r.json()) as { error: string }).error, "trials_paused");
+  assert.equal(low.seen.trialPaid.length, 0);
+  assert.equal((await low.store.log()).people, 0);
+  const broken = setup({ algo: async () => { throw new Error("indexer down"); } });
+  assert.equal((await run(broken.app, { url: `${HOST}/honest` })).status, 503);
+  assert.equal(broken.seen.trialPaid.length, 0);
+  const ok = setup({ algo: async () => 500_000n });
+  assert.equal((await run(ok.app, { url: `${HOST}/honest` })).status, 200);
+  assert.equal(ok.seen.trialPaid.length, 1);
+});
+
+test("trial: at most 60 free tries a UTC day in total, whatever the IP or seller", async () => {
+  const { app, seen, store } = setup();
+  const at = new Date().toISOString();
+  for (let i = 0; i < 60; i++) await store.record({ at, url: `https://other${i}.example/x`, host: `other${i}.example`, class: "DELIVERED", reason: "delivered" });
+  const r = await run(app, { url: `${HOST}/honest` }, "198.51.100.77");
+  assert.equal(r.status, 503);
+  assert.equal(((await r.json()) as { error: string }).error, "daily_cap_reached");
+  assert.equal(seen.trialPaid.length, 0);
 });
