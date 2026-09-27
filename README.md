@@ -234,6 +234,10 @@ Rounds were read from `mainnet-idx.algonode.cloud`. The customer's payment confi
 
 MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q`, vet402 payer `OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY`.
 
+### 2026-09-27: one seller payment without a customer payment (bug, fixed)
+
+`OZZH2TRA3MANN55OTTWOXVBDHRRYIJ52IBXEPVBBE4BNQUOR6CCQ` (04:42 UTC, 0.01 USDC to canix402) had no customer payment in front of it. An unpaid `HEAD /v1/check` skipped the payment check and reached the handler, which paid the seller. Fixed at 05:28 UTC in 3d1377f: HEAD is priced like GET, and the handler refuses without a settled customer payment. It shows on `/activity` under unmatched seller payments.
+
 ## TestNet run record
 
 ### 2026-09-27 JST: first seller audit (`/v1/audit`)
