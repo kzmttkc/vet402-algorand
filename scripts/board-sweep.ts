@@ -34,28 +34,16 @@ import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "../src/c
 import { SpendLedger } from "../src/caps.js";
 import { IndexedSpendGuard, usdcSentToday } from "../src/spend.js";
 import { makePaidFetch, probe, type ProbeDeps, type ProbeResult } from "../src/probe.js";
-import { selectAccept, type AcceptLike } from "../src/declaration.js";
+import { selectAccept } from "../src/declaration.js";
 import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
 import type { BoardFile, BoardRow } from "../src/board.js";
+import { DEFAULT_BAZAAR, OWN_HOSTS, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
 
-export const DEFAULT_BAZAAR = "https://facilitator.goplausible.xyz/discovery/resources";
-export const OWN_HOSTS = ["vet402-algorand.vercel.app", "vet402.com"];
+// Moved to src/bazaar.ts (shared with the paid seller audit); re-exported for existing callers.
+export { DEFAULT_BAZAAR, OWN_HOSTS, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem };
+
 /** MainNet payer wallet (public address, README "MainNet run record"). Used only when no key is loaded. */
 export const KNOWN_MAINNET_PAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
-const MAX_BODY_CHARS = 8192;
-
-export interface BazaarItem {
-  resourceUrl: string;
-  method?: string;
-  description?: string;
-  mimeType?: string;
-  accepts: AcceptLike[];
-  discoveryInfo?: {
-    input?: { method?: string; queryParams?: Record<string, unknown>; body?: unknown; bodyType?: string; pathParams?: unknown };
-  };
-  lastSeen?: string;
-  settleCount?: number;
-}
 
 export interface Candidate {
   /** `${method} ${url}`: one purchase per key per UTC day. */
@@ -88,57 +76,8 @@ export interface SelectOptions {
   perHost: boolean;
 }
 
-export function isOwnHost(host: string, ownHosts: string[] = OWN_HOSTS): boolean {
-  const h = host.toLowerCase();
-  return ownHosts.some((o) => h === o || h.endsWith(`.${o}`));
-}
-
 function clip(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
-
-type Built = { ok: true; url: string; method: "GET" | "POST"; body?: string; contentType?: string; input: string } | { ok: false; reason: string };
-
-/** Turn a Bazaar item into the request vet402 will send (the seller's own example input). */
-export function buildRequest(item: BazaarItem): Built {
-  const inp = item.discoveryInfo?.input ?? {};
-  const method = String(inp.method ?? item.method ?? "GET").toUpperCase();
-  if (method !== "GET" && method !== "POST") return { ok: false, reason: "method_not_probed" };
-  let u: URL;
-  try {
-    u = new URL(item.resourceUrl);
-  } catch {
-    return { ok: false, reason: "bad_url" };
-  }
-  let path = u.pathname;
-  try {
-    path = decodeURI(u.pathname);
-  } catch {
-    /* keep raw */
-  }
-  if (/\{[^}]*\}|\/:[A-Za-z_]/.test(path)) return { ok: false, reason: "path_params" };
-  let q = inp.queryParams as Record<string, unknown> | undefined;
-  // Some listings nest the whole input object inside queryParams; unwrap it.
-  if (q && typeof q === "object" && q.type === "http" && q.queryParams && typeof q.queryParams === "object") {
-    q = q.queryParams as Record<string, unknown>;
-  }
-  if (q && typeof q === "object" && !Array.isArray(q)) {
-    for (const [k, raw] of Object.entries(q)) {
-      // A schema-style value ({type, description, example|default}) contributes its example/default only.
-      const v = raw && typeof raw === "object" ? ((raw as Record<string, unknown>).example ?? (raw as Record<string, unknown>).default) : raw;
-      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") u.searchParams.set(k, String(v));
-    }
-  }
-  let body: string | undefined;
-  let contentType: string | undefined;
-  if (method === "POST" && inp.body !== undefined) {
-    if (inp.bodyType && inp.bodyType !== "json") return { ok: false, reason: "body_not_json" };
-    body = JSON.stringify(inp.body);
-    if (body.length > MAX_BODY_CHARS) return { ok: false, reason: "body_too_large" };
-    contentType = "application/json";
-  }
-  const input = [u.search ? clip(u.search, 140) : "", body ? `body ${clip(body, 140)}` : ""].filter(Boolean).join(" ") || "(none)";
-  return { ok: true, url: u.toString(), method, body, contentType, input };
 }
 
 export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candidates: Candidate[]; excluded: Record<string, number> } {
@@ -259,35 +198,6 @@ export function interleaveByHost<T extends { host: string }>(list: T[]): T[] {
     for (const q of qs) if (round < q.length) out.push(q[round]);
   }
   return out;
-}
-
-export async function fetchBazaar(base = DEFAULT_BAZAAR, fetchImpl: typeof fetch = fetch): Promise<BazaarItem[]> {
-  const items: BazaarItem[] = [];
-  for (let page = 0, offset = 0; page < 40; page++) {
-    const res = await fetchImpl(`${base}?limit=500&offset=${offset}`, { redirect: "follow", signal: AbortSignal.timeout(30_000) });
-    if (!res.ok) throw new Error(`bazaar ${res.status}`);
-    const body = (await res.json()) as { items?: BazaarItem[]; pagination?: { total?: number } };
-    if (!Array.isArray(body.items)) throw new Error("bazaar: malformed response");
-    items.push(...body.items);
-    offset += body.items.length;
-    const total = body.pagination?.total ?? 0;
-    if (body.items.length === 0 || offset >= total) return items;
-  }
-  throw new Error("bazaar: too many pages");
-}
-
-/** Send the candidate's method/body through the normal probe() request path. */
-export function withInput(deps: ProbeDeps, c: Candidate): ProbeDeps {
-  const shape = (init: RequestInit): RequestInit => ({
-    ...init,
-    method: c.method,
-    ...(c.body !== undefined ? { body: c.body, headers: { "content-type": c.contentType ?? "application/json" } } : {}),
-  });
-  return {
-    ...deps,
-    fetchImpl: (url, init) => deps.fetchImpl(url, shape(init)),
-    paidFetch: (url, approved, init) => deps.paidFetch(url, approved, shape(init)),
-  };
 }
 
 const CAP_STOP: Record<string, string> = { daily_cap_reached: "daily_cap", cap_check_unavailable: "cap_check_unavailable" };

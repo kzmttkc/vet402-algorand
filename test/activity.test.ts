@@ -261,3 +261,48 @@ test("deposits below the check price are not counted as customers", async () => 
   assert.equal(r.totals.customers.payments, 0);
   assert.ok(r.notCounted.some((n) => n.reason === "below_price"));
 });
+
+test("audit: one customer payment pairs with several seller payments; counted once as a customer, shown under one row", async () => {
+  const SELLER3 = "SELLER3SELLER3SELLER3SELLER3SELLER3SELLER3SELLER3SELLER3SEL";
+  const audit = x402("AUDIT1", ALICE, PAYTO, 500_000, 200); // 0.50 USDC = one audit
+  const check = x402("CHECK1", BOB, PAYTO, 50_000, 230); // a later 0.05 check
+  const a1 = axfer("AUD-P1", PAYER, SELLER1, 10_000, 202);
+  const a2 = axfer("AUD-P2", PAYER, SELLER2, 10_000, 205);
+  const a3 = axfer("AUD-P3", PAYER, SELLER3, 20_000, 209);
+  const c1 = axfer("CHK-P1", PAYER, SELLER1, 10_000, 232);
+  const { f } = mockIndexer(
+    { [PAYTO]: [audit.txn, check.txn], [PAYER]: [a1, a2, a3, c1] },
+    { [audit.txn.group!]: audit.group, [check.txn.group!]: check.group },
+  );
+  const opts = { networkName: "mainnet" as const, indexerUrl: "https://idx", asaId: ASA, payTo: PAYTO, payer: PAYER, fetchImpl: f, priceAtomic: 50_000n };
+  const r = await new ActivityLedger({ ...opts, auditPriceAtomic: 500_000n, auditMaxTargets: 10 }).get();
+  const by = Object.fromEntries(r.rows.map((w) => [w.customerTx, w]));
+  assert.equal(by.AUDIT1.kind, "audit");
+  assert.deepEqual(by.AUDIT1.sellerPayments.map((p) => p.tx), ["AUD-P1", "AUD-P2", "AUD-P3"]);
+  assert.equal(by.AUDIT1.sellerTx, "AUD-P1"); // compatible single-seller fields repeat the first one
+  assert.equal(by.CHECK1.kind, "check");
+  assert.deepEqual(by.CHECK1.sellerPayments.map((p) => p.tx), ["CHK-P1"]);
+  assert.deepEqual(r.unmatchedPayouts, []);
+  // Customers: 2 payments (one audit + one check), not 4. Seller payments: 4, of which 3 inside the one audit.
+  assert.deepEqual(r.totals.customers, { addresses: 2, payments: 2, usdc: "0.550000" });
+  assert.deepEqual(r.totals.sellerPayments, { payments: 4, usdc: "0.050000", unmatched: 0, unmatchedUsdc: "0.000000" });
+  assert.deepEqual(r.totals.audits, { payments: 1, sellerPayments: 3, sellerUsdc: "0.040000" });
+  const html = activityHtml(r);
+  assert.match(html, /3 of them inside 1 audit\(s\)/);
+  assert.match(html, /3 seller payment\(s\) for this one audit/);
+  assert.equal((html.match(/↳ same audit/g) ?? []).length, 3);
+
+  // Without audit pricing, the old rule holds: one seller payment per customer payment; the rest are unmatched.
+  const old = await new ActivityLedger(opts).get();
+  assert.deepEqual(Object.fromEntries(old.rows.map((w) => [w.customerTx, w.sellerPayments.length])), { AUDIT1: 1, CHECK1: 1 });
+  assert.deepEqual(old.unmatchedPayouts.map((p) => p.tx), ["AUD-P3", "AUD-P2"]);
+});
+
+test("audit: room is capped at auditMaxTargets; extra payouts are unmatched, never hidden", async () => {
+  const audit = x402("AUDIT2", ALICE, PAYTO, 500_000, 300);
+  const outs = [301, 302, 303].map((r, i) => axfer(`P${i}`, PAYER, SELLER1, 10_000, r));
+  const { f } = mockIndexer({ [PAYTO]: [audit.txn], [PAYER]: outs }, { [audit.txn.group!]: audit.group });
+  const r = await new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA, payTo: PAYTO, payer: PAYER, fetchImpl: f, auditPriceAtomic: 500_000n, auditMaxTargets: 2 }).get();
+  assert.deepEqual(r.rows[0].sellerPayments.map((p) => p.tx), ["P0", "P1"]);
+  assert.deepEqual(r.unmatchedPayouts.map((p) => p.tx), ["P2"]);
+});

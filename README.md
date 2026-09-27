@@ -61,6 +61,25 @@ What counts as a promise:
 - MainNet is locked unless `I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS=yes`. `ALLOW_PRIVATE_TARGETS=1` is refused on MainNet. Targets must be `https` and resolve to public IPs, redirects are not followed, and bodies are capped at 1 MB.
 - There is a residual risk. Two instances running at the same instant can each read the same on-chain total before either payment lands. The worst-case overshoot is about (concurrent checks) × per-call cap.
 
+## Seller audit
+
+`GET /v1/audit?seller=<host or payTo address>` (`AUDIT_PRICE_USDC`, default 0.50 USDC). For sellers who want their own API checked from someone else's wallet: vet402 buys each of the seller's listed resources with its own payer wallet and judges each delivery the same way as `/v1/check`. The 402 has the same shape as `/v1/check` (`exact`, USDC ASA, `tag: x402-global-challenge`, Bazaar extension with input and output declared).
+
+**Free plan before payment.** The unpaid request reads the Bazaar feed (`https://facilitator.goplausible.xyz/discovery/resources`, every page by `offset`, cached 10 minutes) and lists the seller's resources that are paid in USDC on this network. `seller` matches the resource host (`api.example.com`, or `localhost:4031` locally) or the `payTo` of its USDC accept.
+
+- None listed → `404 seller_not_found`, no 402 challenge, nothing to pay. Invalid or vet402's own seller → `400`. Bazaar or daily-cap check unreadable → `503`.
+- Otherwise the 402 JSON body carries `audit`: `found`, `checking`, `paying`, `plannedSpendUsdc`, the exact `targets` in the order they will be bought, and `notChecked` with a reason for each resource that will not be bought. So the seller knows how many resources will be checked before signing anything.
+- Order: most-bought first (`settleCount`), then cheapest. At most `AUDIT_MAX_TARGETS` (default 10) resources. The listed prices of the resources vet402 expects to pay for stay within `AUDIT_MAX_SPEND_USDC` (default 0.40, always below the audit price) and today's remaining daily cap; the rest are listed as `over_audit_budget`, `over_daily_headroom` or `over_target_limit`.
+- A resource above the per-call cap is still checked: vet402 reads its 402 and returns `price_over_cap` without paying.
+- vet402 sends the example input the seller published in the Bazaar (query or JSON body), as the board does. `PUT`/`DELETE`, form bodies and path templates are listed as not checked. On 2026-09-27, 810 of the 2,090 MainNet USDC listings were `POST` and 867 were `GET` with declared query parameters, so a bare `GET` on the URL would misjudge most of them.
+- If nothing can be bought within the caps → `422 nothing_to_audit` with the list, nothing to pay.
+
+**After payment (settle-first).** The plan is made again when the paid request arrives (same cached catalogue, current daily headroom), before the customer's payment is settled; that plan is the one that runs, and it is returned in the response. The customer's payment settles first, then vet402 buys the targets one at a time through the normal `probe()`: per-call cap before any signature, the daily cap read from the chain, no self-dealing, no private addresses. On top of that, one audit never spends more than `AUDIT_MAX_SPEND_USDC`, even if a seller raised its price after the plan. When the audit budget or the daily cap is hit, or the audit runs longer than `AUDIT_DEADLINE_MS` (default 240 s), the remaining resources are not paid and come back as `SKIPPED` with `audit_budget`, `daily_cap` or `time_limit`.
+
+Response: `results[]` (per resource: `verdict`, `reason`, `class`, `customerTx`, `downstreamPayment.transaction`, `price`, `delivery`), `summary` (`delivered` / `mismatch` / `unreachable` / `unclear` / `skipped`, number of seller payments, USDC spent), `customerPayment`, and the `plan`. `class` uses the same rules as the board: `mismatch` only when vet402 paid and the delivery did not match the declaration.
+
+Locally, the TestNet test sellers are not in the Bazaar. `AUDIT_CATALOG_URLS=<url,url,...>` lists them by URL instead (allowed only with `ALLOW_PRIVATE_TARGETS=1`). `npx tsx scripts/audit-demo.ts <seller>` pays for one audit as the TestNet client and prints each payment's confirmed round.
+
 ## Use from an agent (MCP)
 
 An agent that pays Algorand x402 endpoints can ask vet402 first. `mcp/` is a stdio MCP server with two tools:
@@ -136,6 +155,11 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `PAYER_MNEMONIC` | yes | (secret) | wallet that pays sellers; **encrypted env only** |
 | `VET402_PAY_TO` | no | MainNet default `RMMD7KW5…PIY33Q` | where customers pay vet402 |
 | `CHECK_PRICE_USDC` | no | `0.05` | customer price |
+| `AUDIT_PRICE_USDC` | no | `0.50` | price of one seller audit |
+| `AUDIT_MAX_SPEND_USDC` | no | `0.40` | most one audit pays sellers; must be below `AUDIT_PRICE_USDC` |
+| `AUDIT_MAX_TARGETS` | no | `10` | most resources one audit checks (1–50) |
+| `AUDIT_DEADLINE_MS` | no | `240000` | the rest of an audit is SKIPPED after this |
+| `BAZAAR_URL` | no | `https://facilitator.goplausible.xyz/discovery/resources` | where the audit lists a seller's resources |
 | `PROBE_MAX_PER_CALL_USDC` | no | `0.10` (MainNet) | per-seller-payment cap |
 | `PROBE_MAX_PER_DAY_USDC` | no | `3.00` (MainNet) | per-UTC-day cap (on-chain) |
 | `FACILITATOR_URL` | no | `https://facilitator.goplausible.xyz` | |
@@ -152,7 +176,9 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 | path | role |
 |---|---|
-| `src/server.ts` | `GET /v1/check`, Bazaar discovery, production wiring, Vercel default export |
+| `src/server.ts` | `GET /v1/check`, `GET /v1/audit`, Bazaar discovery, production wiring, Vercel default export |
+| `src/audit.ts` | seller audit: free plan from the Bazaar, audit budget, run through `probe()` |
+| `src/bazaar.ts` | Bazaar feed reader (cached), request built from the seller's example input (shared with the board) |
 | `src/settle-first.ts` | verify → preflight → **settle** → handler middleware |
 | `src/probe.ts` | read seller 402 → caps / self-dealing → pay (`wrapFetchWithPayment` + `ExactAvmScheme`) → judge |
 | `src/spend.ts` | on-chain daily cap (indexer) + guard |
@@ -169,8 +195,10 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 - **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON.
 - **Operator test**: the customer is vet402's own `payTo` or payer wallet (exact address match). These rows are marked `operator test` and are left out of the customer totals. The two MainNet checks in the run record below are operator tests.
-- **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment (within 300 s) that has no seller payment yet. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
-- Totals: distinct paying customer addresses (operator excluded), customer payments and USDC, seller payments and USDC, operator tests.
+- **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room. A check has room for one seller payment (within 300 s). A seller audit (a customer payment of at least the audit price) has room for up to `AUDIT_MAX_TARGETS` (within 900 s), because one audit buys several resources. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
+- **Audits are one row.** An audit is one customer payment: it is counted once in the customer totals, marked `audit`, and its seller payments are listed under it (`sellerPayments[]` in the JSON; `seller`/`sellerTx` repeat the first one). The headline says how many seller payments were inside audits (`totals.audits`), so several seller payments per audit do not read as several customers.
+- Pairing uses amounts and times only (x402 transfers carry no reference). If a check and an audit run at the same moment, a seller payment can be credited to the wrong one of the two; customer counts are unaffected.
+- Totals: distinct paying customer addresses (operator excluded), customer payments and USDC, seller payments and USDC, audits, operator tests.
 
 The page needs only public addresses. The payer address is taken from `PAYER_MNEMONIC` as before, or from `VET402_PAYER_ADDRESS` if set.
 
@@ -206,6 +234,19 @@ Rounds were read from `mainnet-idx.algonode.cloud`. The customer's payment confi
 MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q`, vet402 payer `OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY`.
 
 ## TestNet run record
+
+### 2026-09-27 JST: first seller audit (`/v1/audit`)
+
+One audit of the test seller `Y6IYAN3L…HZKEJXXM` (`/honest`, `/liar`, `/pricey` under one payTo). Free plan: found 3, checking 3, paying 2.
+
+| resource | verdict | reason | seller tx | round |
+|---|---|---|---|---|
+| customer → vet402 (0.50 USDC) | | | `JEFWCRC3R4GW45R54LAORFRDMYMEOABATC6XJPRTJ6RNYJFAZDGA` | 67704026 |
+| `/honest` | ALLOW | delivered | `KYV7WFWRYXO5NO3NULY4QTJ7EBB2XHMMR5VIX4NLRKKT7GATFSNA` | 67704028 |
+| `/liar` | REFUSE | delivery_missing_keys | `VPEF6Z773KLRBXGGYRWEZDWLGCF4N2CW67UU3OJPIIGYJK4B2Y2A` | 67704030 |
+| `/pricey` | REFUSE | price_over_cap | not paid | |
+
+The customer's round is earlier than both seller payments. `/activity.json` shows the audit as one row (`kind: "audit"`) with both seller payments under it.
 
 ### 2026-09-27 11:1x JST: settle-first run (current code)
 

@@ -9,11 +9,14 @@
  *   3. delivery is checked against the seller's declaration
  *   4. ALLOW / REFUSE with both tx ids and a delivery summary
  *
+ *   GET /v1/audit?seller=<host or payTo>   (0.50 USDC): the same check for each of
+ *   the seller's Bazaar-listed resources, planned for free before payment (audit.ts).
+ *
  * Runs locally (`npm run server`) and on Vercel (zero-config Hono: this file's
  * default export). Layout follows algorandfoundation/x402-demo.
  */
 import { pathToFileURL } from "node:url";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { x402HTTPResourceServer, x402ResourceServer } from "@x402/hono";
 import { ExactAvmScheme } from "@x402/avm/exact/server";
@@ -31,6 +34,8 @@ import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { registerBoard } from "./board.js";
 import { registerSeller } from "./seller.js";
+import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
+import { parseSeller, planAudit, runAudit, type AuditPlan } from "./audit.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -45,6 +50,24 @@ export const CHECK_OUTPUT_EXAMPLE = {
   delivery: { status: 200, contentType: "application/json", bytes: 64, summary: "object{weather:string=\"sunny\", temperature:number=70}", missingKeys: [] },
 };
 
+export const AUDIT_OUTPUT_EXAMPLE = {
+  seller: "seller.example",
+  network: "algorand:...",
+  customerPayment: { transaction: "TXID_CUSTOMER...", network: "algorand:...", amount: "500000", payTo: "VET402..." },
+  summary: { checked: 3, delivered: 1, mismatch: 1, unreachable: 0, unclear: 1, skipped: 0, sellerPayments: 2, spentUsdc: "0.020000" },
+  results: [
+    {
+      resourceUrl: "https://seller.example/v1/data",
+      verdict: "ALLOW",
+      reason: "delivered",
+      class: "delivered",
+      customerTx: "TXID_CUSTOMER...",
+      downstreamPayment: { success: true, transaction: "TXID_SELLER..." },
+    },
+  ],
+  plan: { found: 3, checking: 3, paying: 2, plannedSpendUsdc: "0.020000", auditBudgetUsdc: "0.400000", notChecked: { total: 0, counts: {}, items: [] } },
+};
+
 export interface AppDeps {
   payTo: string;
   probeDeps: ProbeDeps;
@@ -53,6 +76,8 @@ export interface AppDeps {
   facilitator?: FacilitatorLike;
   /** Public activity ledger (GET /activity, /activity.json). Omitted = routes not mounted. */
   activity?: { get(): Promise<ActivityReport> };
+  /** Where /v1/audit reads a seller's resources. Default: the Bazaar feed at cfg.bazaarUrl (cached). */
+  catalog?: Catalog;
 }
 
 export function createApp(cfg: AppConfig, deps: AppDeps) {
@@ -84,6 +109,29 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     },
   });
 
+  const auditDiscovery = declareDiscoveryExtension({
+    input: { seller: "seller.example" },
+    inputSchema: {
+      type: "object",
+      properties: { seller: { type: "string", description: "the seller to audit: its host (api.example.com) or its Algorand payTo address" } },
+      required: ["seller"],
+    },
+    output: {
+      example: AUDIT_OUTPUT_EXAMPLE,
+      schema: {
+        type: "object",
+        properties: {
+          seller: { type: "string" },
+          customerPayment: { type: "object" },
+          summary: { type: "object" },
+          results: { type: "array" },
+          plan: { type: "object" },
+        },
+        required: ["seller", "customerPayment", "summary", "results"],
+      },
+    },
+  });
+
   const httpServer = new x402HTTPResourceServer(resourceServer, {
     "GET /v1/check": {
       accepts: [
@@ -100,10 +148,46 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       mimeType: "application/json",
       extensions: discovery,
     },
+    "GET /v1/audit": {
+      accepts: [
+        {
+          scheme: "exact",
+          price: `$${cfg.auditPriceUsdc}`,
+          network: cfg.network as `${string}:${string}`,
+          payTo: deps.payTo,
+          extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
+        },
+      ],
+      description:
+        `Seller audit: vet402 buys each of your Bazaar-listed resources from its own wallet (up to ${cfg.auditMaxTargets}, at most ${atomicToUsdc(cfg.auditMaxSpendAtomic)} USDC in total), only after your payment has settled, and returns a verdict per resource with both payment tx ids. The unpaid request is free and shows which resources will be checked.`,
+      mimeType: "application/json",
+      extensions: auditDiscovery,
+    },
   });
 
   const ownAddresses = [...new Set([deps.payTo, ...(deps.probeDeps.ownAddresses ?? [])])];
   const probeDeps: ProbeDeps = { ...deps.probeDeps, ownAddresses };
+
+  const catalog = deps.catalog ?? new BazaarCatalog(cfg.bazaarUrl);
+  /** The plan shown before payment is the plan run after it (same request object). */
+  const auditPlans = new WeakMap<Request, AuditPlan>();
+  const planForRequest = async (c: Context<SettleFirstEnv>): Promise<{ stop: Response } | { plan: AuditPlan }> => {
+    const seller = c.req.query("seller");
+    if (!parseSeller(seller)) {
+      return { stop: c.json({ error: "invalid_seller", detail: "seller must be a host (api.example.com) or an Algorand payTo address" }, 400) };
+    }
+    const h = await deps.guard.headroom();
+    if (!h.ok) return { stop: c.json({ error: h.reason, seller, detail: h.detail }, 503) };
+    let items;
+    try {
+      items = await catalog.items();
+    } catch (e) {
+      return { stop: c.json({ error: "bazaar_unavailable", seller, detail: String((e as Error).message ?? e).slice(0, 200) }, 503) };
+    }
+    const out = await planAudit(seller, items, { cfg, ownAddresses, resolveHost: deps.probeDeps.resolveHost, headroomAtomic: h.remainingAtomic });
+    if (!out.ok) return { stop: c.json(out.body, out.status) };
+    return { plan: out.plan };
+  };
 
   const app = new Hono<SettleFirstEnv>();
 
@@ -120,7 +204,10 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       return c.json({
         service: "vet402 (Algorand)",
         network: cfg.network,
-        endpoints: { "GET /v1/check?url=<x402 URL>": `${cfg.checkPriceUsdc} USDC` },
+        endpoints: {
+          "GET /v1/check?url=<x402 URL>": `${cfg.checkPriceUsdc} USDC`,
+          "GET /v1/audit?seller=<host or payTo>": `${cfg.auditPriceUsdc} USDC (the unpaid request shows the plan for free)`,
+        },
         order: "customer payment settles first; the seller is paid only after that",
         caps,
       });
@@ -154,7 +241,18 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   app.use(
     settleFirstMiddleware(httpServer, {
       // Free checks: a request we cannot serve is refused before the customer is charged.
+      beforeChallenge: async (c) => {
+        if (c.req.path !== "/v1/audit") return null;
+        const p = await planForRequest(c);
+        return "stop" in p ? p : { info: { audit: p.plan } };
+      },
       preflight: async (c) => {
+        if (c.req.path === "/v1/audit") {
+          const p = await planForRequest(c);
+          if ("stop" in p) return p.stop;
+          auditPlans.set(c.req.raw, p.plan);
+          return null;
+        }
         const target = c.req.query("url");
         if (!target) return c.json({ error: "missing url query parameter" }, 400);
         const t = await checkTarget(target, cfg.allowPrivateTargets, deps.probeDeps.resolveHost);
@@ -177,6 +275,21 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     } catch (e) {
       // The customer has paid: always answer with a verdict.
       return c.json({ verdict: "REFUSE", reason: "probe_error", target, customerPayment, detail: String((e as Error).message ?? e).slice(0, 200) }, 200);
+    }
+  });
+
+  app.get("/v1/audit", async (c) => {
+    const customerPayment = c.get("customerPayment");
+    const plan = auditPlans.get(c.req.raw);
+    if (!plan) return c.json({ error: "audit_plan_missing", customerPayment }, 500);
+    const { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note } = plan;
+    const planOut = { found, checking, paying, plannedSpendUsdc, auditBudgetUsdc, maxTargets, notChecked, note };
+    try {
+      const run = await runAudit(plan, { cfg, guard: deps.guard, probeDeps, customerTx: customerPayment?.transaction, deadlineMs: cfg.auditDeadlineMs });
+      return c.json({ seller: plan.seller, network: cfg.network, customerPayment, summary: run.summary, results: run.results, plan: planOut }, 200);
+    } catch (e) {
+      // The customer has paid: always answer.
+      return c.json({ seller: plan.seller, network: cfg.network, customerPayment, error: "audit_error", detail: String((e as Error).message ?? e).slice(0, 200), plan: planOut }, 200);
     }
   });
 
@@ -205,8 +318,14 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     payTo,
     payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
     priceAtomic: usdcToAtomic(cfg.checkPriceUsdc),
+    auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc),
+    auditMaxTargets: cfg.auditMaxTargets,
   });
-  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity }) };
+  // Local TestNet only: the test sellers on localhost are not in the Bazaar, so list them by URL.
+  const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (catalogUrls.length && !cfg.allowPrivateTargets) throw new Error("AUDIT_CATALOG_URLS is for the local TestNet run only (needs ALLOW_PRIVATE_TARGETS=1)");
+  const catalog = catalogUrls.length ? new UrlListCatalog(catalogUrls) : undefined;
+  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog }) };
 }
 
 // Vercel entry (zero-config Hono): build lazily so importing this module has no side effects.

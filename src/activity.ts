@@ -15,7 +15,11 @@
  *
  * Seller payments: every USDC transfer sent by the `payer` wallet to an address
  * that is not vet402's own. Each one is matched to the most recent earlier
- * customer payment (within `pairWindowSec`) that has no seller payment yet.
+ * customer payment (within its window) that still has room: a check (one
+ * customer payment for one seller payment) has room for 1; a seller audit
+ * (amount >= `auditPriceAtomic`) has room for up to `auditMaxTargets`, because one
+ * audit buys several of the seller's resources. An audit is still one customer
+ * payment: it is one row, with its seller payments listed under it.
  * A seller payment with no such customer payment is listed as unmatched, never hidden.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
@@ -34,11 +38,26 @@ export interface ActivityOptions {
   priceAtomic?: bigint;
   /** Max seconds between a customer payment and the seller payment it pays for. */
   pairWindowSec?: number;
+  /** Price of one seller audit in atomic USDC. Customer payments of at least this much are audits. Omitted = no audits. */
+  auditPriceAtomic?: bigint;
+  /** Most seller payments one audit can account for (default 10). */
+  auditMaxTargets?: number;
+  /** Max seconds between an audit's customer payment and its last seller payment (default max(pairWindowSec, 900)). */
+  auditPairWindowSec?: number;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 }
 
+export interface SellerPayment {
+  seller: string;
+  tx: string;
+  round: number;
+  amountUsdc: string;
+}
+
 export interface ActivityRow {
+  /** "check" = one customer payment for one seller payment; "audit" = one customer payment for several. */
+  kind: "check" | "audit";
   time: string;
   round: number;
   customer: string;
@@ -49,6 +68,8 @@ export interface ActivityRow {
   sellerTx: string | null;
   sellerRound: number | null;
   sellerAmountUsdc: string | null;
+  /** Every seller payment matched to this customer payment (the fields above repeat the first one). */
+  sellerPayments: SellerPayment[];
 }
 
 export interface Payout {
@@ -77,6 +98,8 @@ export interface ActivityReport {
     customers: { addresses: number; payments: number; usdc: string };
     operatorTests: { payments: number; usdc: string; sellerPayments: number; sellerUsdc: string };
     sellerPayments: { payments: number; usdc: string; unmatched: number; unmatchedUsdc: string };
+    /** Paying customers' audits (operator tests excluded): included in customers and sellerPayments above. */
+    audits: { payments: number; sellerPayments: number; sellerUsdc: string };
   };
   /** Newest first. */
   rows: ActivityRow[];
@@ -169,6 +192,7 @@ export class ActivityLedger {
   private readonly f: typeof fetch;
   private readonly feePayers: string[];
   private readonly windowSec: number;
+  private readonly auditWindowSec: number;
   private readonly timeoutMs: number;
   /** Confirmed groups never change: remember the answer for good. */
   private readonly groupIsX402 = new Map<string, boolean>();
@@ -178,6 +202,7 @@ export class ActivityLedger {
     this.f = o.fetchImpl ?? fetch;
     this.feePayers = o.feePayers ?? GOPLAUSIBLE_FEE_PAYERS;
     this.windowSec = o.pairWindowSec ?? 300;
+    this.auditWindowSec = o.auditPairWindowSec ?? Math.max(this.windowSec, 900);
     this.timeoutMs = o.timeoutMs ?? 8000;
   }
 
@@ -236,23 +261,29 @@ export class ActivityLedger {
 
     customers.sort((a, b) => (before(a, b) ? -1 : 1));
     payouts.sort((a, b) => (before(a, b) ? -1 : 1));
-    const pairedWith = new Map<string, Transfer>();
+    const isAudit = (c: Transfer) => this.o.auditPriceAtomic !== undefined && c.amount >= this.o.auditPriceAtomic;
+    const room = (c: Transfer) => (isAudit(c) ? (this.o.auditMaxTargets ?? 10) : 1);
+    const windowOf = (c: Transfer) => (isAudit(c) ? this.auditWindowSec : this.windowSec);
+    const pairedWith = new Map<string, Transfer[]>();
     const unmatched: Transfer[] = [];
     for (const p of payouts) {
       let pick: Transfer | undefined;
       for (const c of customers) {
         if (!before(c, p)) break;
-        if (p.time - c.time > this.windowSec || pairedWith.has(c.tx)) continue;
+        if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= room(c)) continue;
         pick = c; // keep the latest eligible one
       }
-      if (pick) pairedWith.set(pick.tx, p);
+      if (pick) pairedWith.set(pick.tx, [...(pairedWith.get(pick.tx) ?? []), p]);
       else unmatched.push(p);
     }
+    const sp = (p: Transfer): SellerPayment => ({ seller: p.receiver, tx: p.tx, round: p.round, amountUsdc: atomicToUsdc(p.amount) });
 
     const rows: ActivityRow[] = customers
       .map((c) => {
-        const p = pairedWith.get(c.tx);
+        const ps = pairedWith.get(c.tx) ?? [];
+        const p = ps[0];
         return {
+          kind: isAudit(c) ? ("audit" as const) : ("check" as const),
           time: iso(c.time),
           round: c.round,
           customer: c.sender,
@@ -263,6 +294,7 @@ export class ActivityLedger {
           sellerTx: p?.tx ?? null,
           sellerRound: p?.round ?? null,
           sellerAmountUsdc: p ? atomicToUsdc(p.amount) : null,
+          sellerPayments: ps.map(sp),
         };
       })
       .reverse();
@@ -270,8 +302,10 @@ export class ActivityLedger {
     const real = customers.filter((c) => !own.has(c.sender));
     const ops = customers.filter((c) => own.has(c.sender));
     // Headline: seller payments made for paying customers only; operator tests are reported with operatorTests.
-    const matched = real.flatMap((c) => (pairedWith.has(c.tx) ? [pairedWith.get(c.tx)!] : []));
-    const opPayouts = ops.flatMap((c) => (pairedWith.has(c.tx) ? [pairedWith.get(c.tx)!] : []));
+    const matched = real.flatMap((c) => pairedWith.get(c.tx) ?? []);
+    const opPayouts = ops.flatMap((c) => pairedWith.get(c.tx) ?? []);
+    const realAudits = real.filter(isAudit);
+    const auditPayouts = realAudits.flatMap((c) => pairedWith.get(c.tx) ?? []);
     const sum = (ts: Transfer[]) => atomicToUsdc(ts.reduce((s, t) => s + t.amount, 0n));
     return {
       network: this.o.networkName,
@@ -285,6 +319,7 @@ export class ActivityLedger {
         customers: { addresses: new Set(real.map((c) => c.sender)).size, payments: real.length, usdc: sum(real) },
         operatorTests: { payments: ops.length, usdc: sum(ops), sellerPayments: opPayouts.length, sellerUsdc: sum(opPayouts) },
         sellerPayments: { payments: matched.length, usdc: sum(matched), unmatched: unmatched.length, unmatchedUsdc: sum(unmatched) },
+        audits: { payments: realAudits.length, sellerPayments: auditPayouts.length, sellerUsdc: sum(auditPayouts) },
       },
       rows,
       unmatchedPayouts: [...unmatched].reverse().map((p) => ({ time: iso(p.time), round: p.round, seller: p.receiver, tx: p.tx, amountUsdc: atomicToUsdc(p.amount) })),
@@ -293,7 +328,12 @@ export class ActivityLedger {
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
         "A deposit smaller than the current check price is not counted as a customer payment (listed as below_price).",
-        `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment (within ${this.windowSec} s) that has no seller payment yet; otherwise it is listed as unmatched.`,
+        `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check has room for one seller payment (within ${this.windowSec} s)${
+          this.o.auditPriceAtomic !== undefined
+            ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`
+            : ""
+        }. Otherwise it is listed as unmatched.`,
+        "An audit is one customer payment and one row; its seller payments are listed under it. Customer counts never include them twice.",
         "A customer payment with no seller payment means vet402 refused before paying the seller (for example price over cap or payment failure at the seller).",
       ],
     };
@@ -312,10 +352,22 @@ export function activityHtml(r: ActivityReport): string {
   const x = explorer(r.network);
   const addr = (a: string) => `<a href="${esc(x.addr(a))}" title="${esc(a)}"><code>${esc(shortAddr(a))}</code></a>`;
   const tx = (id: string) => `<a href="${esc(x.tx(id))}" title="${esc(id)}"><code>${esc(id.slice(0, 10))}…</code></a>`;
+  const when = (t: string) => esc(t.replace("T", " ").replace("Z", ""));
   const rows = r.rows
-    .map(
-      (w) => `<tr${w.operatorTest ? ' class="op"' : ""}><td>${esc(w.time.replace("T", " ").replace("Z", ""))}</td><td>${addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}</td><td>${tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td><td>${w.seller ? addr(w.seller) : '<span class="muted">not paid</span>'}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`,
-    )
+    .map((w) => {
+      const cls = w.operatorTest ? ' class="op"' : "";
+      const who = `<td>${addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}${w.kind === "audit" ? ' <span class="tag">audit</span>' : ""}</td>`;
+      const head = `<tr${cls}><td>${when(w.time)}</td>${who}<td>${tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td>`;
+      const ps = w.sellerPayments ?? [];
+      if (w.kind !== "audit" || ps.length === 0) {
+        return `${head}<td>${w.seller ? addr(w.seller) : '<span class="muted">not paid</span>'}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`;
+      }
+      // One customer payment, several seller payments: one row for the audit, one indented line per seller payment.
+      const sub = ps
+        .map((p) => `<tr class="sub${w.operatorTest ? " op" : ""}"><td></td><td colspan="3" class="muted">↳ same audit</td><td>${addr(p.seller)}</td><td>${tx(p.tx)}</td><td class="n">${esc(p.amountUsdc)}</td></tr>`)
+        .join("");
+      return `${head}<td colspan="3" class="muted">${ps.length} seller payment(s) for this one audit ↓</td></tr>${sub}`;
+    })
     .join("\n");
   const unmatched = r.unmatchedPayouts.length
     ? `<h2>Seller payments with no matching customer payment</h2><table><thead><tr><th>time (UTC)</th><th>seller</th><th>tx</th><th class="n">USDC</th></tr></thead><tbody>${r.unmatchedPayouts
@@ -336,7 +388,7 @@ a{color:var(--a)}code{background:var(--code);padding:1px 4px;border-radius:3px;f
 .wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:760px}
 th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
 th{font-weight:600}.n{text-align:right;font-variant-numeric:tabular-nums}
-tr.op td{background:var(--op)}.tag{font-size:12px;border:1px solid var(--muted);border-radius:3px;padding:0 4px;color:var(--muted)}
+tr.op td{background:var(--op)}tr.sub td{border-bottom-style:dotted;font-size:14px}.tag{font-size:12px;border:1px solid var(--muted);border-radius:3px;padding:0 4px;color:var(--muted)}
 .muted,small{color:var(--muted)}ul{padding-left:20px}
 .stats{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0}.stats div{min-width:150px}.stats b{display:block;font-size:22px}
 </style></head><body>
@@ -345,7 +397,7 @@ tr.op td{background:var(--op)}.tag{font-size:12px;border:1px solid var(--muted);
 <div class="stats">
 <div><b>${t.customers.addresses}</b>paying customers<br><small>distinct addresses, operator excluded</small></div>
 <div><b>${t.customers.payments}</b>customer payments<br><small>${esc(t.customers.usdc)} USDC</small></div>
-<div><b>${t.sellerPayments.payments}</b>payments to sellers<br><small>${esc(t.sellerPayments.usdc)} USDC</small></div>
+<div><b>${t.sellerPayments.payments}</b>payments to sellers<br><small>${esc(t.sellerPayments.usdc)} USDC${t.audits.payments ? `; ${t.audits.sellerPayments} of them inside ${t.audits.payments} audit(s)` : ""}</small></div>
 <div><b>${t.operatorTests.payments}</b>operator tests<br><small>${esc(t.operatorTests.usdc)} USDC, not counted</small></div>
 </div>
 <div class="wrap"><table>

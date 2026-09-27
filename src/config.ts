@@ -66,8 +66,16 @@ export interface AppConfig {
   probeTimeoutMs: number;
   /** Show the paid re-check (/v1/audit?seller=) on /seller pages. Off until /v1/audit is live (SELLER_PAGE_AUDIT=on). */
   auditLinkEnabled: boolean;
-  /** Price of GET /v1/audit shown on /seller pages, in USDC. */
+  /** Price of one seller audit (GET /v1/audit), in USDC. */
   auditPriceUsdc: string;
+  /** Most resources one audit looks at. */
+  auditMaxTargets: number;
+  /** Most vet402 pays sellers within one audit (atomic USDC). Always below the audit price. */
+  auditMaxSpendAtomic: bigint;
+  /** Wall-clock limit of one audit; the rest is SKIPPED, not paid. */
+  auditDeadlineMs: number;
+  /** Bazaar discovery feed the audit reads the seller's resources from. */
+  bazaarUrl: string;
 }
 
 const DEFAULT_CAPS: Record<NetworkName, { perCall: string; perDay: string }> = {
@@ -93,6 +101,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const allowPrivate = env.ALLOW_PRIVATE_TARGETS === "1";
   if (isMain && allowPrivate) throw new Error("ALLOW_PRIVATE_TARGETS=1 is not allowed on MainNet");
   const onServerless = !!env.VERCEL;
+  // Validated (usdcToAtomic throws on junk) and shown short: "0.50", not "0.500000".
+  const auditPrice = atomicToUsdc(usdcToAtomic(env.AUDIT_PRICE_USDC ?? "0.50")).replace(/0{1,4}$/, "");
+  const auditMaxSpend = usdcToAtomic(env.AUDIT_MAX_SPEND_USDC ?? "0.40");
+  if (auditMaxSpend >= usdcToAtomic(auditPrice)) throw new Error("AUDIT_MAX_SPEND_USDC must be below AUDIT_PRICE_USDC");
+  const auditMaxTargets = Number(env.AUDIT_MAX_TARGETS ?? 10);
+  if (!Number.isInteger(auditMaxTargets) || auditMaxTargets < 1 || auditMaxTargets > 50) throw new Error("AUDIT_MAX_TARGETS must be an integer 1..50");
   return {
     networkName,
     network: isMain ? ALGORAND_MAINNET_CAIP2 : ALGORAND_TESTNET_CAIP2,
@@ -110,6 +124,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     spendLedgerFile: env.SPEND_LEDGER_FILE ?? (onServerless ? undefined : `state/spend-${networkName}.json`),
     probeTimeoutMs: Number(env.PROBE_TIMEOUT_MS ?? 20000),
     auditLinkEnabled: env.SELLER_PAGE_AUDIT === "on",
-    auditPriceUsdc: atomicToUsdc(usdcToAtomic(env.AUDIT_PRICE_USDC ?? "0.50")).replace(/0{1,4}$/, ""),
+    auditPriceUsdc: auditPrice,
+    auditMaxTargets,
+    auditMaxSpendAtomic: auditMaxSpend,
+    auditDeadlineMs: Number(env.AUDIT_DEADLINE_MS ?? 240000),
+    bazaarUrl: env.BAZAAR_URL ?? "https://facilitator.goplausible.xyz/discovery/resources",
   };
 }

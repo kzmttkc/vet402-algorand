@@ -31,6 +31,13 @@ export type SettleFirstEnv = { Variables: { customerPayment: CustomerPayment } }
 export interface SettleFirstOptions {
   /** Runs after verify and before settle. Return a Response to stop (customer is NOT charged). */
   preflight?: (c: Context<SettleFirstEnv>) => Promise<Response | null>;
+  /**
+   * Runs for a request that carries no payment, before the 402 challenge is sent.
+   * `stop`: answer with this instead of a 402 (there is nothing to pay for).
+   * `info`: merged into the 402 JSON body, so the buyer sees what it would get before signing.
+   * null: the plain 402.
+   */
+  beforeChallenge?: (c: Context<SettleFirstEnv>) => Promise<{ stop: Response } | { info: Record<string, unknown> } | null>;
 }
 
 export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: SettleFirstOptions = {}): MiddlewareHandler<SettleFirstEnv> {
@@ -61,6 +68,13 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
       return c.json({ error: fe ? fe.message : "facilitator unavailable" }, 502);
     }
 
+    let challengeInfo: Record<string, unknown> | undefined;
+    if (!context.paymentHeader && opts.beforeChallenge) {
+      const q = await opts.beforeChallenge(c);
+      if (q && "stop" in q) return q.stop;
+      if (q) challengeInfo = q.info;
+    }
+
     let result;
     try {
       result = await httpServer.processHTTPRequest(context);
@@ -73,7 +87,9 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
     if (result.type === "payment-error") {
       const r = result.response;
       for (const [k, v] of Object.entries(r.headers)) c.header(k, v);
-      return r.isHtml ? c.html(String(r.body), r.status as 402) : c.json(r.body ?? {}, r.status as 402);
+      if (r.isHtml) return c.html(String(r.body), r.status as 402);
+      const body = challengeInfo ? { ...(typeof r.body === "object" && r.body ? r.body : {}), ...challengeInfo } : (r.body ?? {});
+      return c.json(body, r.status as 402);
     }
 
     // payment-verified: free checks before we take the customer's money.
