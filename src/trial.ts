@@ -225,7 +225,7 @@ export class ChainTrialStore implements TrialStore {
     const sender = this.o.trial.address;
     let g = algorand.newGroup();
     // The lease makes a second claim of the same key within ~1000 rounds fail on the chain itself, whatever instance sends it.
-    for (const k of keys) g = g.addPayment({ sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${CLAIM}${k}`), lease: createHash("sha256").update(`${CLAIM}${k}`).digest() });
+    for (const k of keys) g = g.addPayment({ sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${CLAIM}${k}`), lease: new Uint8Array(createHash("sha256").update(`${CLAIM}${k}`).digest()) }); // algokit wants a plain Uint8Array, not a Buffer
     await g.send();
     for (const k of keys) this.local.add(k);
     this.cache = null;
