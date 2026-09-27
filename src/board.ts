@@ -1,13 +1,14 @@
 /**
  * Daily delivery board: GET /board (HTML) and GET /board.json. Free routes.
  *
- * Reads the file written by scripts/board-sweep.ts (default board/latest.json).
+ * Reads the file written by scripts/board-sweep.ts (default board/latest.json),
+ * or the same file name from GitHub raw when the deployment has no local copy.
  * Every row is one purchase vet402 made with its own payer wallet, or a row it
  * skipped. Nothing on this page is generated: with no file (or no rows) the page
  * says the sweep has not run yet. All strings are escaped; no external JS.
  */
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type { Env, Hono } from "hono";
 
 export type BoardVerdict = "ALLOW" | "REFUSE" | "SKIPPED";
@@ -147,6 +148,155 @@ export function readBoard(file: string): BoardFile | null {
   }
 }
 
+/**
+ * Where the published board files live when the deployment has no local copy
+ * (Vercel does not bundle board/*.json into the function). Only these file
+ * names are ever fetched; the base URL is fixed.
+ */
+export const BOARD_REMOTE_BASE = "https://raw.githubusercontent.com/kzmttkc/vet402-algorand/main/board/";
+export const BOARD_REMOTE_FILES: readonly string[] = ["latest.json", "census-latest.json"];
+const REMOTE_MAX_BYTES = 16 * 1024 * 1024;
+
+export interface BoardLoaderOptions {
+  /** Set false to never fetch (local file only). */
+  remote?: boolean;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
+  timeoutMs?: number;
+  okTtlMs?: number;
+  failTtlMs?: number;
+}
+
+export type BoardLoader = (file: string) => Promise<BoardFile | null>;
+
+/**
+ * Local file first; if it is missing, the same file name from GitHub raw.
+ * Success is cached 5 min, failure 30 s (a failure keeps serving the last good copy).
+ */
+export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
+  const remote = o.remote ?? true;
+  const fetchImpl = o.fetchImpl ?? ((u, i) => fetch(u, i));
+  const now = o.now ?? Date.now;
+  const timeoutMs = o.timeoutMs ?? 5_000;
+  const okTtl = o.okTtlMs ?? 5 * 60_000;
+  const failTtl = o.failTtlMs ?? 30_000;
+  const cache = new Map<string, { until: number; board: BoardFile | null; good: BoardFile | null }>();
+  const inflight = new Map<string, Promise<BoardFile | null>>();
+
+  async function fetchRemote(name: string): Promise<BoardFile | null> {
+    try {
+      const res = await fetchImpl(BOARD_REMOTE_BASE + name, { redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) return null;
+      const len = Number(res.headers.get("content-length") ?? "0");
+      if (len > REMOTE_MAX_BYTES) return null;
+      const text = await res.text();
+      if (text.length > REMOTE_MAX_BYTES) return null;
+      return parseBoard(text);
+    } catch {
+      return null;
+    }
+  }
+
+  return async (file: string) => {
+    const local = readBoard(file);
+    if (local) return local;
+    const name = basename(file);
+    if (!remote || !BOARD_REMOTE_FILES.includes(name)) return null;
+    const hit = cache.get(name);
+    if (hit && hit.until > now()) return hit.board;
+    const running = inflight.get(name);
+    if (running) return running;
+    const p = fetchRemote(name).then((board) => {
+      const good = board ?? cache.get(name)?.good ?? null;
+      cache.set(name, { until: now() + (board ? okTtl : failTtl), board: good, good });
+      inflight.delete(name);
+      return good;
+    });
+    inflight.set(name, p);
+    return p;
+  };
+}
+
+/**
+ * How the page shows a row. Display only: the file and /board.json keep verdict/reason as recorded.
+ *
+ * DELIVERED   ALLOW.
+ * MISMATCH    vet402 paid (settlement receipt said success) and the delivery did not match what it compared against.
+ * UNREACHABLE the URL did not answer with a 402 (404, 410, 405, 401, 200, 5xx…) or its host does not resolve.
+ * UNCLEAR     vet402 or the payment path could not reach a result: rate limits, facilitator quota, payment
+ *             not settled for any reason, timeouts, fetch errors, vet402's own price cap or daily cap,
+ *             no accept vet402 can pay, a 402 vet402's client could not read, a 400/403/408/429 or a redirect
+ *             on the unpaid look (input or bot rules, not proof the seller is absent). Never shown as REFUSE.
+ */
+export type DisplayClass = "DELIVERED" | "MISMATCH" | "UNREACHABLE" | "UNCLEAR";
+export const DISPLAY_CLASSES: DisplayClass[] = ["DELIVERED", "MISMATCH", "UNREACHABLE", "UNCLEAR"];
+
+/** Unpaid-look status codes that say more about vet402's request than about the seller. */
+const UNCLEAR_LOOK_STATUS = new Set([400, 403, 408, 429]);
+
+export function displayClass(r: Pick<BoardRow, "verdict" | "reason" | "detail" | "paid">): DisplayClass {
+  if (r.verdict === "ALLOW") return "DELIVERED";
+  if (r.verdict !== "REFUSE") return "UNCLEAR";
+  if (r.paid) return "MISMATCH";
+  if (r.reason === "not_x402") {
+    const m = /^expected 402, got (\d{3})\b/.exec(r.detail ?? "");
+    if (!m) return "UNCLEAR";
+    const code = Number(m[1]);
+    if (UNCLEAR_LOOK_STATUS.has(code) || (code >= 300 && code < 400)) return "UNCLEAR";
+    return "UNREACHABLE";
+  }
+  if (r.reason === "invalid_target" && /does not resolve/.test(r.detail ?? "")) return "UNREACHABLE";
+  return "UNCLEAR";
+}
+
+export interface HostSummary {
+  host: string;
+  listings: number;
+  /** vet402 paid this host at least once (a settled tx). */
+  paid: boolean;
+  counts: Record<DisplayClass, number>;
+  /** DELIVERED if any row delivered; else UNCLEAR if any row is unclear (on hold); else MISMATCH if any; else UNREACHABLE. */
+  cls: DisplayClass;
+}
+
+function hostOf(r: BoardRow): string {
+  if (r.host) return r.host;
+  try {
+    return new URL(r.url).host;
+  } catch {
+    return r.url;
+  }
+}
+
+const HOST_ORDER: Record<DisplayClass, number> = { DELIVERED: 0, MISMATCH: 1, UNCLEAR: 2, UNREACHABLE: 3 };
+
+/** One entry per seller host, grouped by class, then by listing count. */
+export function hostSummaries(rows: BoardRow[]): HostSummary[] {
+  const m = new Map<string, HostSummary>();
+  for (const r of rows) {
+    const h = hostOf(r);
+    let s = m.get(h);
+    if (!s) {
+      s = { host: h, listings: 0, paid: false, counts: { DELIVERED: 0, MISMATCH: 0, UNREACHABLE: 0, UNCLEAR: 0 }, cls: "UNREACHABLE" };
+      m.set(h, s);
+    }
+    s.listings++;
+    s.paid ||= r.paid;
+    s.counts[displayClass(r)]++;
+  }
+  const out = [...m.values()];
+  for (const s of out) {
+    s.cls = s.counts.DELIVERED > 0 ? "DELIVERED" : s.counts.UNCLEAR > 0 ? "UNCLEAR" : s.counts.MISMATCH > 0 ? "MISMATCH" : "UNREACHABLE";
+  }
+  return out.sort((a, b) => HOST_ORDER[a.cls] - HOST_ORDER[b.cls] || b.listings - a.listings || a.host.localeCompare(b.host));
+}
+
+export function countBy<T>(xs: T[], f: (x: T) => DisplayClass): Record<DisplayClass, number> {
+  const c: Record<DisplayClass, number> = { DELIVERED: 0, MISMATCH: 0, UNREACHABLE: 0, UNCLEAR: 0 };
+  for (const x of xs) c[f(x)]++;
+  return c;
+}
+
 export function esc(s: unknown): string {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -172,36 +322,46 @@ function shortUrl(u: string): string {
   }
 }
 
-const COLOR: Record<BoardVerdict, string> = { ALLOW: "var(--allow)", REFUSE: "var(--refuse)", SKIPPED: "var(--skip)" };
+const COLOR: Record<DisplayClass, string> = {
+  DELIVERED: "var(--delivered)",
+  MISMATCH: "var(--mismatch)",
+  UNREACHABLE: "var(--unreach)",
+  UNCLEAR: "var(--unclear)",
+};
+const CSS_CLASS: Record<DisplayClass, string> = { DELIVERED: "delivered", MISMATCH: "mismatch", UNREACHABLE: "unreach", UNCLEAR: "unclear" };
 
-/** SVG network: vet402 in the middle, one dot per row, played in the order of the file. */
-function networkSvg(board: BoardFile | null): { svg: string; cycleMs: number } {
-  const rows = board?.rows ?? [];
-  const n = rows.length;
-  // Whole playback stays under ~8 s (a short vertical video), whatever the row count.
+interface Point {
+  label: string;
+  cls: DisplayClass;
+  /** A light travels only when vet402 actually paid (a settled tx). */
+  paid: boolean;
+}
+
+/** SVG network: vet402 in the middle, one dot per point, played in order. */
+function networkSvg(points: Point[], attr: "data-i" | "data-h"): { svg: string; cycleMs: number } {
+  const n = points.length;
+  // Whole playback stays under ~8 s (a short vertical video), whatever the count.
   const step = n > 0 ? Math.min(0.7, 7 / n) : 0;
   const dense = n > 48;
   const dotR = n > 400 ? 2.2 : n > 24 ? 5 : 7;
   const travel = 0.45;
   const start = 0.6;
   const parts: string[] = [];
-  rows.forEach((r, i) => {
-    // Few rows: one or two rings. Many rows: a sunflower spiral around vet402.
+  points.forEach((p, i) => {
+    // Few points: one or two rings. Many points: a sunflower spiral around vet402.
     const ring = dense ? 44 + 140 * Math.sqrt((i + 0.5) / n) : n > 24 ? (i % 2 === 0 ? 132 : 168) : 150;
     const a = dense ? i * 2.39996323 : -Math.PI / 2 + (2 * Math.PI * i) / n;
     const x = +(Math.cos(a) * ring).toFixed(1);
     const y = +(Math.sin(a) * ring).toFixed(1);
     const d = +(start + i * step).toFixed(2);
-    const color = COLOR[r.verdict];
-    const label = `${shortUrl(r.url)}: ${r.verdict} ${r.reason}`;
+    const color = COLOR[p.cls];
     if (n <= 200) parts.push(`<line class="edge" x1="0" y1="0" x2="${x}" y2="${y}"/>`);
-    // A light travels only when vet402 actually paid (there is a settled tx).
-    if (r.paid) {
+    if (p.paid) {
       parts.push(`<line class="pulse" pathLength="1" x1="0" y1="0" x2="${x}" y2="${y}" style="stroke:${color};color:${color};--d:${d}s"/>`);
     }
     parts.push(
-      `<g class="node" data-i="${i}" tabindex="0" role="button" aria-label="${esc(label)}" style="--d:${(d + travel).toFixed(2)}s">` +
-        `<title>${esc(label)}</title>` +
+      `<g class="node" ${attr}="${i}" tabindex="0" role="button" aria-label="${esc(p.label)}" style="--d:${(d + travel).toFixed(2)}s">` +
+        `<title>${esc(p.label)}</title>` +
         `<circle class="hit" cx="${x}" cy="${y}" r="${n > 400 ? 4 : 14}"/>` +
         `<circle class="ping" cx="${x}" cy="${y}" r="${dotR}" style="stroke:${color}"/>` +
         `<circle class="dot" cx="${x}" cy="${y}" r="${dotR}" style="fill:${color}"/>` +
@@ -219,10 +379,15 @@ function networkSvg(board: BoardFile | null): { svg: string; cycleMs: number } {
   return { svg, cycleMs };
 }
 
+/** Safe inside <script type="application/json">: no "<" can close the tag. */
+function scriptJson(v: unknown): string {
+  return JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+
 function rowsJson(board: BoardFile | null): string {
   const rows = (board?.rows ?? []).map((r) => ({
     url: r.url,
-    verdict: r.verdict,
+    cls: displayClass(r),
     reason: r.reason,
     detail: r.detail ?? "",
     price: r.priceUsdc ?? "",
@@ -230,49 +395,73 @@ function rowsJson(board: BoardFile | null): string {
     link: txLink(r.tx, board?.networkName ?? "") ?? "",
     at: r.at,
   }));
-  // Safe inside <script type="application/json">: no "<" can close the tag.
-  return JSON.stringify(rows).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+  return scriptJson(rows);
+}
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
 }
 
 export type BoardView = "daily" | "census";
 
 export function boardHtml(board: BoardFile | null, view: BoardView = "daily"): string {
   const has = !!board && board.rows.length > 0;
+  const rows = board?.rows ?? [];
   const netLabel = board?.networkName === "mainnet" ? "Algorand MainNet" : board?.networkName === "testnet" ? "Algorand TestNet" : esc(board?.networkName ?? "");
-  const { svg, cycleMs } = networkSvg(board);
-  const t = board?.totals;
-  const what = view === "census" ? "resources" : "sellers";
+  const hosts = view === "census" ? hostSummaries(rows) : [];
+  const points: Point[] =
+    view === "census"
+      ? hosts.map((h) => ({ label: `${h.host}: ${h.cls} (${h.listings} listed)`, cls: h.cls, paid: h.paid }))
+      : rows.map((r) => ({ label: `${shortUrl(r.url)}: ${displayClass(r)} ${r.reason}`, cls: displayClass(r), paid: r.paid }));
+  const { svg, cycleMs } = networkSvg(points, view === "census" ? "data-h" : "data-i");
+  const c = countBy(rows, displayClass);
+  const what = view === "census" ? "listed resources" : "sellers";
   const tabs = `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a></nav>`;
   const headline = has
-    ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${t!.rows}</b> ${what} · <b class="a">${t!.allow} ALLOW</b> · <b class="r">${t!.refuse} REFUSE</b> · <b class="s">${t!.skipped} skipped</b> · paid <b>${esc(t!.paidUsdc)}</b> USDC</p>`
+    ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${fmt(rows.length)}</b> ${what} · <b class="delivered">${fmt(c.DELIVERED)} DELIVERED</b> · <b class="mismatch">${fmt(c.MISMATCH)} MISMATCH</b> · <b class="unreach">${fmt(c.UNREACHABLE)} UNREACHABLE</b> · <b class="unclear">${fmt(c.UNCLEAR)} UNCLEAR</b> · paid <b>${esc(board!.totals.paidUsdc)}</b> USDC</p>`
     : `<p class="kpi">Not run yet. vet402 has not run a sweep, so there is nothing to show.</p>`;
+  let sellers = "";
+  if (has && view === "census") {
+    const hc = countBy(hosts, (h) => h.cls);
+    const top = hosts.reduce((m, h) => Math.max(m, h.listings), 0);
+    sellers =
+      `<div class="sellers"><p><b>${fmt(hosts.length)}</b> sellers: ` +
+      `<b class="delivered">${fmt(hc.DELIVERED)}</b> delivered at least once · ` +
+      `<b class="mismatch">${fmt(hc.MISMATCH)}</b> were paid, and no delivery matched the declaration · ` +
+      `<b class="unreach">${fmt(hc.UNREACHABLE)}</b> did not answer with a 402 on any URL · ` +
+      `<b class="unclear">${fmt(hc.UNCLEAR)}</b> on hold (some results were UNCLEAR)</p>` +
+      `<p class="note">The Bazaar lists ${fmt(rows.length)} resources from ${fmt(hosts.length)} sellers: one seller can list many URLs (for example one verification URL per transaction; the largest lists ${fmt(top)}). So the picture below has one dot per seller.</p></div>`;
+  }
   const fixture = board?.fixture ? `<p class="fixture">FIXTURE: ${esc(board.fixture)}</p>` : "";
-  const tableRows = (board?.rows ?? [])
+  const tableRows = rows
     .map((r, i) => {
       const link = txLink(r.tx, board!.networkName);
       const tx = link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx!.slice(0, 8))}…</a>` : "—";
       const decl = [r.declared?.description, r.declared?.expectedKeys?.length ? `keys: ${r.declared.expectedKeys.join(", ")}` : ""].filter(Boolean).join(" · ");
+      const cls = displayClass(r);
       return (
         `<tr id="row-${i}"><td>${esc(r.at.slice(11, 19))}</td>` +
         `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
-        `<td class="v ${r.verdict.toLowerCase()}">${esc(r.verdict)}</td>` +
+        `<td class="v ${CSS_CLASS[cls]}">${cls}</td>` +
         `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}</td>` +
         `<td>${tx}</td></tr>`
       );
     })
     .join("");
   const table = has
-    ? `<div class="tw"><table><thead><tr><th>UTC</th><th>seller (declared)</th><th>USDC</th><th>verdict</th><th>reason</th><th>vet402 → seller tx</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
+    ? `<div class="tw"><table><thead><tr><th>UTC</th><th>seller (declared)</th><th>USDC</th><th>result</th><th>reason code</th><th>vet402 → seller tx</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
     : "";
+  const hostsJson = scriptJson(hosts.map((h) => ({ host: h.host, cls: h.cls, listings: h.listings, paid: h.paid, counts: h.counts })));
+  const lightNote = view === "census" ? "a light = vet402 paid this seller on-chain at least once" : "a light = vet402 paid the seller on-chain";
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>vet402 delivery board</title>
-<meta name="description" content="Each day vet402 buys once from active x402 sellers on Algorand with its own money and records whether the delivery matched the declaration.">
+<meta name="description" content="vet402 buys from x402 sellers on Algorand with its own money and records whether the delivery matched the declaration.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <style>
-:root{--bg:#0a0e17;--fg:#e8ecf3;--mut:#8a93a6;--line:rgba(255,255,255,.09);--allow:#34d399;--refuse:#f87171;--skip:#6b7280;--card:#111827}
+:root{--bg:#0a0e17;--fg:#e8ecf3;--mut:#8a93a6;--line:rgba(255,255,255,.09);--delivered:#34d399;--mismatch:#f87171;--unreach:#6b7280;--unclear:#f59e0b;--card:#111827}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,sans-serif}
 a{color:#93c5fd}
@@ -282,7 +471,11 @@ a{color:#93c5fd}
 .tabs a{padding:3px 10px;border:1px solid var(--line);border-radius:999px;color:var(--mut);text-decoration:none}
 .tabs a[aria-current]{color:var(--fg);border-color:#60a5fa}
 .kpi{margin:4px 0 0;color:var(--mut);font-size:14px}
-.kpi b{color:var(--fg);white-space:nowrap} .kpi .a{color:var(--allow)} .kpi .r{color:var(--refuse)} .kpi .s{color:var(--skip)}
+.kpi b,.sellers b{color:var(--fg);white-space:nowrap}
+.delivered{color:var(--delivered)!important} .mismatch{color:var(--mismatch)!important} .unreach{color:#9ca3af!important} .unclear{color:var(--unclear)!important}
+.sellers{margin:8px auto 0;max-width:620px;font-size:14px;color:var(--mut)}
+.sellers p{margin:2px 0}
+.sellers .note{font-size:13px}
 .fixture{display:inline-block;margin:8px 0 0;padding:2px 8px;border:1px solid #f59e0b;color:#f59e0b;border-radius:4px;font-size:13px}
 #net{display:block;width:100%;max-width:520px;margin:6px auto 0;height:auto;overflow:visible}
 .edge{stroke:var(--line);stroke-width:1}
@@ -313,7 +506,6 @@ th{color:var(--mut);font-weight:600;white-space:nowrap}
 td.u{min-width:220px;overflow-wrap:anywhere}
 small{color:var(--mut)}
 code{font-size:12px}
-.v.allow{color:var(--allow)} .v.refuse{color:var(--refuse)} .v.skipped{color:var(--skip)}
 tr.sel td{background:#172033}
 </style>
 </head><body>
@@ -321,38 +513,53 @@ tr.sel td{background:#172033}
 ${tabs}
 <h1>vet402 bought it. Did it arrive?</h1>
 ${headline}
+${sellers}
 ${fixture}
 ${svg}
-<p class="legend"><i style="background:var(--allow)"></i>ALLOW<i style="background:var(--refuse)"></i>REFUSE<i style="background:var(--skip)"></i>skipped · a light = vet402 paid the seller on-chain</p>
-<div id="detail" aria-live="polite">${has ? "Tap a dot to see that purchase." : "Not run yet."}</div>
+<p class="legend"><i style="background:var(--delivered)"></i>DELIVERED<i style="background:var(--mismatch)"></i>MISMATCH<i style="background:var(--unreach)"></i>UNREACHABLE<i style="background:var(--unclear)"></i>UNCLEAR · ${lightNote}</p>
+<div id="detail" aria-live="polite">${has ? (view === "census" ? "Tap a dot to see that seller." : "Tap a dot to see that purchase.") : "Not run yet."}</div>
 </section>
 <main>
-<p class="method">What this is: vet402 bought from each seller once, with its own money, and compared what came back with what the seller declared (Bazaar description, output schema or example). It sent the example input the seller published. One result does not rate a seller: a single purchase can fail for reasons on either side. Reason codes are shown as they are. If a row is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
+<p class="method">What this is: vet402 bought from each listed resource with its own money, sent the example input the seller published, and compared what came back with what the seller declared (Bazaar description, output schema or example). vet402 does not rate a seller on the result of one purchase: a single purchase can go wrong for reasons on either side. DELIVERED: the response matched the declaration. MISMATCH: vet402 paid and the response differed from the declaration it compared against (most declarations are an example response, not a strict schema). UNREACHABLE: the URL did not answer with a 402 (for example 404, 410 or 503) or its host did not resolve. UNCLEAR: vet402 or the payment path could not reach a result (rate limits, facilitator quota, a payment that did not settle, timeouts, vet402's own price cap, or a 402 vet402's client could not read); these are not counted against the seller. Reason codes are shown as recorded. If something here is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
 ${table}
 <p><small><a href="/board.json${view === "census" ? "?view=census" : ""}">board.json</a> · <a href="/">vet402</a> · per call cap ${esc(board?.caps?.perCallUsdc ?? "")} USDC, per day cap ${esc(board?.caps?.perDayUsdc ?? "")} USDC${board?.payer ? ` · payer <code>${esc(board.payer)}</code>` : ""}</small></p>
 </main>
 <script type="application/json" id="rows">${rowsJson(board)}</script>
+<script type="application/json" id="hosts">${hostsJson}</script>
 <script>
 (function(){
-  var rows=[];try{rows=JSON.parse(document.getElementById('rows').textContent||'[]')}catch(e){}
+  function load(id){try{return JSON.parse(document.getElementById(id).textContent||'[]')}catch(e){return []}}
+  var rows=load('rows'),hosts=load('hosts');
   var det=document.getElementById('detail'),net=document.getElementById('net');
-  function show(i){
-    var r=rows[i];if(!r)return;
+  function line(t){det.appendChild(document.createElement('br'));det.appendChild(document.createTextNode(t))}
+  function head(t){det.textContent='';var b=document.createElement('b');b.textContent=t;det.appendChild(b)}
+  function mark(n,tr){
     document.querySelectorAll('.node.sel,tr.sel').forEach(function(e){e.classList.remove('sel')});
-    var n=document.querySelector('.node[data-i="'+i+'"]');if(n)n.classList.add('sel');
-    var tr=document.getElementById('row-'+i);if(tr)tr.classList.add('sel');
-    det.textContent='';
-    var b=document.createElement('b');b.textContent=r.verdict+' · '+r.reason;det.appendChild(b);
-    det.appendChild(document.createElement('br'));
-    det.appendChild(document.createTextNode(r.url+(r.price?' · '+r.price+' USDC':'')));
-    if(r.detail){det.appendChild(document.createElement('br'));det.appendChild(document.createTextNode(r.detail))}
+    if(n)n.classList.add('sel');if(tr)tr.classList.add('sel');
+  }
+  function showRow(i,n){
+    var r=rows[i];if(!r)return;
+    mark(n,document.getElementById('row-'+i));
+    head(r.cls+' · '+r.reason);
+    line(r.url+(r.price?' · '+r.price+' USDC':''));
+    if(r.detail)line(r.detail);
     det.appendChild(document.createElement('br'));
     if(r.link){var a=document.createElement('a');a.href=r.link;a.rel='noopener';a.textContent='tx '+r.tx;det.appendChild(a)}
     else det.appendChild(document.createTextNode('no payment was made'));
   }
+  function showHost(i,n){
+    var h=hosts[i];if(!h)return;
+    mark(n,null);
+    head(h.cls+' · '+h.host);
+    var c=h.counts;
+    line(h.listings+' listed · delivered '+c.DELIVERED+' · mismatch '+c.MISMATCH+' · unreachable '+c.UNREACHABLE+' · unclear '+c.UNCLEAR);
+    line(h.paid?'vet402 paid this seller at least once':'no payment was made');
+  }
   document.querySelectorAll('.node').forEach(function(n){
-    n.addEventListener('click',function(){show(+n.getAttribute('data-i'))});
-    n.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();show(+n.getAttribute('data-i'))}});
+    var hi=n.getAttribute('data-h');
+    function go(){if(hi!==null)showHost(+hi,n);else showRow(+n.getAttribute('data-i'),n)}
+    n.addEventListener('click',go);
+    n.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
   });
   var still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(!still&&rows.length&&net){setInterval(function(){net.classList.remove('play');void net.getBoundingClientRect();net.classList.add('play')},${cycleMs + 2500})}
@@ -362,17 +569,21 @@ ${table}
 }
 
 /** Register the free board routes. Call before the payment middleware. */
-export function registerBoard<E extends Env>(app: Hono<E>, file: string = defaultBoardFile()): void {
+export function registerBoard<E extends Env>(
+  app: Hono<E>,
+  file: string = defaultBoardFile(),
+  load: BoardLoader = createBoardLoader({ remote: process.env.BOARD_REMOTE !== "off" }),
+): void {
   const pick = (v: string | undefined): { view: BoardView; path: string } =>
     v === "census" ? { view: "census", path: censusFileFor(file) } : { view: "daily", path: file };
-  app.get("/board.json", (c) => {
+  app.get("/board.json", async (c) => {
     const { path } = pick(c.req.query("view"));
     c.header("cache-control", "public, max-age=300");
-    return c.json(readBoard(path) ?? { version: 1, rows: [], note: "not run yet" });
+    return c.json((await load(path)) ?? { version: 1, rows: [], note: "not run yet" });
   });
-  app.get("/board", (c) => {
+  app.get("/board", async (c) => {
     const { view, path } = pick(c.req.query("view"));
     c.header("cache-control", "public, max-age=300");
-    return c.html(boardHtml(readBoard(path), view));
+    return c.html(boardHtml(await load(path), view));
   });
 }

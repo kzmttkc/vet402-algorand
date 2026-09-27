@@ -20,7 +20,17 @@ import {
   type Candidate,
   type SelectOptions,
 } from "../scripts/board-sweep.js";
-import { boardHtml, parseBoard, type BoardFile, type BoardRow } from "../src/board.js";
+import {
+  BOARD_REMOTE_BASE,
+  boardHtml,
+  createBoardLoader,
+  displayClass,
+  hostSummaries,
+  parseBoard,
+  type BoardFile,
+  type BoardRow,
+  type DisplayClass,
+} from "../src/board.js";
 import { probe, type ProbeDeps, type ProbeResult } from "../src/probe.js";
 import { SpendLedger } from "../src/caps.js";
 import { LocalSpendGuard } from "../src/spend.js";
@@ -281,26 +291,153 @@ test("HTML: every seller-controlled string is escaped; tx links only for real tx
   assert.equal(JSON.parse(json)[0].detail, "</script><script>alert(2)</script>");
   // Method paragraph, no external scripts.
   assert.ok(html.includes("with its own money"));
-  assert.ok(html.includes("One result does not rate a seller"));
+  assert.ok(html.includes("vet402 does not rate a seller on the result of one purchase"));
+  assert.ok(html.includes("these are not counted against the seller"));
   assert.ok(html.includes("github.com/kzmttkc/vet402-algorand/issues"));
   assert.ok(!/<script[^>]+src=/.test(html));
 });
 
-test("HTML: three colors for ALLOW / REFUSE / SKIPPED; a light only for paid rows; empty board says not run yet", () => {
+test("HTML: four display colors; a light only for paid rows; UNCLEAR is never called REFUSE; empty board says not run yet", () => {
   const html = boardHtml(
     board([
       { verdict: "ALLOW", reason: "delivered", tx: TX1, paid: true },
       { verdict: "REFUSE", reason: "delivery_missing_keys", tx: TX1, paid: true },
+      { verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 404", paid: false },
+      { verdict: "REFUSE", reason: "payment_failed", detail: "status 429, no settlement receipt", paid: false },
       { verdict: "SKIPPED", reason: "daily_cap", paid: false },
     ]),
   );
-  assert.ok(html.includes("fill:var(--allow)") && html.includes("fill:var(--refuse)") && html.includes("fill:var(--skip)"));
+  for (const v of ["delivered", "mismatch", "unreach", "unclear"]) assert.ok(html.includes(`fill:var(--${v})`), v);
   assert.equal((html.match(/class="pulse"/g) ?? []).length, 2);
   assert.ok(html.includes("prefers-reduced-motion"));
+  assert.ok(!/\bREFUSE\b/.test(html), "the page never says REFUSE");
+  assert.ok(html.includes("2 UNCLEAR"));
   const empty = boardHtml(null);
   assert.ok(empty.includes("Not run yet"));
   assert.ok(!empty.includes('class="node"'));
   assert.equal(parseBoard("not json"), null);
+});
+
+// Every (reason, paid, detail) shape seen in board/census-2026-09-27.json, plus the skipped reasons.
+const CLASS_TABLE: [Partial<BoardRow>, DisplayClass][] = [
+  [{ verdict: "ALLOW", reason: "delivered", paid: true }, "DELIVERED"],
+  [{ verdict: "REFUSE", reason: "delivery_missing_keys", paid: true }, "MISMATCH"],
+  [{ verdict: "REFUSE", reason: "not_json", paid: true }, "MISMATCH"],
+  [{ verdict: "REFUSE", reason: "http_error", paid: true }, "MISMATCH"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 404" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 410" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 405" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 401" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 200" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 503" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 530" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "invalid_target", detail: "host does not resolve" }, "UNREACHABLE"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 400" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 429" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 403" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 302" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "not_x402", detail: "402 without parseable x402 payment requirements" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 429, no settlement receipt" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 402, subcent_quota_exceeded" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 400, no settlement receipt" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 502, no settlement receipt" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 200, no settlement receipt" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "The operation was aborted due to timeout" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 402, Transaction simulation failed: transaction already in ledger: X" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "price_over_cap", detail: "price 1000000 > per-call cap 100000 (atomic USDC)" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "probe_error", detail: "fetch failed" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "no_supported_accept", detail: "no exact/algorand:X/USDC 31566704 accept" }, "UNCLEAR"],
+  [{ verdict: "REFUSE", reason: "invalid_target", detail: "private address" }, "UNCLEAR"],
+  [{ verdict: "SKIPPED", reason: "daily_cap" }, "UNCLEAR"],
+  [{ verdict: "SKIPPED", reason: "cap_check_unavailable" }, "UNCLEAR"],
+];
+
+test("display class: the fixed table (a paid refusal is MISMATCH; nothing unpaid is MISMATCH)", () => {
+  for (const [r, want] of CLASS_TABLE) {
+    const row = { verdict: "REFUSE", reason: "", paid: false, ...r } as BoardRow;
+    assert.equal(displayClass(row), want, `${row.verdict} ${row.reason} ${row.detail ?? ""}`);
+  }
+});
+
+test("seller summary: delivered wins, then on hold, then mismatch, then unreachable; a light only if paid", () => {
+  const rows = board([
+    { host: "a", verdict: "ALLOW", paid: true },
+    { host: "a", verdict: "REFUSE", reason: "payment_failed", paid: false },
+    { host: "b", verdict: "REFUSE", reason: "delivery_missing_keys", paid: true },
+    { host: "b", verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 404", paid: false },
+    { host: "c", verdict: "REFUSE", reason: "delivery_missing_keys", paid: true },
+    { host: "c", verdict: "REFUSE", reason: "price_over_cap", paid: false },
+    { host: "d", verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 410", paid: false },
+  ]).rows;
+  const s = Object.fromEntries(hostSummaries(rows).map((h) => [h.host, h]));
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(s).map(([h, v]) => [h, [v.cls, v.paid, v.listings]])),
+    { a: ["DELIVERED", true, 2], b: ["MISMATCH", true, 2], c: ["UNCLEAR", true, 2], d: ["UNREACHABLE", false, 1] },
+  );
+  const html = boardHtml(board(rows.map((r) => ({ ...r }))), "census");
+  assert.equal((html.match(/class="node"/g) ?? []).length, 4, "one dot per seller");
+  assert.equal((html.match(/class="pulse"/g) ?? []).length, 3);
+  assert.ok(html.includes("7 resources from 4 sellers"));
+});
+
+test("census file on disk: every row has a class; agent402.tools 429/subcent and vead.app are UNCLEAR", async () => {
+  const { readBoard } = await import("../src/board.js");
+  const b = readBoard(join(process.cwd(), "board", "census-2026-09-27.json"));
+  if (!b) return; // the file is data, not code; skip when absent
+  assert.equal(b.rows.length, 1819);
+  assert.equal(hostSummaries(b.rows).length, 112);
+  for (const r of b.rows) {
+    if (r.host === "agent402.tools" && /status 429|subcent_quota_exceeded/.test(r.detail ?? "")) assert.equal(displayClass(r), "UNCLEAR");
+    if (r.host === "vead.app") assert.equal(displayClass(r), "UNCLEAR");
+    if (!r.paid) assert.notEqual(displayClass(r), "MISMATCH");
+  }
+});
+
+test("loader: local file first; else GitHub raw for allow-listed names only; 5 s timeout; cache ok 5 min / fail short", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "board-remote-"));
+  const good = JSON.stringify(board([{ verdict: "ALLOW", tx: TX1 }]));
+  const urls: string[] = [];
+  let status = 200;
+  let t = 0;
+  const load = createBoardLoader({
+    now: () => t,
+    fetchImpl: async (u, init) => {
+      urls.push(String(u));
+      assert.ok(init?.signal, "a timeout signal is set");
+      return new Response(status === 200 ? good : "nope", { status });
+    },
+  });
+  // Local wins; no fetch.
+  writeFileSync(join(dir, "latest.json"), good);
+  assert.equal((await load(join(dir, "latest.json")))?.rows.length, 1);
+  assert.equal(urls.length, 0);
+  // Missing locally: fetched from the fixed base, then cached.
+  const miss = join(dir, "sub", "census-latest.json");
+  assert.equal((await load(miss))?.rows[0].tx, TX1);
+  assert.deepEqual(urls, [`${BOARD_REMOTE_BASE}census-latest.json`]);
+  t += 4 * 60_000;
+  await load(miss);
+  assert.equal(urls.length, 1, "cached for 5 minutes");
+  // After expiry a failure keeps the last good copy and is retried after a short wait.
+  t += 2 * 60_000;
+  status = 500;
+  assert.equal((await load(miss))?.rows.length, 1);
+  assert.equal(urls.length, 2);
+  await load(miss);
+  assert.equal(urls.length, 2, "failure is cached briefly");
+  t += 31_000;
+  await load(miss);
+  assert.equal(urls.length, 3);
+  // Names outside the allow-list are never fetched.
+  assert.equal(await load(join(dir, "census-2026-09-27.json")), null);
+  assert.equal(await load(join(dir, "..", "secret.json")), null);
+  assert.equal(urls.length, 3);
+  // A failure with nothing cached is null (the page says not run yet).
+  const cold = createBoardLoader({ fetchImpl: async () => new Response("", { status: 404 }) });
+  assert.equal(await cold(join(dir, "none", "latest.json")), null);
+  // remote:false never fetches.
+  const off = createBoardLoader({ remote: false, fetchImpl: async () => assert.fail("must not fetch") });
+  assert.equal(await off(join(dir, "none", "census-latest.json")), null);
 });
 
 function fakeFacilitator(calls: string[]): FacilitatorClient {
@@ -340,7 +477,7 @@ test("routes: /board, /board.json and the census view are free (no 402, facilita
     assert.equal(h.status, 200);
     assert.equal(h.headers.get("PAYMENT-REQUIRED"), null);
     assert.match(h.headers.get("content-type") ?? "", /text\/html/);
-    assert.ok((await h.text()).includes("1 ALLOW"));
+    assert.ok((await h.text()).includes("1 DELIVERED"));
 
     const j = await app.request("/board.json");
     assert.equal(j.status, 200);
@@ -349,7 +486,7 @@ test("routes: /board, /board.json and the census view are free (no 402, facilita
     const cj = await app.request("/board.json?view=census");
     assert.equal(((await cj.json()) as BoardFile).rows.length, 2);
     const ch = await (await app.request("/board?view=census")).text();
-    assert.ok(ch.includes("1 REFUSE") && ch.includes("1 skipped"));
+    assert.ok(ch.includes("1 MISMATCH") && ch.includes("1 UNCLEAR"));
 
     assert.deepEqual(calls, []);
     // The paid route is still paid.
