@@ -38,7 +38,7 @@ import { IndexedSpendGuard, usdcSentToday } from "../src/spend.js";
 import { makePaidFetch, probe, type ProbeDeps, type ProbeResult } from "../src/probe.js";
 import { selectAccept } from "../src/declaration.js";
 import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
-import type { BoardFile, BoardRow } from "../src/board.js";
+import { notSent, type BoardFile, type BoardRow } from "../src/board.js";
 import { DEFAULT_BAZAAR, OWN_HOSTS, buildPaidRequest, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
 
 // Moved to src/bazaar.ts (shared with the paid seller audit); re-exported for existing callers.
@@ -50,7 +50,10 @@ export const KNOWN_MAINNET_PAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EK
 export interface Candidate {
   /** `${method} ${url}`: one purchase per key per UTC day. */
   key: string;
+  /** The URL as published (placeholders in place): stable across runs, used for the key and the row. */
   url: string;
+  /** Where the purchase is sent when a filled query placeholder makes it differ from `url`. */
+  requestUrl?: string;
   host: string;
   method: "GET" | "POST";
   body?: string;
@@ -157,7 +160,9 @@ export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candi
       url: b.url,
       host,
       method: b.method,
-      ...(b.ok ? { body: b.body, contentType: b.contentType, ...(b.filled ? { filled: b.filled } : {}) } : { unfillable: b.unfillable }),
+      ...(b.ok
+        ? { body: b.body, contentType: b.contentType, ...(b.requestUrl ? { requestUrl: b.requestUrl } : {}), ...(b.filled ? { filled: b.filled } : {}) }
+        : { unfillable: b.unfillable }),
       input: b.input,
       priceAtomic: price,
       payTo: accept.payTo,
@@ -378,8 +383,9 @@ export function totalsOf(rows: BoardRow[]): BoardFile["totals"] {
   return {
     rows: rows.length,
     allow: rows.filter((r) => r.verdict === "ALLOW").length,
-    refuse: rows.filter((r) => r.verdict === "REFUSE").length,
+    refuse: rows.filter((r) => r.verdict === "REFUSE" && !notSent(r)).length,
     skipped: rows.filter((r) => r.verdict === "SKIPPED").length,
+    unclear: rows.filter(notSent).length,
     paidUsdc: atomicToUsdc(paid),
   };
 }
@@ -601,7 +607,7 @@ async function main(argv: string[]): Promise<void> {
   console.log(`buying ${candidates.filter((c) => !done.has(c.key)).length} (already done today: ${done.size}) · estimate ${atomicToUsdc(estimate)} USDC · headroom ${h0.ok ? atomicToUsdc(h0.remainingAtomic) : h0.reason}`);
 
   await runSweep(candidates, {
-    probeOne: (c) => probe(c.url, boardCfg, guard, withInput(baseDeps, c)),
+    probeOne: (c) => probe(c.requestUrl ?? c.url, boardCfg, guard, withInput(baseDeps, c)),
     headroom: async () => (h0.ok ? { ok: true } : { ok: false, reason: h0.reason, detail: h0.detail }),
     concurrency: census ? Number(argValue(argv, "--concurrency") ?? 3) : 1,
     hostGapMs: hostGapMs(argv),
@@ -620,7 +626,7 @@ async function main(argv: string[]): Promise<void> {
   writeJsonAtomic(file, final);
   writeJsonAtomic(latest, final);
   const t = final.totals;
-  console.log(`done: ${t.rows} rows · ALLOW ${t.allow} · REFUSE ${t.refuse} · SKIPPED ${t.skipped} · paid ${t.paidUsdc} USDC → ${file}, ${latest}`);
+  console.log(`done: ${t.rows} rows · ALLOW ${t.allow} · REFUSE ${t.refuse} · SKIPPED ${t.skipped} · UNCLEAR (not sent) ${t.unclear ?? 0} · paid ${t.paidUsdc} USDC → ${file}, ${latest}`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

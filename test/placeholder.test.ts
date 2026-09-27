@@ -5,9 +5,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ALGORAND_MAINNET_CAIP2, ALGORAND_TESTNET_CAIP2, USDC_MAINNET_ASA_ID, USDC_TESTNET_ASA_ID } from "@x402/avm";
-import { fillPlaceholder, fillPlaceholders, isPlaceholder, placeholderHint } from "../src/placeholder.js";
+import { fillPlaceholder, fillPlaceholders, isPlaceholder, knownPattern, placeholderHint } from "../src/placeholder.js";
 import { buildPaidRequest, buildRequest, withInput, type BazaarItem } from "../src/bazaar.js";
-import { runSweep, selectCandidates, type Candidate, type SelectOptions } from "../scripts/board-sweep.js";
+import { readFileSync } from "node:fs";
+import { resumeState, runSweep, selectCandidates, totalsOf, type Candidate, type SelectOptions } from "../scripts/board-sweep.js";
 import { boardHtml, displayClass, parseBoard, type BoardFile } from "../src/board.js";
 import { planAudit } from "../src/audit.js";
 import { probe, type ProbeDeps, type ProbeResult } from "../src/probe.js";
@@ -88,19 +89,19 @@ test("hints: length from the hint, hash names, uuid, {{...}}", () => {
   };
   assert.match(val("sha256-hex-64-chars"), HEX64);
   assert.match(val("64-hex-sha256"), HEX64);
-  assert.match(val("64 hex chars: sha256 Merkle root of the item records"), HEX64);
+  assert.equal(fillPlaceholder("64 hex chars: sha256 Merkle root of the item records").ok, false, "not a pure digest hint: derived from the seller's own records");
   assert.match(val("merkle-root-hex"), HEX64);
   assert.match(val("sha-256 hex"), HEX64, "the 256 of sha-256 is not a length");
   assert.match(val("32-hex-nonce"), /^[0-9a-f]{32}$/);
   assert.match(val("md5"), /^[0-9a-f]{32}$/);
   assert.match(val("uuid"), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-  const r = fillPlaceholders({ id: "{{uuid}}", n: 1 });
-  assert.deepEqual(r.filled, ["id"]);
-  assert.notEqual(r.value.id, "{{uuid}}");
+  const r = fillPlaceholders({ nonce: "{{uuid}}", n: 1 });
+  assert.deepEqual(r.filled, ["nonce"]);
+  assert.notEqual(r.value.nonce, "{{uuid}}");
 });
 
 test("schema-style query params: format, pattern and length are respected", () => {
-  const b = buildRequest({
+  const b0 = buildRequest({
     resourceUrl: "https://s.example/q",
     method: "GET",
     accepts: [],
@@ -109,19 +110,20 @@ test("schema-style query params: format, pattern and length are respected", () =
         method: "GET",
         queryParams: {
           digest: { type: "string", pattern: "^[a-f0-9]{40}$", example: "<hex digest>" },
-          req: { type: "string", format: "uuid", example: "<request id>" },
+          nonce: { type: "string", format: "uuid", example: "<uuid>" },
           plain: "hello",
         },
       },
     },
   });
-  assert.equal(b.ok, true);
-  if (!b.ok) return;
-  const u = new URL(b.url);
+  assert.equal(b0.ok, true);
+  if (!b0.ok) return;
+  const b = b0;
+  const u = new URL(b.requestUrl!);
   assert.match(u.searchParams.get("digest")!, /^[a-f0-9]{40}$/);
-  assert.match(u.searchParams.get("req")!, /^[0-9a-f-]{36}$/);
+  assert.match(u.searchParams.get("nonce")!, /^[0-9a-f-]{36}$/);
   assert.equal(u.searchParams.get("plain"), "hello");
-  assert.deepEqual(b.filled, ["?digest", "?req"]);
+  assert.deepEqual(b.filled, ["?digest", "?nonce"]);
   // A pattern the generated value cannot meet: not filled (and not paid).
   assert.equal(fillPlaceholder("hex", { pattern: "^[A-F]{10}$" }).ok, false);
   const f70 = fillPlaceholder("hex", { minLength: 70, maxLength: 80 });
@@ -311,4 +313,133 @@ test("board file keeps filled/unfillable and the board shows the note", () => {
   const parsed = parseBoard(JSON.stringify(file))!;
   assert.deepEqual(parsed.rows[0].filled, ["hash"]);
   assert.match(boardHtml(parsed), /vet402 filled hash with a fresh random value/);
+});
+
+// --- Review 2026-09-28 (BLOCK-1): the purchase key never contains a fresh value
+
+const getItem = (url: string, q: Record<string, unknown>): BazaarItem => ({
+  resourceUrl: url,
+  method: "GET",
+  accepts: [{ scheme: "exact", network: NET, asset: USDC, amount: "5000", payTo: "SELLER" }],
+  lastSeen: "2026-09-27T00:00:00Z",
+  discoveryInfo: { input: { method: "GET", queryParams: q } },
+});
+
+test("BLOCK-1: a filled query placeholder goes only into requestUrl; url and key stay as published", () => {
+  const it = getItem("https://q.example/stamp", { digest: "<sha256>", n: 1 });
+  const a = buildRequest(it);
+  const b = buildRequest(it);
+  assert.ok(a.ok && b.ok);
+  if (!a.ok || !b.ok) return;
+  assert.equal(a.url, b.url, "the published URL is the same on every run");
+  assert.equal(new URL(a.url).searchParams.get("digest"), "<sha256>");
+  assert.match(new URL(a.requestUrl!).searchParams.get("digest")!, HEX64);
+  assert.notEqual(a.requestUrl, b.requestUrl, "the value sent is fresh each time");
+  assert.equal(buildRequest(getItem("https://q.example/plain", { n: 1 })).ok && (buildRequest(getItem("https://q.example/plain", { n: 1 })) as { requestUrl?: string }).requestUrl, undefined);
+});
+
+test("BLOCK-1 (a): the same listing twice gives the same key, so duplicate_url removes the second", () => {
+  const it = getItem("https://q.example/stamp", { digest: "<sha256>" });
+  const { candidates, excluded } = selectCandidates([it, it], opts());
+  assert.equal(candidates.length, 1);
+  assert.equal(excluded.duplicate_url, 1);
+  const again = selectCandidates([it], opts()).candidates[0];
+  assert.equal(again.key, candidates[0].key);
+  assert.notEqual(again.requestUrl, candidates[0].requestUrl);
+});
+
+test("BLOCK-1 (b): after a rerun, resumeState(rows of the first run).done skips it", async () => {
+  const it = getItem("https://q.example/stamp", { digest: "<sha256>" });
+  const sent: string[] = [];
+  const probeOne = async (c: Candidate): Promise<ProbeResult> => {
+    sent.push(c.requestUrl ?? c.url);
+    return { verdict: "REFUSE", reason: "payment_failed", target: c.requestUrl ?? c.url, detail: "status 409, no settlement receipt" };
+  };
+  const first = await runSweep(selectCandidates([it], opts()).candidates, { probeOne, now: () => NOW });
+  assert.equal(sent.length, 1);
+  assert.match(new URL(sent[0]).searchParams.get("digest")!, HEX64, "the purchase is sent to the filled URL");
+  assert.equal(new URL(first[0].url).searchParams.get("digest"), "<sha256>", "the row keeps the published URL");
+  const { done } = resumeState({ rows: first });
+  const second = await runSweep(selectCandidates([it], opts()).candidates, { probeOne, now: () => NOW, done });
+  assert.equal(sent.length, 1, "not bought again the same day");
+  assert.equal(second.length, 0);
+});
+
+test("BLOCK-1 (c): an interrupted attempt (journaled, no row) is not paid again", async () => {
+  const it = getItem("https://q.example/stamp", { digest: "<sha256>" });
+  const key = selectCandidates([it], opts()).candidates[0].key;
+  const { done, interrupted } = resumeState({ rows: [], attempts: [key] });
+  assert.deepEqual(interrupted, [key]);
+  let calls = 0;
+  await runSweep(selectCandidates([it], opts()).candidates, {
+    probeOne: async (c) => {
+      calls++;
+      return { verdict: "REFUSE", reason: "payment_failed", target: c.url };
+    },
+    now: () => NOW,
+    done,
+  });
+  assert.equal(calls, 0);
+});
+
+// --- Review 2026-09-28 (WARN-1): hints and field names that name something real are not filled
+
+test("WARN-1: chain references, keys, parties, orders and ids are never made up (hint or field name)", () => {
+  for (const h of ["txhash", "tx-hash", "block-hash", "hex-pubkey", "ed25519-pubkey-hex", "sender-hex", "recipient hex", "order-id-hex", "request id", "hex signature"]) {
+    assert.equal(fillPlaceholder(h).ok, false, h);
+  }
+  const r = fillPlaceholders({ address: "<hex-64>", txid: "<sha256>", privateKey: "<hex-64>", tx_hash: "<sha256>", orderId: "<hex>", to: "<hex-64>", hash: "<sha256-hex-64-chars>" });
+  assert.deepEqual(r.filled, ["hash"]);
+  assert.deepEqual(r.unfillable, ["address", "txid", "privateKey", "tx_hash", "orderId", "to"]);
+  assert.equal(fillPlaceholder("hex digest of the payload").ok, false, "only a pure digest hint is filled");
+  const q = buildRequest(getItem("https://q.example/pk", { pubkey: "<hex-64>" }));
+  assert.ok(q.ok && q.unfillable?.[0] === "?pubkey");
+});
+
+// --- Review 2026-09-28 (WARN-2): a seller's pattern is never compiled
+
+test("WARN-2: only known pattern shapes are read; anything else is unfillable and never compiled", () => {
+  assert.deepEqual(knownPattern("^[0-9a-fA-F]{64}$"), { kind: "hex", min: 64, max: 64, upper: false });
+  assert.deepEqual(knownPattern("^[A-F0-9]{8,16}$"), { kind: "hex", min: 8, max: 16, upper: true });
+  assert.deepEqual(knownPattern("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"), { kind: "uuid", upper: false });
+  for (const p of ["^(a+)+$", "^(a|aa)+$", "^[0-9a-f]{64}|(x+x+)+y$", ".*", "^[a-z]{10}$", "^[0-9a-f]{64}(?:abc)?$"]) {
+    assert.equal(knownPattern(p), undefined, p);
+    const t0 = Date.now();
+    assert.equal(fillPlaceholder("sha256", { pattern: p }).ok, false, p);
+    assert.ok(Date.now() - t0 < 50);
+  }
+  const up = fillPlaceholder("hex", { pattern: "^[A-F0-9]{40}$" });
+  assert.ok(up.ok && /^[A-F0-9]{40}$/.test(up.value));
+  const id = fillPlaceholder("uuid", { pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" });
+  assert.ok(id.ok && /^[0-9a-f-]{36}$/.test(id.value));
+  const src = readFileSync(new URL("../src/placeholder.ts", import.meta.url), "utf8");
+  assert.equal(/new RegExp|RegExp\(/.test(src), false, "no seller pattern is ever compiled");
+});
+
+// --- Review 2026-09-28 (WARN-3): an own "__proto__" key survives
+
+test("WARN-3: a \"__proto__\" key in the example is kept as data", () => {
+  const body = JSON.parse('{"__proto__":{"a":1},"hash":"<sha256>"}');
+  const r = fillPlaceholders(body);
+  const out = JSON.parse(JSON.stringify(r.value));
+  assert.ok(Object.prototype.hasOwnProperty.call(out, "__proto__"));
+  assert.deepEqual(out["__proto__"], { a: 1 });
+  assert.equal(Object.getPrototypeOf(r.value), Object.prototype);
+  assert.match(out.hash, HEX64);
+  const b = buildRequest(post("https://p.example/x", body));
+  assert.ok(b.ok && b.body!.startsWith('{"__proto__":{"a":1},"hash":"'));
+});
+
+// --- Review 2026-09-28 (WARN-4): not-sent rows are UNCLEAR in totals, not REFUSE
+
+test("WARN-4: placeholder_unfillable counts as unclear in totals, not refuse (sweep and parsed file)", async () => {
+  const rows = await runSweep(selectCandidates([post("https://w.example/send", { to: "<recipient-address>" })], opts()).candidates, {
+    probeOne: async () => assert.fail("never probed"),
+    now: () => NOW,
+  });
+  const t = totalsOf(rows);
+  assert.deepEqual({ rows: t.rows, refuse: t.refuse, unclear: t.unclear }, { rows: 1, refuse: 0, unclear: 1 });
+  const parsed = parseBoard(JSON.stringify({ version: 1, network: NET, networkName: "mainnet", date: "2026-09-28", startedAt: "", finishedAt: "", totals: t, rows }))!;
+  assert.equal(parsed.totals.refuse, 0);
+  assert.equal(parsed.totals.unclear, 1);
 });

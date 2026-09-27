@@ -70,8 +70,10 @@ function sellerAccept(item: BazaarItem, ref: SellerRef, cfg: AppConfig): AcceptL
 
 export interface AuditTarget {
   resourceUrl: string;
-  /** The request vet402 sends: the seller's own example input from the Bazaar. */
+  /** The request vet402 sends: the seller's own example input from the Bazaar (as published: the dedupe key). */
   url: string;
+  /** Where the request is actually sent, when a filled query placeholder makes it differ from `url`. */
+  requestUrl?: string;
   method: "GET" | "POST";
   body?: string;
   contentType?: string;
@@ -230,6 +232,7 @@ export async function planAudit(sellerRaw: string | undefined, items: BazaarItem
       resourceUrl: item.resourceUrl,
       url: b.url,
       method: b.method,
+      ...(b.requestUrl ? { requestUrl: b.requestUrl } : {}),
       ...(b.body !== undefined ? { body: b.body, contentType: b.contentType } : {}),
       input: b.input,
       ...(b.filled ? { filled: b.filled } : {}),
@@ -497,7 +500,7 @@ export async function runAudit(plan: AuditPlan, o: RunOptions): Promise<AuditRun
     };
     let r: ProbeResult;
     try {
-      r = await probe(t.url, o.cfg, t.willPay ? guard : new ReadPriceOnlyGuard(), locked);
+      r = await probe(t.requestUrl ?? t.url, o.cfg, t.willPay ? guard : new ReadPriceOnlyGuard(), locked);
     } catch (e) {
       r = { verdict: "REFUSE", reason: "probe_error", target: t.url, detail: String((e as Error).message ?? e).slice(0, 200) };
     }

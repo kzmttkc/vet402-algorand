@@ -51,7 +51,11 @@ export interface BoardFile {
   caps?: { perCallUsdc: string; perDayUsdc: string };
   spentTodayBeforeUsdc?: string;
   selection?: { source: string; candidates: number; excluded: Record<string, number> };
-  totals: { rows: number; allow: number; refuse: number; skipped: number; paidUsdc: string };
+  /**
+   * refuse leaves out rows vet402 never sent (placeholder_unfillable): those are counted in `unclear`.
+   * rows = allow + refuse + skipped + unclear. (`unclear` is absent in files written before 2026-09-28.)
+   */
+  totals: { rows: number; allow: number; refuse: number; skipped: number; unclear?: number; paidUsdc: string };
   /** Set only on hand-made sample files. The page shows it as a banner. */
   fixture?: string;
   rows: BoardRow[];
@@ -88,6 +92,11 @@ function str(v: unknown, max = 300): string | undefined {
   if (v === undefined || v === null) return undefined;
   const s = String(v);
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
+}
+
+/** A row vet402 recorded without sending anything (a placeholder it does not make up): UNCLEAR, never a REFUSE of the seller. */
+export function notSent(r: Pick<BoardRow, "verdict" | "reason">): boolean {
+  return r.verdict === "REFUSE" && r.reason === "placeholder_unfillable";
 }
 
 function strList(v: unknown): string[] | undefined {
@@ -161,8 +170,9 @@ export function parseBoard(text: string): BoardFile | null {
     totals: {
       rows: rows.length,
       allow: rows.filter((r) => r.verdict === "ALLOW").length,
-      refuse: rows.filter((r) => r.verdict === "REFUSE").length,
+      refuse: rows.filter((r) => r.verdict === "REFUSE" && !notSent(r)).length,
       skipped: rows.filter((r) => r.verdict === "SKIPPED").length,
+      unclear: rows.filter(notSent).length,
       paidUsdc: str(t.paidUsdc, 20) ?? "0",
     },
     fixture: str(o.fixture, 200),

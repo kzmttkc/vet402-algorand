@@ -39,7 +39,13 @@ function clip(s: string, n: number): string {
 export type BuiltRequest =
   | {
       ok: true;
+      /**
+       * The URL as the seller published it (placeholders left in place). Stable across runs: the
+       * purchase key ("bought once per day", resume, census/daily exclusion) and the row's url.
+       */
       url: string;
+      /** Where the request is actually sent, when a filled query placeholder makes it differ from `url`. */
+      requestUrl?: string;
       method: "GET" | "POST";
       body?: string;
       contentType?: string;
@@ -80,20 +86,25 @@ export function buildRequest(item: BazaarItem): BuiltRequest {
   }
   const filled: string[] = [];
   const unfillable: string[] = [];
+  // `u` keeps the published example (the stable key); `ru` carries the fresh values that are sent.
+  const ru = new URL(u.toString());
   if (q && typeof q === "object" && !Array.isArray(q)) {
     for (const [k, raw] of Object.entries(q)) {
       // A schema-style value ({type, description, example|default}) contributes its example/default only.
       const schema = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : undefined;
-      let v = schema ? (schema.example ?? schema.default) : raw;
+      const v = schema ? (schema.example ?? schema.default) : raw;
+      if (!(typeof v === "string" || typeof v === "number" || typeof v === "boolean")) continue;
+      u.searchParams.set(k, String(v));
+      let sent = String(v);
       const hint = typeof v === "string" ? placeholderHint(v) : undefined;
       if (hint !== undefined) {
-        const f = fillPlaceholder(hint, (schema ?? {}) as FieldSchema);
+        const f = fillPlaceholder(hint, (schema ?? {}) as FieldSchema, k);
         if (f.ok) {
-          v = f.value;
+          sent = f.value;
           filled.push(`?${k}`);
         } else unfillable.push(`?${k}`);
       }
-      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") u.searchParams.set(k, String(v));
+      ru.searchParams.set(k, sent);
     }
   }
   let body: string | undefined;
@@ -107,10 +118,11 @@ export function buildRequest(item: BazaarItem): BuiltRequest {
     if (body.length > MAX_BODY_CHARS) return { ok: false, reason: "body_too_large" };
     contentType = "application/json";
   }
-  const input = [u.search ? clip(u.search, 140) : "", body ? `body ${clip(body, 140)}` : ""].filter(Boolean).join(" ") || "(none)";
+  const input = [ru.search ? clip(ru.search, 140) : "", body ? `body ${clip(body, 140)}` : ""].filter(Boolean).join(" ") || "(none)";
   return {
     ok: true,
     url: u.toString(),
+    ...(ru.toString() !== u.toString() ? { requestUrl: ru.toString() } : {}),
     method,
     body,
     contentType,
