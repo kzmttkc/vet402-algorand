@@ -1,0 +1,899 @@
+{
+ "GET /v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
+    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
+    "mimeType": "application/json"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "50000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ],
+   "extensions": {
+    "bazaar": {
+     "info": {
+      "input": {
+       "type": "http",
+       "queryParams": {
+        "url": "https://seller.example/v1/data"
+       },
+       "method": "GET"
+      },
+      "output": {
+       "type": "json",
+       "example": {
+        "verdict": "ALLOW",
+        "reason": "delivered",
+        "target": "https://seller.example/v1/data",
+        "customerPayment": {
+         "transaction": "TXID_CUSTOMER...",
+         "network": "algorand:...",
+         "amount": "50000",
+         "payTo": "VET402..."
+        },
+        "declared": {
+         "description": "Weather data",
+         "mimeType": "application/json",
+         "expectedKeys": [
+          "weather",
+          "temperature"
+         ]
+        },
+        "price": {
+         "amountAtomic": "5000",
+         "usdc": "0.005000",
+         "payTo": "SELLER...",
+         "network": "algorand:...",
+         "asset": "31566704"
+        },
+        "downstreamPayment": {
+         "success": true,
+         "transaction": "TXID_SELLER...",
+         "network": "algorand:..."
+        },
+        "delivery": {
+         "status": 200,
+         "contentType": "application/json",
+         "bytes": 64,
+         "summary": "object{weather:string=\"sunny\", temperature:number=70}",
+         "missingKeys": []
+        }
+       }
+      }
+     },
+     "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+       "input": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "const": "http"
+         },
+         "method": {
+          "type": "string",
+          "enum": [
+           "GET"
+          ]
+         },
+         "queryParams": {
+          "type": "object",
+          "properties": {
+           "url": {
+            "type": "string",
+            "description": "x402 endpoint for vet402 to pay and check"
+           }
+          },
+          "required": [
+           "url"
+          ]
+         }
+        },
+        "required": [
+         "type",
+         "method"
+        ],
+        "additionalProperties": false
+       },
+       "output": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string"
+         },
+         "example": {
+          "type": "object",
+          "properties": {
+           "verdict": {
+            "type": "string",
+            "enum": [
+             "ALLOW",
+             "REFUSE"
+            ]
+           },
+           "reason": {
+            "type": "string"
+           },
+           "target": {
+            "type": "string"
+           },
+           "customerPayment": {
+            "type": "object"
+           },
+           "downstreamPayment": {
+            "type": "object"
+           },
+           "delivery": {
+            "type": "object"
+           }
+          },
+          "required": [
+           "verdict",
+           "reason",
+           "target",
+           "customerPayment"
+          ]
+         }
+        },
+        "required": [
+         "type"
+        ]
+       }
+      },
+      "required": [
+       "input"
+      ]
+     }
+    }
+   }
+  },
+  "body": {}
+ },
+ "HEAD /v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
+    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
+    "mimeType": "application/json"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "50000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ],
+   "extensions": {
+    "bazaar": {
+     "info": {
+      "input": {
+       "type": "http",
+       "queryParams": {
+        "url": "https://seller.example/v1/data"
+       },
+       "method": "GET"
+      },
+      "output": {
+       "type": "json",
+       "example": {
+        "verdict": "ALLOW",
+        "reason": "delivered",
+        "target": "https://seller.example/v1/data",
+        "customerPayment": {
+         "transaction": "TXID_CUSTOMER...",
+         "network": "algorand:...",
+         "amount": "50000",
+         "payTo": "VET402..."
+        },
+        "declared": {
+         "description": "Weather data",
+         "mimeType": "application/json",
+         "expectedKeys": [
+          "weather",
+          "temperature"
+         ]
+        },
+        "price": {
+         "amountAtomic": "5000",
+         "usdc": "0.005000",
+         "payTo": "SELLER...",
+         "network": "algorand:...",
+         "asset": "31566704"
+        },
+        "downstreamPayment": {
+         "success": true,
+         "transaction": "TXID_SELLER...",
+         "network": "algorand:..."
+        },
+        "delivery": {
+         "status": 200,
+         "contentType": "application/json",
+         "bytes": 64,
+         "summary": "object{weather:string=\"sunny\", temperature:number=70}",
+         "missingKeys": []
+        }
+       }
+      }
+     },
+     "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+       "input": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "const": "http"
+         },
+         "method": {
+          "type": "string",
+          "enum": [
+           "GET"
+          ]
+         },
+         "queryParams": {
+          "type": "object",
+          "properties": {
+           "url": {
+            "type": "string",
+            "description": "x402 endpoint for vet402 to pay and check"
+           }
+          },
+          "required": [
+           "url"
+          ]
+         }
+        },
+        "required": [
+         "type",
+         "method"
+        ],
+        "additionalProperties": false
+       },
+       "output": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string"
+         },
+         "example": {
+          "type": "object",
+          "properties": {
+           "verdict": {
+            "type": "string",
+            "enum": [
+             "ALLOW",
+             "REFUSE"
+            ]
+           },
+           "reason": {
+            "type": "string"
+           },
+           "target": {
+            "type": "string"
+           },
+           "customerPayment": {
+            "type": "object"
+           },
+           "downstreamPayment": {
+            "type": "object"
+           },
+           "delivery": {
+            "type": "object"
+           }
+          },
+          "required": [
+           "verdict",
+           "reason",
+           "target",
+           "customerPayment"
+          ]
+         }
+        },
+        "required": [
+         "type"
+        ]
+       }
+      },
+      "required": [
+       "input"
+      ]
+     }
+    }
+   }
+  },
+  "body": null
+ },
+ "GET /v1/audit?seller=localhost%3A4031": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/audit?seller=localhost%3A4031",
+    "description": "Seller audit: vet402 buys each of your Bazaar-listed resources from its own wallet (up to 10, at most 0.400000 USDC in total), only after your payment has settled, and returns a verdict per resource with both payment tx ids. The unpaid request is free and shows which resources will be checked.",
+    "mimeType": "application/json"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "500000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "auditPaying": 1,
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ],
+   "extensions": {
+    "bazaar": {
+     "info": {
+      "input": {
+       "type": "http",
+       "queryParams": {
+        "seller": "seller.example"
+       },
+       "method": "GET"
+      },
+      "output": {
+       "type": "json",
+       "example": {
+        "seller": "seller.example",
+        "network": "algorand:...",
+        "customerPayment": {
+         "transaction": "TXID_CUSTOMER...",
+         "network": "algorand:...",
+         "amount": "500000",
+         "payTo": "VET402..."
+        },
+        "summary": {
+         "checked": 3,
+         "delivered": 1,
+         "mismatch": 1,
+         "unreachable": 0,
+         "unclear": 1,
+         "skipped": 0,
+         "sellerPayments": 2,
+         "spentUsdc": "0.020000"
+        },
+        "results": [
+         {
+          "resourceUrl": "https://seller.example/v1/data",
+          "verdict": "ALLOW",
+          "reason": "delivered",
+          "class": "delivered",
+          "customerTx": "TXID_CUSTOMER...",
+          "downstreamPayment": {
+           "success": true,
+           "transaction": "TXID_SELLER..."
+          }
+         }
+        ],
+        "plan": {
+         "found": 3,
+         "checking": 3,
+         "paying": 2,
+         "plannedSpendUsdc": "0.020000",
+         "auditBudgetUsdc": "0.400000",
+         "notChecked": {
+          "total": 0,
+          "counts": {},
+          "items": []
+         }
+        }
+       }
+      }
+     },
+     "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+       "input": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "const": "http"
+         },
+         "method": {
+          "type": "string",
+          "enum": [
+           "GET"
+          ]
+         },
+         "queryParams": {
+          "type": "object",
+          "properties": {
+           "seller": {
+            "type": "string",
+            "description": "the seller to audit: its host (api.example.com) or its Algorand payTo address"
+           }
+          },
+          "required": [
+           "seller"
+          ]
+         }
+        },
+        "required": [
+         "type",
+         "method"
+        ],
+        "additionalProperties": false
+       },
+       "output": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string"
+         },
+         "example": {
+          "type": "object",
+          "properties": {
+           "seller": {
+            "type": "string"
+           },
+           "customerPayment": {
+            "type": "object"
+           },
+           "summary": {
+            "type": "object"
+           },
+           "results": {
+            "type": "array"
+           },
+           "plan": {
+            "type": "object"
+           }
+          },
+          "required": [
+           "seller",
+           "customerPayment",
+           "summary",
+           "results"
+          ]
+         }
+        },
+        "required": [
+         "type"
+        ]
+       }
+      },
+      "required": [
+       "input"
+      ]
+     }
+    }
+   }
+  },
+  "body": {
+   "audit": {
+    "seller": "localhost:4031",
+    "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+    "found": 1,
+    "checking": 1,
+    "paying": 1,
+    "plannedSpendUsdc": "0.010000",
+    "auditBudgetUsdc": "0.400000",
+    "maxTargets": 10,
+    "priceUsdc": "0.50",
+    "targets": [
+     {
+      "resourceUrl": "http://localhost:4031/honest",
+      "url": "http://localhost:4031/honest",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "SELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELL",
+      "listedPriceUsdc": "0.010000",
+      "willPay": true
+     }
+    ],
+    "notChecked": {
+     "total": 0,
+     "counts": {},
+     "items": []
+    },
+    "note": "vet402 will check 1 of 1 listed resource(s) and expects to pay for 1 of them (0.010000 USDC of listed prices, at most 0.400000 USDC per audit). If a seller's live price differs, or the daily cap is reached, the rest is not paid and is reported as SKIPPED."
+   }
+  }
+ },
+ "GET /v1/verdict?url=https%3A%2F%2Fapi.algorand-indexer.xyz%2Fv2%2Faccounts%2FX4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI%3Faddress%3DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/verdict?url=https%3A%2F%2Fapi.algorand-indexer.xyz%2Fv2%2Faccounts%2FX4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI%3Faddress%3DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "description": "What vet402 found the last time it bought from this x402 URL with its own wallet: DELIVERED, MISMATCH, UNREACHABLE or UNCLEAR, the reason, the day and the vet402 -> seller tx. vet402 pays nobody for this answer. A URL with no result is a free 404.",
+    "mimeType": "application/json"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "1000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ],
+   "extensions": {
+    "bazaar": {
+     "info": {
+      "input": {
+       "type": "http",
+       "queryParams": {
+        "url": "https://seller.example/v1/data"
+       },
+       "method": "GET"
+      },
+      "output": {
+       "type": "json",
+       "example": {
+        "url": "https://seller.example/v1/data",
+        "match": "exact",
+        "class": "DELIVERED",
+        "countedAgainstSeller": true,
+        "reason": "delivered",
+        "date": "2026-09-27",
+        "sellerTx": "TXID_SELLER...",
+        "sellerTxUrl": "https://allo.info/tx/TXID_SELLER...",
+        "latest": {
+         "class": "DELIVERED",
+         "reason": "delivered",
+         "date": "2026-09-27",
+         "method": "GET",
+         "url": "https://seller.example/v1/data",
+         "paid": true,
+         "sellerTx": "TXID_SELLER...",
+         "source": "census"
+        },
+        "results": [],
+        "sellerPage": "https://vet402-algorand.vercel.app/seller/seller.example",
+        "customerPayment": {
+         "transaction": "TXID_CUSTOMER...",
+         "network": "algorand:...",
+         "amount": "1000",
+         "payTo": "VET402..."
+        },
+        "note": "vet402 made no payment to the seller for this answer; it reports its own earlier purchase."
+       }
+      }
+     },
+     "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+       "input": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "const": "http"
+         },
+         "method": {
+          "type": "string",
+          "enum": [
+           "GET"
+          ]
+         },
+         "queryParams": {
+          "type": "object",
+          "properties": {
+           "url": {
+            "type": "string",
+            "description": "x402 endpoint to look up in vet402's own purchase records"
+           }
+          },
+          "required": [
+           "url"
+          ]
+         }
+        },
+        "required": [
+         "type",
+         "method"
+        ],
+        "additionalProperties": false
+       },
+       "output": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string"
+         },
+         "example": {
+          "type": "object",
+          "properties": {
+           "url": {
+            "type": "string"
+           },
+           "match": {
+            "type": "string",
+            "enum": [
+             "exact",
+             "path"
+            ]
+           },
+           "class": {
+            "type": "string",
+            "enum": [
+             "DELIVERED",
+             "MISMATCH",
+             "UNREACHABLE",
+             "UNCLEAR"
+            ]
+           },
+           "countedAgainstSeller": {
+            "type": "boolean"
+           },
+           "reason": {
+            "type": "string"
+           },
+           "date": {
+            "type": "string"
+           },
+           "sellerTx": {
+            "type": "string"
+           },
+           "latest": {
+            "type": "object"
+           },
+           "results": {
+            "type": "array"
+           },
+           "customerPayment": {
+            "type": "object"
+           }
+          },
+          "required": [
+           "url",
+           "class",
+           "reason",
+           "date",
+           "customerPayment"
+          ]
+         }
+        },
+        "required": [
+         "type"
+        ]
+       }
+      },
+      "required": [
+       "input"
+      ]
+     }
+    }
+   }
+  },
+  "body": {
+   "lookup": {
+    "found": true,
+    "match": "exact",
+    "results": 1
+   }
+  }
+ },
+ "GET /v1/buy?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/buy?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
+    "description": "vet402 buys the x402 resource you name for you: you pay the seller's price + 0.005000 USDC; after your payment settles vet402 pays the seller (per-call cap 0.040000 USDC), returns the seller's response body as-is, and adds its verdict (ALLOW/REFUSE) and both tx ids in x-vet402-* headers. The unpaid request is free and shows the price. No refunds.",
+    "mimeType": "application/octet-stream"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "15000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "sellerAmount": "10000",
+      "sellerPayTo": "SELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELL",
+      "buyFee": "5000",
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ],
+   "extensions": {
+    "bazaar": {
+     "info": {
+      "input": {
+       "type": "http",
+       "queryParams": {
+        "url": "https://seller.example/v1/data"
+       },
+       "method": "GET"
+      },
+      "output": {
+       "type": "json",
+       "example": {
+        "forecast": "sunny",
+        "temperature": 21
+       }
+      }
+     },
+     "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+       "input": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "const": "http"
+         },
+         "method": {
+          "type": "string",
+          "enum": [
+           "GET"
+          ]
+         },
+         "queryParams": {
+          "type": "object",
+          "properties": {
+           "url": {
+            "type": "string",
+            "description": "x402 endpoint for vet402 to buy (and check) for you"
+           }
+          },
+          "required": [
+           "url"
+          ]
+         }
+        },
+        "required": [
+         "type",
+         "method"
+        ],
+        "additionalProperties": false
+       },
+       "output": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string"
+         },
+         "example": {
+          "type": "object"
+         }
+        },
+        "required": [
+         "type"
+        ]
+       }
+      },
+      "required": [
+       "input"
+      ]
+     }
+    }
+   }
+  },
+  "body": {
+   "buy": {
+    "target": "http://localhost:4031/honest",
+    "method": "GET",
+    "priceRead": "get",
+    "sellerPrice": {
+     "amountAtomic": "10000",
+     "usdc": "0.010000",
+     "payTo": "SELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELL"
+    },
+    "fee": {
+     "amountAtomic": "5000",
+     "usdc": "0.005000"
+    },
+    "total": {
+     "amountAtomic": "15000",
+     "usdc": "0.015000"
+    },
+    "refund": "none"
+   }
+  }
+ },
+ "POST /v1/buy?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest": {
+  "status": 402,
+  "paymentRequired": {
+   "x402Version": 2,
+   "error": "Payment required",
+   "resource": {
+    "url": "http://localhost/v1/buy?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
+    "description": "vet402 buys the x402 resource you name for you: you pay the seller's price + 0.005000 USDC; after your payment settles vet402 pays the seller (per-call cap 0.040000 USDC), returns the seller's response body as-is, and adds its verdict (ALLOW/REFUSE) and both tx ids in x-vet402-* headers. The unpaid request is free and shows the price. No refunds.",
+    "mimeType": "application/octet-stream"
+   },
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+     "amount": "15000",
+     "asset": "10458941",
+     "payTo": "VETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVETPAYTOVE",
+     "maxTimeoutSeconds": 300,
+     "extra": {
+      "sellerAmount": "10000",
+      "sellerPayTo": "SELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELL",
+      "buyFee": "5000",
+      "asset": "10458941",
+      "tag": "x402-global-challenge",
+      "decimals": 6,
+      "feePayer": "FEEPAYER"
+     }
+    }
+   ]
+  },
+  "body": {
+   "buy": {
+    "target": "http://localhost:4031/honest",
+    "method": "POST",
+    "priceRead": "get",
+    "sellerPrice": {
+     "amountAtomic": "10000",
+     "usdc": "0.010000",
+     "payTo": "SELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELLERSELL"
+    },
+    "fee": {
+     "amountAtomic": "5000",
+     "usdc": "0.005000"
+    },
+    "total": {
+     "amountAtomic": "15000",
+     "usdc": "0.015000"
+    },
+    "refund": "none"
+   }
+  }
+ }
+}

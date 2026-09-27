@@ -20,6 +20,7 @@ import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { x402HTTPResourceServer, x402ResourceServer } from "@x402/hono";
 import { ExactAvmScheme } from "@x402/avm/exact/server";
+import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient, type HTTPRequestContext } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402-avm/extensions";
@@ -37,6 +38,7 @@ import { registerSeller } from "./seller.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { registerBuy } from "./buy.js";
+import { BaseCustomerReader, withBase } from "./base.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
@@ -99,6 +101,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   }
   const facilitator = deps.facilitator ?? new HTTPFacilitatorClient({ url: cfg.facilitatorUrl });
   const resourceServer = new x402ResourceServer(facilitator).register(cfg.network as `${string}:${string}`, new ExactAvmScheme());
+  if (cfg.base) resourceServer.register(cfg.base.network, new ExactEvmScheme()); // BASE_ACCEPT=on: customers may also pay in Base USDC (base.ts)
   resourceServer.registerExtension(bazaarResourceServerExtension as unknown as ResourceServerExtension);
   // One /supported read, started here and shared by the payment middlewares of /v1/check, /v1/audit, /v1/verdict and /v1/buy.
   shareInitialize(resourceServer)().catch(() => {}); // a failure is retried by the first request
@@ -167,7 +170,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
 
   const httpServer = new x402HTTPResourceServer(resourceServer, {
     "GET /v1/check": {
-      accepts: [
+      accepts: withBase(
+        cfg,
         {
           scheme: "exact",
           price: `$${cfg.checkPriceUsdc}`,
@@ -175,14 +179,16 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
           payTo: deps.payTo,
           extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
         },
-      ],
+        `$${cfg.checkPriceUsdc}`,
+      ),
       description:
         "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
       mimeType: "application/json",
       extensions: discovery,
     },
     "GET /v1/audit": {
-      accepts: [
+      accepts: withBase(
+        cfg,
         {
           scheme: "exact",
           // AssetAmount with the planned count: see "The number of resources to be paid" below.
@@ -191,7 +197,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
           payTo: deps.payTo,
           extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
         },
-      ],
+        async (ctx: HTTPRequestContext) => ({ amount: auditPriceAtomic, extra: { auditPaying: await auditPayingFor(ctx) } }),
+      ),
       description:
         `Seller audit: vet402 buys each of your Bazaar-listed resources from its own wallet (up to ${cfg.auditMaxTargets}, at most ${atomicToUsdc(cfg.auditMaxSpendAtomic)} USDC in total), only after your payment has settled, and returns a verdict per resource with both payment tx ids. The unpaid request is free and shows which resources will be checked.`,
       mimeType: "application/json",
@@ -199,7 +206,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     },
   });
 
-  const ownAddresses = [...new Set([deps.payTo, ...(deps.probeDeps.ownAddresses ?? [])])];
+  const ownAddresses = [...new Set([deps.payTo, ...(cfg.base ? [cfg.base.payTo] : []), ...(deps.probeDeps.ownAddresses ?? [])])];
   const probeDeps: ProbeDeps = { ...deps.probeDeps, ownAddresses };
 
   const catalog = deps.catalog ?? new BazaarCatalog(cfg.bazaarUrl);
@@ -383,6 +390,12 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   return app;
 }
 
+/** BASE_ACCEPT=on: /activity also counts customers who paid on Base (read-only, keyless). */
+function baseActivitySource(b: NonNullable<AppConfig["base"]>) {
+  const reader = new BaseCustomerReader(b);
+  return { network: b.network, payTo: b.payTo, usdc: b.usdc, explorerUrl: b.explorerUrl, signers: reader.signers, read: () => reader.read() };
+}
+
 /** Production wiring from env: chain-backed daily cap, real paying fetch. */
 export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
   const cfg = loadConfig(env);
@@ -409,6 +422,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     verdictPriceAtomic: usdcToAtomic(VERDICT_PRICE_USDC),
     auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc),
     auditMaxTargets: cfg.auditMaxTargets,
+    ...(cfg.base ? { base: baseActivitySource(cfg.base) } : {}),
   });
   // Local TestNet only: the test sellers on localhost are not in the Bazaar, so list them by URL.
   const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);

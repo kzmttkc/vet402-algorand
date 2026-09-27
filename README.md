@@ -254,6 +254,12 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 The page needs only public addresses. The payer address is taken from `PAYER_MNEMONIC` as before, or from `VET402_PAYER_ADDRESS` if set.
 
+## Pay in Base USDC (`BASE_ACCEPT`, off by default)
+
+With `BASE_ACCEPT=on` and `BASE_PAY_TO=<0x address>`, every paid route (`/v1/check`, `/v1/audit`, `/v1/verdict`, `/v1/buy`) answers its 402 with a second accept after the Algorand one: `exact`, Base USDC (`eip155:8453`, `0x833589fC…2913` on MainNet; Base Sepolia `eip155:84532`, `0x036CbD53…CF7e` on TestNet, following `X402_NETWORK`), the same atomic USDC amount (both have 6 decimals; `/v1/buy` and `/v1/audit` price dynamically on both), `payTo = BASE_PAY_TO`, `extra.tag = x402-global-challenge`. The Bazaar declaration sits next to both accepts. Only the customer's leg moves to Base: vet402 holds no Base key (`BASE_PAY_TO` only receives), and sellers are still paid on Algorand from the payer wallet, after the customer's payment settled. Settle-first, the caps, HEAD pricing, exact-path checks and the payTo match work the same for a Base payment (`test/base-accept.test.ts`). With the switch off every 402 is identical to the one before Base existed (golden file `test/fixtures/x402-402-off.json`, taken from e563b4c).
+
+`/activity` then also counts Base customers: USDC transfers into `BASE_PAY_TO` are listed from Blockscout (keyless) and each one is proven from its receipt on the public RPC: a successful transaction sent by the GoPlausible facilitator's EVM signer (`0x13600897…66fa`) to the USDC contract, with USDC's EIP-3009 `AuthorizationUsed` for the payer. Plain transfers are not counted. If Base cannot be read, the page says Base payments are not counted instead of leaving them out silently. `@x402/evm` is pinned to 2.11.0 like the rest of `@x402/*`. TestNet customer run: `scripts/base-customer-demo.ts`.
+
 ## Daily delivery board
 
 `GET /board` (HTML) and `GET /board.json` (free) show whether Algorand x402 sellers delivered what they declared, when vet402 bought from them with its own money. `?view=census` shows the census run.
