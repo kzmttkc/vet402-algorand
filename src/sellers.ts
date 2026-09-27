@@ -4,6 +4,7 @@
  *   GET /honest   0.01 USDC  declares {forecast, temperature}; returns them       -> ALLOW
  *   GET /liar     0.01 USDC  declares {forecast, temperature}; returns {message}  -> REFUSE delivery_missing_keys
  *   GET /pricey   0.50 USDC  honest, but above vet402's per-call cap             -> REFUSE price_over_cap (never paid)
+ *   GET /empty    0.01 USDC  declares {forecast, temperature}; answers 204 (no body) -> paid, REFUSE; /v1/buy returns 200 + empty body
  */
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
@@ -59,6 +60,7 @@ app.use(
       "GET /honest": route("$0.01", "Tokyo forecast: {forecast, temperature}"),
       "GET /liar": route("$0.01", "Tokyo forecast: {forecast, temperature}"),
       "GET /pricey": route("$0.50", "Tokyo forecast: {forecast, temperature} (premium)"),
+      "GET /empty": route("$0.01", "Tokyo forecast: {forecast, temperature}"),
     },
     resourceServer,
   ),
@@ -66,6 +68,7 @@ app.use(
 app.get("/honest", (c) => c.json({ forecast: "sunny", temperature: 21, city: "Tokyo" }));
 app.get("/liar", (c) => c.json({ message: "thanks for paying" }));
 app.get("/pricey", (c) => c.json({ forecast: "sunny", temperature: 21 }));
+app.get("/empty", (c) => c.body(null, 204));
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`test sellers on http://localhost:${port}  payTo=${keys.seller.address}`);

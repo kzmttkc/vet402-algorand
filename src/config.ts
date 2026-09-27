@@ -42,17 +42,6 @@ export function atomicToUsdc(atomic: bigint): string {
   return `${neg ? "-" : ""}${whole}.${frac}`;
 }
 
-/**
- * The smallest amount a customer can pay vet402: a check, or a purchase (/v1/buy) of the
- * cheapest possible seller price (1 atomic unit) plus the fee. /activity counts payments
- * from this amount up as customer payments.
- */
-export function minCustomerPriceAtomic(cfg: Pick<AppConfig, "checkPriceUsdc" | "buyFeeAtomic">): bigint {
-  const check = usdcToAtomic(cfg.checkPriceUsdc);
-  const buy = cfg.buyFeeAtomic + 1n;
-  return check < buy ? check : buy;
-}
-
 export interface AppConfig {
   networkName: NetworkName;
   network: string; // CAIP-2
@@ -122,7 +111,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   // A /v1/buy payment is at most maxPerCall + fee. It must stay below the audit price, or /activity
   // (which tells an audit from a check by amount) would count a purchase as an audit.
   const buyFee = usdcToAtomic(env.BUY_FEE_USDC ?? "0.005");
-  if (buyFee <= 0n) throw new Error("BUY_FEE_USDC must be above 0");
+  // At least 0.001: a purchase (seller price + fee) is then always above the /v1/verdict price, so /activity can tell them apart.
+  if (buyFee < 1_000n) throw new Error("BUY_FEE_USDC must be at least 0.001");
   if (maxPerCall + buyFee >= usdcToAtomic(auditPrice)) throw new Error("PROBE_MAX_PER_CALL_USDC + BUY_FEE_USDC must be below AUDIT_PRICE_USDC");
   const auditMaxTargets = Number(env.AUDIT_MAX_TARGETS ?? 10);
   if (!Number.isInteger(auditMaxTargets) || auditMaxTargets < 1 || auditMaxTargets > 50) throw new Error("AUDIT_MAX_TARGETS must be an integer 1..50");

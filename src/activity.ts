@@ -16,12 +16,18 @@
  * Seller payments: every USDC transfer sent by the `payer` wallet to an address
  * that is not vet402's own. Each one is matched to the most recent earlier
  * customer payment (within its window) that still has room: a check or a
- * purchase (/v1/buy, priced at the seller's price + fee; one customer payment for
- * one seller payment) has room for 1; a seller audit
+ * purchase (/v1/buy; one customer payment for one seller payment) has room for 1; a seller audit
  * (amount >= `auditPriceAtomic`) has room for up to `auditMaxTargets`, because one
  * audit buys several of the seller's resources. An audit is still one customer
  * payment: it is one row, with its seller payments listed under it.
  * A seller payment with no such customer payment is listed as unmatched, never hidden.
+ *
+ * Payments below the check price (`priceAtomic`) are customers only when they can be proven:
+ *   - exactly the /v1/verdict price (`verdictPriceAtomic`): a lookup ("verdict"); it pays no
+ *     seller, so it never takes a seller payment;
+ *   - otherwise a purchase ("buy", /v1/buy = seller price + `buyFeeAtomic`) only if a seller
+ *     payment pairs with it and (payment - fee) >= that seller payment. A small deposit with no
+ *     such seller payment is listed as below_price, so it cannot inflate the customer count.
  */
 import { atomicToUsdc, type NetworkName } from "./config.js";
 
@@ -35,8 +41,12 @@ export interface ActivityOptions {
   payTo: string;
   payer: string;
   feePayers?: string[];
-  /** Lowest price vet402 charges in atomic USDC (a check, or a /v1/buy of the cheapest seller); smaller deposits are not counted as customers. */
+  /** Price of one check in atomic USDC. Smaller payments count only as a verdict or a paired buy (see above). */
   priceAtomic?: bigint;
+  /** /v1/buy fee in atomic USDC. Omitted = payments below the check price are never purchases. */
+  buyFeeAtomic?: bigint;
+  /** /v1/verdict price in atomic USDC (a payment of exactly this is a lookup). */
+  verdictPriceAtomic?: bigint;
   /** Max seconds between a customer payment and the seller payment it pays for. */
   pairWindowSec?: number;
   /** Price of one seller audit in atomic USDC. Customer payments of at least this much are audits. Omitted = no audits. */
@@ -57,8 +67,12 @@ export interface SellerPayment {
 }
 
 export interface ActivityRow {
-  /** "check" = one customer payment for one seller payment (a /v1/check or a /v1/buy); "audit" = one customer payment for several. */
-  kind: "check" | "audit";
+  /**
+   * "check" = one customer payment (at least the check price) for one seller payment;
+   * "buy" = a /v1/buy below the check price, paired with its seller payment;
+   * "verdict" = a /v1/verdict lookup (no seller payment); "audit" = one customer payment for several.
+   */
+  kind: "check" | "audit" | "buy" | "verdict";
   time: string;
   round: number;
   customer: string;
@@ -219,6 +233,15 @@ export class ActivityLedger {
     return report;
   }
 
+  private isVerdict(t: Transfer): boolean {
+    return this.o.verdictPriceAtomic !== undefined && t.amount === this.o.verdictPriceAtomic;
+  }
+
+  /** Could be a /v1/buy (seller price >= 1 + fee); decided after pairing. */
+  private mayBeBuy(t: Transfer): boolean {
+    return this.o.buyFeeAtomic !== undefined && t.amount > this.o.buyFeeAtomic;
+  }
+
   private async isX402Group(t: Transfer): Promise<boolean> {
     const key = `${t.round}:${t.group}`;
     const known = this.groupIsX402.get(key);
@@ -242,11 +265,11 @@ export class ActivityLedger {
       usdcTransfers({ ...base, address: payer }),
     ]);
 
-    const customers: Transfer[] = [];
+    let customers: Transfer[] = [];
     const notCounted: NotCounted[] = [];
     for (const t of incoming) {
       if (t.receiver !== payTo || t.amount <= 0n) continue; // outgoing, or a 0-amount opt-in
-      if (this.o.priceAtomic !== undefined && t.amount < this.o.priceAtomic) {
+      if (this.o.priceAtomic !== undefined && t.amount < this.o.priceAtomic && !this.isVerdict(t) && !this.mayBeBuy(t)) {
         notCounted.push({ tx: t.tx, round: t.round, reason: "below_price" });
       } else if (t.inner) {
         notCounted.push({ tx: t.tx, round: t.round, reason: "inner_transaction" });
@@ -262,21 +285,33 @@ export class ActivityLedger {
 
     customers.sort((a, b) => (before(a, b) ? -1 : 1));
     payouts.sort((a, b) => (before(a, b) ? -1 : 1));
-    const isAudit = (c: Transfer) => this.o.auditPriceAtomic !== undefined && c.amount >= this.o.auditPriceAtomic;
-    const room = (c: Transfer) => (isAudit(c) ? (this.o.auditMaxTargets ?? 10) : 1);
+    const kindOf = (c: Transfer): ActivityRow["kind"] => {
+      if (this.o.priceAtomic !== undefined && c.amount < this.o.priceAtomic) return this.isVerdict(c) ? "verdict" : "buy";
+      return this.o.auditPriceAtomic !== undefined && c.amount >= this.o.auditPriceAtomic ? "audit" : "check";
+    };
+    const isAudit = (c: Transfer) => kindOf(c) === "audit";
+    const room = (c: Transfer) => ({ audit: this.o.auditMaxTargets ?? 10, check: 1, buy: 1, verdict: 0 })[kindOf(c)];
     const windowOf = (c: Transfer) => (isAudit(c) ? this.auditWindowSec : this.windowSec);
+    // A purchase below the check price paid the seller's price + fee: its seller payment is at most (payment - fee).
+    const fits = (c: Transfer, p: Transfer) => kindOf(c) !== "buy" || c.amount - (this.o.buyFeeAtomic ?? 0n) >= p.amount;
     const pairedWith = new Map<string, Transfer[]>();
     const unmatched: Transfer[] = [];
     for (const p of payouts) {
       let pick: Transfer | undefined;
       for (const c of customers) {
         if (!before(c, p)) break;
-        if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= room(c)) continue;
+        if (p.time - c.time > windowOf(c) || (pairedWith.get(c.tx)?.length ?? 0) >= room(c) || !fits(c, p)) continue;
         pick = c; // keep the latest eligible one
       }
       if (pick) pairedWith.set(pick.tx, [...(pairedWith.get(pick.tx) ?? []), p]);
       else unmatched.push(p);
     }
+    // A payment below the check price that no seller payment proves to be a purchase is not a customer.
+    customers = customers.filter((c) => {
+      if (kindOf(c) !== "buy" || pairedWith.has(c.tx)) return true;
+      notCounted.push({ tx: c.tx, round: c.round, reason: "below_price" });
+      return false;
+    });
     const sp = (p: Transfer): SellerPayment => ({ seller: p.receiver, tx: p.tx, round: p.round, amountUsdc: atomicToUsdc(p.amount) });
 
     const rows: ActivityRow[] = customers
@@ -284,7 +319,7 @@ export class ActivityLedger {
         const ps = pairedWith.get(c.tx) ?? [];
         const p = ps[0];
         return {
-          kind: isAudit(c) ? ("audit" as const) : ("check" as const),
+          kind: kindOf(c),
           time: iso(c.time),
           round: c.round,
           customer: c.sender,
@@ -328,7 +363,7 @@ export class ActivityLedger {
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
-        `A deposit smaller than the lowest price vet402 charges${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} is not counted as a customer payment (listed as below_price).`,
+        `A payment smaller than the check price${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} counts only as a /v1/verdict lookup (exactly ${this.o.verdictPriceAtomic !== undefined ? atomicToUsdc(this.o.verdictPriceAtomic) : "its"} USDC; it takes no seller payment) or as a /v1/buy purchase that is paired with a seller payment of at most (payment - ${this.o.buyFeeAtomic !== undefined ? atomicToUsdc(this.o.buyFeeAtomic) : "fee"} USDC fee). Any other small payment is listed as below_price and is not counted.`,
         `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check or a purchase (/v1/buy, whose price is the seller's price + vet402's fee) has room for one seller payment (within ${this.windowSec} s)${
           this.o.auditPriceAtomic !== undefined
             ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`
@@ -357,11 +392,11 @@ export function activityHtml(r: ActivityReport): string {
   const rows = r.rows
     .map((w) => {
       const cls = w.operatorTest ? ' class="op"' : "";
-      const who = `<td>${addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}${w.kind === "audit" ? ' <span class="tag">audit</span>' : ""}</td>`;
+      const who = `<td>${addr(w.customer)}${w.operatorTest ? ' <span class="tag">operator test</span>' : ""}${w.kind !== "check" ? ` <span class="tag">${w.kind}</span>` : ""}</td>`;
       const head = `<tr${cls}><td>${when(w.time)}</td>${who}<td>${tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td>`;
       const ps = w.sellerPayments ?? [];
       if (w.kind !== "audit" || ps.length === 0) {
-        return `${head}<td>${w.seller ? addr(w.seller) : '<span class="muted">not paid</span>'}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`;
+        return `${head}<td>${w.seller ? addr(w.seller) : `<span class="muted">${w.kind === "verdict" ? "none (lookup)" : "not paid"}</span>`}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`;
       }
       // One customer payment, several seller payments: one row for the audit, one indented line per seller payment.
       const sub = ps

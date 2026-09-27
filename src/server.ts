@@ -23,18 +23,18 @@ import { ExactAvmScheme } from "@x402/avm/exact/server";
 import { HTTPFacilitatorClient, type HTTPRequestContext } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402-avm/extensions";
-import { atomicToUsdc, loadConfig, minCustomerPriceAtomic, usdcToAtomic, type AppConfig } from "./config.js";
+import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "./config.js";
 import { loadKeys, loadPayer } from "./keys.js";
 import { SpendLedger } from "./caps.js";
 import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
 import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
 import { checkTarget } from "./target.js";
-import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
+import { settleFirstMiddleware, shareInitialize, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { registerBoard } from "./board.js";
 import { registerSeller } from "./seller.js";
-import { registerVerdictLookup } from "./lookup.js";
+import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { registerBuy } from "./buy.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
@@ -100,6 +100,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   const facilitator = deps.facilitator ?? new HTTPFacilitatorClient({ url: cfg.facilitatorUrl });
   const resourceServer = new x402ResourceServer(facilitator).register(cfg.network as `${string}:${string}`, new ExactAvmScheme());
   resourceServer.registerExtension(bazaarResourceServerExtension as unknown as ResourceServerExtension);
+  // One /supported read, started here and shared by the payment middlewares of /v1/check, /v1/audit, /v1/verdict and /v1/buy.
+  shareInitialize(resourceServer)().catch(() => {}); // a failure is retried by the first request
 
   const discovery = declareDiscoveryExtension({
     input: { url: "https://seller.example/v1/data" },
@@ -259,6 +261,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
         endpoints: {
           "GET /v1/check?url=<x402 URL>": `${cfg.checkPriceUsdc} USDC`,
           "GET /v1/audit?seller=<host or payTo>": `${cfg.auditPriceUsdc} USDC (the unpaid request shows the plan for free)`,
+          "GET /v1/verdict?url=<x402 URL>": `${VERDICT_PRICE_USDC} USDC (vet402's last recorded result for that URL; pays no seller)`,
+          "GET|POST /v1/buy?url=<x402 URL>": `the seller's price + ${atomicToUsdc(cfg.buyFeeAtomic)} USDC (the unpaid request shows the price for free; returns the seller's body with vet402's verdict in x-vet402-* headers; no refunds)`,
         },
         order: "customer payment settles first; the seller is paid only after that",
         caps,
@@ -290,7 +294,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
   registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
-  registerBuy(app, cfg, { payTo: deps.payTo, facilitator, guard: deps.guard, probeDeps }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
+  registerBuy(app, cfg, resourceServer, { payTo: deps.payTo, guard: deps.guard, probeDeps, catalog }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
 
   app.use(
     settleFirstMiddleware(httpServer, {
@@ -400,7 +404,9 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     asaId: cfg.usdcAsaId,
     payTo,
     payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
-    priceAtomic: minCustomerPriceAtomic(cfg), // a /v1/buy payment can be below the check price
+    priceAtomic: usdcToAtomic(cfg.checkPriceUsdc),
+    buyFeeAtomic: cfg.buyFeeAtomic,
+    verdictPriceAtomic: usdcToAtomic(VERDICT_PRICE_USDC),
     auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc),
     auditMaxTargets: cfg.auditMaxTargets,
   });

@@ -9,12 +9,14 @@ import assert from "node:assert/strict";
 import { ALGORAND_MAINNET_CAIP2, ALGORAND_TESTNET_CAIP2 } from "@x402/avm";
 import type { FacilitatorClient } from "@x402/core/server";
 import { createApp } from "../src/server.js";
-import { loadConfig, minCustomerPriceAtomic, type AppConfig } from "../src/config.js";
+import { loadConfig, usdcToAtomic, type AppConfig } from "../src/config.js";
 import { SpendLedger } from "../src/caps.js";
 import { LocalSpendGuard, type SpendGuard } from "../src/spend.js";
 import type { ProbeDeps } from "../src/probe.js";
-import { buyPriceAtomic, BUY_MAX_REQUEST_BYTES } from "../src/buy.js";
+import { buyPriceAtomic, BUY_MAX_REQUEST_BYTES, readBodyCapped } from "../src/buy.js";
 import { ActivityLedger } from "../src/activity.js";
+import type { BazaarItem, Catalog } from "../src/bazaar.js";
+import { VERDICT_PRICE_USDC } from "../src/lookup.js";
 
 const NET = ALGORAND_TESTNET_CAIP2;
 const ASA = "10458941";
@@ -53,6 +55,12 @@ interface SellerState {
   paySucceeds: boolean;
   /** Called on every unpaid read, before the 402 is built. */
   onLook?: () => void;
+  /** POST-only seller: a GET is answered 405. */
+  postOnly?: boolean;
+  /** Paid response status (default 200). */
+  paidStatus?: number;
+  /** The seller's payment waits for this. */
+  payGate?: Promise<void>;
 }
 
 const LIAR_BODY = '{"message":"thanks for paying"}';
@@ -81,6 +89,7 @@ function sellerDeps(trace: Trace, s: SellerState): ProbeDeps & { paid: { url: st
       looks.push(init);
       trace.push(`look ${new URL(url).pathname}`);
       s.onLook?.();
+      if (s.postOnly && init.method !== "POST") return new Response("method not allowed", { status: 405 });
       if (s.status402 && s.status402 !== 402) return new Response("ok", { status: s.status402 });
       return new Response("{}", { status: 402, headers: { "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(pr(new URL(url).pathname))).toString("base64") } });
     },
@@ -89,12 +98,15 @@ function sellerDeps(trace: Trace, s: SellerState): ProbeDeps & { paid: { url: st
       const path = new URL(url).pathname;
       trace.push(`pay ${path}`);
       paid.push({ url, approved, init });
+      await s.payGate;
       if (!s.paySucceeds) {
         return { response: new Response("{}", { status: 402 }), settle: { success: false, errorReason: "insufficient_funds" }, signed: true };
       }
       const b = s.body(path);
+      const status = s.paidStatus ?? 200;
+      const nullBody = status === 204 || status === 205 || status === 304;
       return {
-        response: new Response(b.bytes as Uint8Array<ArrayBuffer>, { status: 200, headers: { "content-type": b.contentType } }),
+        response: new Response(nullBody ? null : (b.bytes as Uint8Array<ArrayBuffer>), { status, headers: nullBody ? {} : { "content-type": b.contentType } }),
         settle: { success: true, transaction: "SELLER_TX", network: NET },
         signed: true,
       };
@@ -111,13 +123,19 @@ const sellerState = (amount = "10000", payTo = SELLER): SellerState => ({
 const baseCfg = (env: NodeJS.ProcessEnv = {}): AppConfig => loadConfig({ ALLOW_PRIVATE_TARGETS: "1", ...env });
 const guardFor = (cfg: AppConfig) => new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic));
 
-function setup(o: { cfg?: AppConfig; state?: SellerState; guard?: SpendGuard; settleOk?: boolean } = {}) {
+const catalogOf = (items: BazaarItem[]): Catalog & { reads: number } => {
+  const c = { reads: 0, async items() { c.reads++; return items; } };
+  return c;
+};
+
+function setup(o: { cfg?: AppConfig; state?: SellerState; guard?: SpendGuard; settleOk?: boolean; catalog?: Catalog; facilitator?: FacilitatorClient } = {}) {
   const cfg = o.cfg ?? baseCfg();
   const trace: Trace = [];
   const state = o.state ?? sellerState();
   const deps = sellerDeps(trace, state);
-  const app = createApp(cfg, { payTo: VET402, probeDeps: deps, guard: o.guard ?? guardFor(cfg), facilitator: fakeFacilitator(trace, o.settleOk ?? true) });
-  return { app, trace, state, deps, cfg };
+  const catalog = o.catalog ?? catalogOf([]);
+  const app = createApp(cfg, { payTo: VET402, probeDeps: deps, guard: o.guard ?? guardFor(cfg), facilitator: o.facilitator ?? fakeFacilitator(trace, o.settleOk ?? true), catalog });
+  return { app, trace, state, deps, cfg, catalog };
 }
 
 const buyPath = (target: string) => `/v1/buy?url=${encodeURIComponent(target)}`;
@@ -333,18 +351,91 @@ test("daily headroom below the seller's price: refused before settle", async () 
   assert.equal(deps.paid.length, 0);
 });
 
-test("POST: the customer's JSON body goes to the seller unchanged, with content-type only", async () => {
-  const { app, deps } = setup();
+test("POST: the customer's body is sent to the seller only after the customer's payment settled, unchanged, with content-type only", async () => {
+  const { app, deps, trace } = setup();
   const json = '{"city":"Tokyo","days":[1,2]}';
   const init: RequestInit = { method: "POST", body: json, headers: { "content-type": "application/json", authorization: "Bearer secret", cookie: "s=1", "x-custom": "y" } };
   const { paid } = await buy(app, buyPath(`${HOST}/honest`), { init });
   assert.equal(paid!.status, 200);
   assert.equal(await paid!.text(), HONEST_BODY);
-  for (const seen of [...deps.looks, deps.paid[0].init]) {
+  // Before settlement (free price, paid request's price): a plain GET, no body.
+  const iSettle = trace.findIndex((t) => t.startsWith("settle"));
+  const before = trace.slice(0, iSettle).filter((t) => t.startsWith("look")).length;
+  assert.equal(before, 2);
+  for (const seen of deps.looks.slice(0, before)) {
+    assert.equal(seen.method, "GET");
+    assert.equal(seen.body, undefined);
+  }
+  // After settlement: the probe read and the payment carry the customer's body and only content-type.
+  assert.ok(deps.looks.length > before);
+  for (const seen of [...deps.looks.slice(before), deps.paid[0].init]) {
     assert.equal(seen.method, "POST");
     assert.equal(Buffer.from(seen.body as Uint8Array).toString(), json);
     assert.deepEqual(Object.keys((seen.headers as Record<string, string>) ?? {}), ["content-type"]);
   }
+});
+
+test("unpaid POST is not a free relay: a POST-only seller is priced only from its Bazaar-listed example input", async () => {
+  const state = { ...sellerState(), postOnly: true };
+  // Not listed: refused, and the seller only ever saw a bodiless GET.
+  {
+    const { app, deps } = setup({ state });
+    const res = await app.request(buyPath(`${HOST}/honest`), { method: "POST", body: '{"secret":"relay me"}', headers: { "content-type": "application/json" } });
+    assert.equal(res.status, 422);
+    assert.equal(((await res.json()) as { reason: string }).reason, "not_listed");
+    assert.deepEqual(deps.looks.map((l) => [l.method, l.body]), [["GET", undefined]]);
+  }
+  // Listed for POST: priced with the listed example body, never the customer's.
+  const listed: BazaarItem = { resourceUrl: `${HOST}/honest`, method: "POST", accepts: [state.accept], discoveryInfo: { input: { method: "POST", body: { city: "Example" }, bodyType: "json" } } };
+  const { app, deps, trace } = setup({ state, catalog: catalogOf([listed]) });
+  const init: RequestInit = { method: "POST", body: '{"city":"Tokyo"}', headers: { "content-type": "application/json" } };
+  const { first, paid } = await buy(app, buyPath(`${HOST}/honest`), { init });
+  assert.equal(first.status, 402);
+  assert.equal(((await first.json()) as { buy: { priceRead: string } }).buy.priceRead, "listed_example");
+  assert.equal(paid!.status, 200);
+  const iSettle = trace.findIndex((t) => t.startsWith("settle"));
+  const beforeLooks = deps.looks.slice(0, trace.slice(0, iSettle).filter((t) => t.startsWith("look")).length);
+  assert.ok(beforeLooks.length >= 2);
+  for (const l of beforeLooks) assert.ok(l.body === undefined || String(l.body) === '{"city":"Example"}', `pre-settle body ${String(l.body)}`);
+  assert.equal(Buffer.from(deps.paid[0].init.body as Uint8Array).toString(), '{"city":"Tokyo"}');
+});
+
+test("price reads are limited per client IP (in memory): the 31st in a minute is 429 and does not reach the seller", async () => {
+  const { app, deps } = setup();
+  for (let i = 0; i < 30; i++) assert.equal((await app.request(buyPath(`${HOST}/honest`), { headers: { "x-real-ip": "203.0.113.9" } })).status, 402);
+  const looks = deps.looks.length;
+  const over = await app.request(buyPath(`${HOST}/honest`), { headers: { "x-real-ip": "203.0.113.9" } });
+  assert.equal(over.status, 429);
+  assert.equal(((await over.json()) as { reason: string }).reason, "rate_limited");
+  assert.equal(deps.looks.length, looks);
+  assert.equal((await app.request(buyPath(`${HOST}/honest`), { headers: { "x-real-ip": "203.0.113.10" } })).status, 402, "another client is not limited");
+});
+
+test("a chunked POST body with no content-length is cut at 64 KB (413), not read to the end", async () => {
+  let pulled = 0;
+  const chunk = new Uint8Array(16 * 1024).fill(0x20);
+  const endless = new ReadableStream<Uint8Array>({
+    pull(ctl) {
+      pulled++;
+      if (pulled > 1000) return ctl.close();
+      ctl.enqueue(chunk);
+    },
+  });
+  const capped = await readBodyCapped(endless, BUY_MAX_REQUEST_BYTES);
+  assert.equal(capped.ok, false);
+  assert.ok(pulled <= 7, `read ${pulled} chunks`);
+  const { app, deps } = setup();
+  const big = new ReadableStream<Uint8Array>({
+    start(ctl) {
+      for (let i = 0; i < 8; i++) ctl.enqueue(chunk);
+      ctl.close();
+    },
+  });
+  const req = new Request(`http://localhost${buyPath(`${HOST}/honest`)}`, { method: "POST", body: big, headers: { "content-type": "application/json" }, duplex: "half" } as RequestInit);
+  assert.equal(req.headers.get("content-length"), null);
+  const res = await app.fetch(req);
+  assert.equal(res.status, 413);
+  assert.equal(deps.looks.length, 0);
 });
 
 test("POST guards are free: non-JSON content-type (415), too large (413), invalid JSON (400)", async () => {
@@ -398,42 +489,197 @@ test("/v1/check still works next to /v1/buy (its own middleware is untouched)", 
   assert.equal(decodePR(res).accepts[0].amount, "50000");
 });
 
-test("config: BUY_FEE_USDC default 0.005; fee + per-call cap must stay below the audit price; activity floor covers a buy", () => {
+test("config: BUY_FEE_USDC default 0.005, at least 0.001; fee + per-call cap must stay below the audit price", () => {
   const cfg = baseCfg();
   assert.equal(cfg.buyFeeAtomic, 5_000n);
-  assert.equal(minCustomerPriceAtomic(cfg), 5_001n);
   assert.throws(() => baseCfg({ BUY_FEE_USDC: "0" }), /BUY_FEE_USDC/);
+  assert.throws(() => baseCfg({ BUY_FEE_USDC: "0.0009" }), /at least 0.001/);
   assert.throws(() => baseCfg({ BUY_FEE_USDC: "0.47" }), /below AUDIT_PRICE_USDC/);
 });
 
-test("/activity: a /v1/buy customer payment (seller price + fee) pairs with its one seller payment", async () => {
-  const ASA_M = "31566704";
-  const PT = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
-  const PY = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
-  const FEE = "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
-  const ALICE = "ALICEALICEALICEALICEALICEALICEALICEALICEALICEALICEALICEALIC";
-  const BOB = "BOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBO";
-  const T0 = 1790479000;
+test("seller answers 204 / 205 after both payments: 200 with an empty body, verdict and both tx ids still in headers", async () => {
+  for (const status of [204, 205]) {
+    const state = sellerState();
+    state.paidStatus = status;
+    const { app } = setup({ state });
+    const { paid } = await buy(app, buyPath(`${HOST}/honest`));
+    assert.equal(paid!.status, 200, `seller ${status}`);
+    assert.equal((await paid!.arrayBuffer()).byteLength, 0);
+    assert.equal(paid!.headers.get("x-vet402-seller-status"), String(status));
+    assert.equal(paid!.headers.get("x-vet402-verdict"), "REFUSE");
+    assert.ok(paid!.headers.get("x-vet402-reason"));
+    assert.equal(paid!.headers.get("x-vet402-customer-tx"), "CUSTOMER_TX");
+    assert.equal(paid!.headers.get("x-vet402-seller-tx"), "SELLER_TX");
+  }
+  // Any other 2xx is 200 too.
+  const state = sellerState();
+  state.paidStatus = 201;
+  const { app } = setup({ state });
+  const { paid } = await buy(app, buyPath(`${HOST}/honest`));
+  assert.equal(paid!.status, 200);
+  assert.equal(await paid!.text(), HONEST_BODY);
+  assert.equal(paid!.headers.get("x-vet402-seller-status"), "201");
+});
+
+test("an x402 v1 payment is refused before settlement (v1 is matched by scheme and network only)", async () => {
+  const t: Trace = [];
+  const f = fakeFacilitator(t);
+  const N = NET as `${string}:${string}`;
+  f.getSupported = async () => ({ kinds: [{ x402Version: 2, scheme: "exact", network: N }, { x402Version: 1, scheme: "exact", network: N }], extensions: [], signers: {} });
+  const { app, deps } = setup({ facilitator: f });
+  const trace = t;
+  const first = await app.request(buyPath(`${HOST}/honest`));
+  const pr = decodePR(first);
+  const v1 = Buffer.from(JSON.stringify({ x402Version: 1, scheme: "exact", network: pr.accepts[0].network, accepted: { ...pr.accepts[0], amount: "1" }, payload: { paymentGroup: [], paymentIndex: 0 } })).toString("base64");
+  const paid = await app.request(buyPath(`${HOST}/honest`), { headers: { "PAYMENT-SIGNATURE": v1 } });
+  assert.equal(paid.status, 400);
+  assert.equal(((await paid.json()) as { reason: string }).reason, "unsupported_x402_version");
+  assert.ok(!settled(trace), trace.join(","));
+  assert.equal(deps.paid.length, 0);
+});
+
+test("the seller's price is reserved on the daily cap before settlement: a concurrent purchase near the cap is refused unpaid; no double reservation", async () => {
+  const cfg = baseCfg();
+  const ledger = new SpendLedger(cfg.maxPerCallAtomic, 15_000n); // room for one 0.01 purchase
+  let open!: () => void;
+  const state = sellerState();
+  state.payGate = new Promise<void>((r) => (open = r));
+  const { app, trace, deps } = setup({ cfg, state, guard: new LocalSpendGuard(ledger) });
+  const firstDone = buy(app, buyPath(`${HOST}/honest`));
+  for (let i = 0; i < 200 && !trace.includes("pay /honest"); i++) await new Promise((r) => setImmediate(r));
+  assert.ok(trace.includes("pay /honest"), "first purchase is paying the seller");
+  assert.equal(ledger.spentTodayAtomic(), 10_000n);
+  const second = await buy(app, buyPath(`${HOST}/honest`));
+  assert.equal(second.paid!.status, 503);
+  assert.equal(((await second.paid!.json()) as { reason: string }).reason, "daily_cap_reached");
+  assert.equal(trace.filter((t) => t.startsWith("settle")).length, 1, "the second customer was not charged");
+  open();
+  const first = await firstDone;
+  assert.equal(first.paid!.status, 200);
+  assert.equal(deps.paid.length, 1);
+  assert.equal(ledger.spentTodayAtomic(), 10_000n, "reserved once, committed once");
+});
+
+test("customer settlement fails: the reservation is given back", async () => {
+  const cfg = baseCfg();
+  const ledger = new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
+  const { app, deps } = setup({ cfg, guard: new LocalSpendGuard(ledger), settleOk: false });
+  const { paid } = await buy(app, buyPath(`${HOST}/honest`));
+  assert.equal(paid!.status, 402);
+  assert.equal(deps.paid.length, 0);
+  assert.equal(ledger.spentTodayAtomic(), 0n);
+});
+
+test("seller refused after settlement without a signature: the reservation is given back", async () => {
+  const cfg = baseCfg();
+  const ledger = new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
+  const state = sellerState();
+  const { app, trace } = setup({ cfg, state, guard: new LocalSpendGuard(ledger) });
+  state.onLook = () => {
+    if (settled(trace)) state.accept = { ...state.accept, amount: "11000" };
+  };
+  const { paid } = await buy(app, buyPath(`${HOST}/honest`));
+  assert.equal(paid!.status, 502);
+  assert.equal(ledger.spentTodayAtomic(), 0n);
+});
+
+test("one facilitator /supported read is shared by /v1/check, /v1/audit, /v1/verdict and /v1/buy", async () => {
+  let reads = 0;
+  const trace: Trace = [];
+  const f = fakeFacilitator(trace);
+  const base = f.getSupported.bind(f);
+  f.getSupported = async () => {
+    reads++;
+    await new Promise((r) => setTimeout(r, 20));
+    return base();
+  };
+  const { app } = setup({ facilitator: f });
+  const answers = await Promise.all([
+    app.request(`/v1/check?url=${encodeURIComponent(`${HOST}/honest`)}`),
+    app.request("/v1/audit?seller=localhost:4031"),
+    app.request("/v1/verdict?url=not-a-url"),
+    app.request(buyPath(`${HOST}/honest`)),
+    app.request(buyPath(`${HOST}/liar`)),
+  ]);
+  assert.equal(reads, 1);
+  for (const a of answers) assert.ok(a.status < 500, `status ${a.status}`);
+  assert.equal(answers[0].status, 402);
+  assert.equal(answers[3].status, 402);
+});
+
+test("GET / (JSON) lists /v1/verdict and /v1/buy", async () => {
+  const { app } = setup();
+  const res = await app.request("/", { headers: { accept: "application/json" } });
+  const body = (await res.json()) as { endpoints: Record<string, string> };
+  assert.ok(body.endpoints["GET /v1/verdict?url=<x402 URL>"]?.includes("0.001"));
+  assert.ok(body.endpoints["GET|POST /v1/buy?url=<x402 URL>"]?.includes("0.005"));
+  assert.ok(body.endpoints["GET /v1/check?url=<x402 URL>"]);
+});
+
+// ---- /activity ----------------------------------------------------------------------------------
+
+const ASA_M = "31566704";
+const PT = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+const PY = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+const FEEPAYER = "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
+const ALICE = "ALICEALICEALICEALICEALICEALICEALICEALICEALICEALICEALICEALIC";
+const BOB = "BOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBOBBO";
+const MALLORY = "MALLORYMALLORYMALLORYMALLORYMALLORYMALLORYMALLORYMALLORYMAL";
+const SA = "SELLERAAAASELLERAAAASELLERAAAASELLERAAAASELLERAAAASELLERAAA";
+const T0 = 1790479000;
+
+function ledgerOf(incoming: [id: string, from: string, amount: number, round: number][], payouts: [id: string, amount: number, round: number][]) {
   const ax = (id: string, s: string, r: string, amount: number, round: number, group?: string) => ({
     id, sender: s, "tx-type": "axfer", fee: 0, ...(group ? { group } : {}), "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 1,
     "asset-transfer-transaction": { "asset-id": Number(ASA_M), amount, receiver: r, "close-amount": 0 },
   });
-  const feeTx = (g: string, round: number) => ({ id: `F-${g}`, sender: FEE, "tx-type": "pay", fee: 2000, group: g, "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 0 });
-  const buy1 = ax("BUY1", ALICE, PT, 15_000, 100, "G1"); // seller 0.01 + fee 0.005
-  const check = ax("CHECK1", BOB, PT, 50_000, 110, "G2");
-  const out1 = ax("OUT1", PY, "SELLERAAAASELLERAAAASELLERAAAASELLERAAAASELLERAAAASELLERAAA", 10_000, 102);
-  const out2 = ax("OUT2", PY, "SELLERBBBBSELLERBBBBSELLERBBBBSELLERBBBBSELLERBBBBSELLERBBB", 10_000, 112);
-  const groups: Record<string, unknown[]> = { G1: [feeTx("G1", 100), buy1], G2: [feeTx("G2", 110), check] };
+  const ins = incoming.map(([id, from, amount, round]) => ax(id, from, PT, amount, round, `G-${id}`));
+  const outs = payouts.map(([id, amount, round]) => ax(id, PY, SA, amount, round));
+  const groups = Object.fromEntries(ins.map((t) => [t.group!, [{ id: `F-${t.id}`, sender: FEEPAYER, "tx-type": "pay", fee: 2000, group: t.group, "confirmed-round": t["confirmed-round"], "round-time": t["round-time"], "intra-round-offset": 0 }, t]]));
   const f = (async (url: string) => {
     const u = new URL(url);
-    if (u.pathname.includes(PT)) return Response.json({ transactions: [check, buy1] });
-    if (u.pathname.includes(PY)) return Response.json({ transactions: [out2, out1] });
+    if (u.pathname.includes(PT)) return Response.json({ transactions: ins });
+    if (u.pathname.includes(PY)) return Response.json({ transactions: outs });
     return Response.json({ transactions: groups[u.searchParams.get("group-id")!] ?? [] });
   }) as unknown as typeof fetch;
-  const cfg = loadConfig({ X402_NETWORK: "mainnet", I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" });
-  const r = await new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PT, payer: PY, fetchImpl: f, priceAtomic: minCustomerPriceAtomic(cfg), auditPriceAtomic: 500_000n }).get();
+  return new ActivityLedger({
+    networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PT, payer: PY, fetchImpl: f,
+    priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: usdcToAtomic(VERDICT_PRICE_USDC), auditPriceAtomic: 500_000n,
+  });
+}
+
+test("/activity: a buy pairs with its seller payment; a verdict is a customer with no seller payment; a check is unchanged", async () => {
+  const r = await ledgerOf(
+    [["BUY1", ALICE, 15_000, 100], ["VERD1", BOB, 1_000, 105], ["CHECK1", BOB, 50_000, 130]],
+    [["OUT1", 10_000, 102], ["OUT5", 10_000, 131]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["CHECK1", "check", "OUT5"], ["VERD1", "verdict", null], ["BUY1", "buy", "OUT1"]]);
   assert.deepEqual(r.notCounted, []);
-  assert.deepEqual(r.rows.map((w) => [w.customerTx, w.kind, w.sellerTx]), [["CHECK1", "check", "OUT2"], ["BUY1", "check", "OUT1"]]);
   assert.equal(r.unmatchedPayouts.length, 0);
-  assert.equal(r.totals.customers.payments, 2);
+  assert.equal(r.totals.customers.payments, 3);
+});
+
+test("/activity cannot be inflated with small payments: unpaired, too small for the seller payment, or a verdict next to a seller payment", async () => {
+  const r = await ledgerOf(
+    [
+      ["SPAM1", MALLORY, 6_000, 100], // could be a buy, but no seller payment follows
+      ["SPAM2", MALLORY, 5_001, 101],
+      ["DUST", MALLORY, 500, 102], // below everything
+      ["SMALL", MALLORY, 12_000, 108], // 12000 - 5000 fee < 9000 paid to the seller
+      ["VERD2", MALLORY, 1_000, 300], // a lookup never takes a seller payment (the others are out of the 300 s window by now)
+    ],
+    [["OUT3", 9_000, 109], ["OUT4", 500, 301]],
+  ).get();
+  assert.deepEqual(r.rows.map((w) => w.customerTx), ["VERD2"]);
+  assert.equal(r.totals.customers.payments, 1);
+  assert.deepEqual(r.notCounted.map((n) => [n.tx, n.reason]).sort(), [["DUST", "below_price"], ["SMALL", "below_price"], ["SPAM1", "below_price"], ["SPAM2", "below_price"]]);
+  assert.deepEqual(r.unmatchedPayouts.map((p) => p.tx).sort(), ["OUT3", "OUT4"]);
+});
+
+test("/activity: the fee rule is exact (payment - fee == seller payment pairs; one atomic unit more does not)", async () => {
+  const ok = await ledgerOf([["B", ALICE, 15_000, 100]], [["O", 10_000, 101]]).get();
+  assert.deepEqual(ok.rows.map((w) => [w.kind, w.sellerTx]), [["buy", "O"]]);
+  const no = await ledgerOf([["B", ALICE, 15_000, 100]], [["O", 10_001, 101]]).get();
+  assert.equal(no.rows.length, 0);
+  assert.deepEqual(no.unmatchedPayouts.map((p) => p.tx), ["O"]);
 });

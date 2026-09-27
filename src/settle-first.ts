@@ -31,8 +31,34 @@ export type SettleFirstEnv = {
     customerPayment: CustomerPayment;
     /** The verified payment's requirements (equal to what the buyer accepted), set before preflight. */
     paidRequirements: { amount: string; payTo: string; extra?: Record<string, unknown> };
+    /** x402Version of the verified payment payload, set before preflight. */
+    x402Version: number;
   };
 };
+
+/**
+ * One facilitator /supported read shared by every payment middleware on the same resource server.
+ * x402ResourceServer.initialize() clears its maps and then awaits the facilitator, so two
+ * middlewares initializing at the same time (the first requests to /v1/check, /v1/audit,
+ * /v1/verdict and /v1/buy after a cold start) could make a request see empty maps. After this,
+ * every initialize() call (also the one inside x402HTTPResourceServer.initialize(), which then
+ * validates its own routes) returns the same promise. A failed read is retried by the next call.
+ */
+export function shareInitialize(rs: { initialize(): Promise<void> }): () => Promise<void> {
+  const original = rs.initialize.bind(rs);
+  let inflight: Promise<void> | null = null;
+  const once = () => {
+    if (!inflight) {
+      inflight = original().catch((e) => {
+        inflight = null;
+        throw e;
+      });
+    }
+    return inflight;
+  };
+  rs.initialize = once;
+  return once;
+}
 
 export interface SettleFirstOptions {
   /** Runs after verify and before settle. Return a Response to stop (customer is NOT charged). */
@@ -44,6 +70,8 @@ export interface SettleFirstOptions {
    * null: the plain 402.
    */
   beforeChallenge?: (c: Context<SettleFirstEnv>) => Promise<{ stop: Response } | { info: Record<string, unknown> } | null>;
+  /** Runs when preflight passed but the customer's payment did not settle (undo what preflight reserved). */
+  onNotSettled?: (c: Context<SettleFirstEnv>) => void;
 }
 
 export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: SettleFirstOptions = {}): MiddlewareHandler<SettleFirstEnv> {
@@ -100,6 +128,7 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
 
     // payment-verified: free checks before we take the customer's money.
     c.set("paidRequirements", result.paymentRequirements);
+    c.set("x402Version", result.paymentPayload.x402Version);
     if (opts.preflight) {
       const stop = await opts.preflight(c);
       if (stop) return stop;
@@ -113,10 +142,12 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
         responseHeaders: {},
       });
     } catch (e) {
+      opts.onNotSettled?.(c);
       const fe = getFacilitatorResponseError(e);
       return c.json({ error: "customer_settlement_failed", detail: fe ? fe.message : String((e as Error).message ?? e).slice(0, 200) }, 502);
     }
     if (!settle.success) {
+      opts.onNotSettled?.(c);
       const r = settle.response;
       for (const [k, v] of Object.entries(r.headers)) c.header(k, v);
       return c.json(

@@ -114,6 +114,12 @@ export interface ProbeOptions {
    * anything else, nothing is paid (reason price_changed).
    */
   expect?: AcceptLike;
+  /**
+   * A reservation the caller already holds on `ledger` for up to `amountAtomic` (/v1/buy takes it
+   * before the customer's payment settles). probe() uses it instead of reserving again, and
+   * releases it on every path that does not sign a payment.
+   */
+  reservation?: { id: string; amountAtomic: bigint };
 }
 
 /** What the seller delivered after being paid, byte for byte (only when it was paid). */
@@ -138,10 +144,38 @@ export async function probeWithBody(
   opts: ProbeOptions = {},
 ): Promise<{ result: ProbeResult; delivered?: DeliveredBody }> {
   let delivered: DeliveredBody | undefined;
-  const result = await probeCore(target, cfg, ledger, deps, opts, (d) => {
-    delivered = d;
-  });
-  return { result, delivered };
+  const r = opts.reservation;
+  if (!r) {
+    const result = await probeCore(target, cfg, ledger, deps, opts, (d) => {
+      delivered = d;
+    });
+    return { result, delivered };
+  }
+  // Hand the held reservation to probeCore as its "reserve"; release it if probeCore never used or settled it.
+  let done = false;
+  const held: SpendGuard = {
+    reserve: async (amount) =>
+      amount <= r.amountAtomic
+        ? { ok: true, reservationId: r.id }
+        : { ok: false, reason: "price_over_cap", detail: `seller asks ${amount}, reserved ${r.amountAtomic}` },
+    release: (id) => {
+      done = true;
+      ledger.release(id);
+    },
+    commit: (id) => {
+      done = true;
+      ledger.commit(id);
+    },
+    headroom: () => ledger.headroom(),
+  };
+  try {
+    const result = await probeCore(target, cfg, held, deps, opts, (d) => {
+      delivered = d;
+    });
+    return { result, delivered };
+  } finally {
+    if (!done) ledger.release(r.id);
+  }
 }
 
 async function probeCore(
