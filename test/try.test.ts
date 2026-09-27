@@ -785,3 +785,76 @@ test("/activity: a /v1/verdict lookup paid between a purchase (or a check) and i
     assert.equal(r.totals.customers.payments, 2, first);
   }
 });
+
+/* ---------- with BASE_ACCEPT on (main 919f91e) ---------- */
+
+import { snapFacilitator } from "./x402-snapshot.js";
+
+const BASE_PAY_TO_T = "0x1111111111111111111111111111111111111111";
+
+test("BASE_ACCEPT on: the first purchase at cost is on the Algorand accept only; the Base accept keeps the normal price and cannot be made free", async () => {
+  const cfg = loadConfig({ ALLOW_PRIVATE_TARGETS: "1", BASE_ACCEPT: "on", BASE_PAY_TO: BASE_PAY_TO_T });
+  const trace: string[] = [];
+  const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
+  const deps = sellerDeps(seen);
+  deps.paidFetch = trialPaidFetch(seen);
+  const app = createApp(cfg, {
+    payTo: BUY_PAYTO,
+    probeDeps: deps,
+    guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
+    facilitator: snapFacilitator(trace),
+    catalog: { items: async () => [] },
+    firstPurchase: async () => true,
+  });
+  const a = await account();
+  const first = await app.request(buyUrl(a.address));
+  assert.equal(first.status, 402);
+  const pr = decode402(first);
+  assert.equal(pr.accepts.length, 2);
+  assert.deepEqual([pr.accepts[0].amount, pr.accepts[0].extra.firstPurchase, pr.accepts[0].extra.payer], ["10000", true, a.address]);
+  assert.equal(pr.accepts[1].network, "eip155:84532");
+  assert.equal(pr.accepts[1].amount, "15000");
+  assert.equal(pr.accepts[1].extra.firstPurchase, undefined);
+  assert.equal(pr.accepts[1].extra.buyFee, "5000");
+  // A Base payment with the first-purchase terms copied onto the Base accept is not accepted.
+  const forged = { ...pr.accepts[1], amount: "10000", extra: { ...pr.accepts[1].extra, buyFee: "0", firstPurchase: true, payer: a.address } };
+  const evmSig = (accepted: unknown) => Buffer.from(JSON.stringify({ x402Version: 2, resource: pr.resource, accepted, payload: { signature: "0xSIG", authorization: {} } })).toString("base64");
+  assert.equal((await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": evmSig(forged) } })).status, 402);
+  assert.ok(!trace.some((t) => t.startsWith("settle")));
+  // The Base accept as offered settles at the normal price, on Base.
+  const paid = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": evmSig(pr.accepts[1]) } });
+  assert.equal(paid.status, 200);
+  assert.ok(trace.includes(`settle eip155:84532 15000 ${BASE_PAY_TO_T}`), trace.join(" | "));
+});
+
+test("/activity with Base and trials: a Base customer pairs with the Algorand seller payment after it; trial payments are never customers", async () => {
+  const ASA_M = "10458941";
+  const PAYTO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+  const MPAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+  const T0 = 1790479000;
+  const ax = (id: string, sender: string, receiver: string, amount: number, time: number, round: number) => ({
+    id, sender, "tx-type": "axfer", fee: 0, group: `G-${id}`, "confirmed-round": round, "round-time": time, "intra-round-offset": 1,
+    "asset-transfer-transaction": { "asset-id": Number(ASA_M), amount, receiver, "close-amount": 0 },
+  });
+  const accounts: Record<string, unknown[]> = {
+    [PAYTO]: [],
+    [MPAYER]: [ax("OUT_BASE", MPAYER, SELLER, 10_000, T0 + 4, 200)],
+    [TRIAL]: [ax("TRIAL1", TRIAL, SELLER, 10_000, T0 + 5, 201)],
+  };
+  const f = (async (url: string) => {
+    const m = new URL(url).pathname.match(/^\/v2\/accounts\/([A-Z2-7]+)\/transactions$/);
+    if (m) return accounts[m[1]] ? Response.json({ transactions: accounts[m[1]] }) : new Response("nf", { status: 404 });
+    return new Response("?", { status: 400 });
+  }) as unknown as typeof fetch;
+  const base = {
+    network: "eip155:84532", payTo: BASE_PAY_TO_T, usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", explorerUrl: "https://sepolia.basescan.org", signers: ["0x136008978ad053942dCDBE759A0903f5d84966fa"],
+    read: async () => ({ payments: [{ tx: "0xaaa", block: 10, logIndex: 1, time: T0, customer: "0x2222222222222222222222222222222222222222", amount: 50_000n }], notCounted: [] }),
+  };
+  const r = await new ActivityLedger({ networkName: "testnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PAYTO, payer: MPAYER, trialPayer: TRIAL, fetchImpl: f, priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: 1_000n, auditPriceAtomic: 500_000n, base }).get();
+  assert.equal(r.totals.customers.payments, 1);
+  assert.equal(r.rows[0].network, "eip155:84532");
+  assert.equal(r.rows[0].sellerTx, "OUT_BASE");
+  assert.equal(r.totals.sellerPayments.unmatched, 0);
+  assert.deepEqual(r.totals.trials, { payments: 1, usdc: "0.010000", wallet: TRIAL });
+  assert.equal(r.base?.status === "counted" && r.base.customers.payments, 1);
+});
