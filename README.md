@@ -55,6 +55,49 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 - MainNet is locked unless `I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS=yes`. `ALLOW_PRIVATE_TARGETS=1` is refused on MainNet. Targets must be `https` and resolve to public IPs, redirects are not followed, and bodies are capped at 1 MB.
 - There is a residual risk. Two instances running at the same instant can each read the same on-chain total before either payment lands. The worst-case overshoot is about (concurrent checks) × per-call cap.
 
+## Use from an agent (MCP)
+
+An agent that pays Algorand x402 endpoints can ask vet402 first. `mcp/` is a stdio MCP server with two tools:
+
+| tool | input | cost |
+|---|---|---|
+| `vet402_check` | `{ url }` | **pays 0.05 USDC** per call to vet402 from the wallet in `ALGORAND_MNEMONIC`. Returns the verdict, the reason, both tx ids and the delivery summary |
+| `algorand_x402_endpoints` | `{ query?, network?, limit? }` | free. Lists Algorand x402 endpoints from the Bazaar feed. All pages are read, because one page holds at most 200 of the 2,000+ entries |
+
+```bash
+npm ci && (cd mcp && npm ci)
+```
+
+MCP client config (Claude Desktop, Claude Code `.mcp.json`, etc.):
+
+```json
+{
+  "mcpServers": {
+    "vet402": {
+      "command": "npm",
+      "args": ["--prefix", "/path/to/vet402-algorand/mcp", "start", "--silent"],
+      "env": { "ALGORAND_MNEMONIC": "<25 words of a wallet holding a little USDC>", "VET402_NETWORK": "mainnet" }
+    }
+  }
+}
+```
+
+`VET402_NETWORK` is `mainnet` (default) or `testnet`. `VET402_URL` defaults to `https://vet402-algorand.vercel.app`. `VET402_MAX_PRICE_USDC` (default `0.05`) is the most one call pays vet402. Without `ALGORAND_MNEMONIC`, `vet402_check` returns an error and pays nothing.
+
+The same check from TypeScript, without MCP (`src/check-client.ts`):
+
+```ts
+import { checkBeforeBuy } from "./src/check-client.js";
+
+const r = await checkBeforeBuy(url, { mnemonic: process.env.ALGORAND_MNEMONIC, network: "mainnet" });
+if (r.verdict === "ALLOW") { /* buy it yourself */ }
+// r.reason, r.customerPayment.transaction, r.downstreamPayment?.transaction, r.delivery?.summary
+```
+
+The client pays only an `exact` USDC accept on the chosen Algorand network, at most `maxPriceUsdc`, and at most once per call.
+
+TestNet run through the MCP server (2026-09-27, local vet402 and test sellers): `/honest` → ALLOW delivered, payment 1 `IMENJ5DJR3V6U34V2CXDP64WRABOPRSHIGXWRTQ7QXG4TMEKXCQA`, payment 2 `LEDG2MC2EJYSOHPWI6Y5H6O5NP42VG4WE7V7KLIR3W7FMUWTISQQ`. `/liar` → REFUSE delivery_missing_keys, payment 1 `O6IFUIQNQYX5BARHZDMDJXVFGIJRTKVBFBB7X5RYF4QNGWALJ74Q`, payment 2 `OZPPC343S7SQB5VGV3GOVVHOPKRQO3TQ3CRIJSMKGJ4WAXHS33QQ`.
+
 ## Run locally (TestNet)
 
 ```bash
