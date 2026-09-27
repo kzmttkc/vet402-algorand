@@ -417,7 +417,8 @@
           "counts": {},
           "items": []
          }
-        }
+        },
+        "certificateUrl": "https://vet402-algorand.vercel.app/cert/TXID_CUSTOMER..."
        }
       }
      },
