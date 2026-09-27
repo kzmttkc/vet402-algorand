@@ -1194,3 +1194,16 @@ test("/try: the one-tap button comes right under the headline (before step 1); s
   const off = setup({ trial: false });
   assert.doesNotMatch(await (await off.app.request("/try")).text(), /id="one"/);
 });
+
+test("an operator try made without ?from= is left out of the counts when its record tx is in TRY_OPERATOR_RECORDS", async () => {
+  const { countedLog } = await import("../src/trial.js");
+  const log = { people: 2, entries: [
+    { at: "2026-09-27T19:51:36Z", url: "u", host: "h", class: "DELIVERED" as const, reason: "delivered", recordTx: "QQ2KHA277P" },
+    { at: "2026-09-27T19:52:00Z", url: "u", host: "h", class: "DELIVERED" as const, reason: "delivered", recordTx: "OTHERTX" },
+  ] };
+  const c = countedLog(log, ["qq2kha277p"]);
+  assert.equal(c.people, 1);
+  assert.equal(c.trials, 1);
+  assert.equal(c.entries[0].operatorTest, true);
+  assert.equal(countedLog(log).trials, 2);
+});

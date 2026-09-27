@@ -449,6 +449,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
         guard: new IndexedSpendGuard(new SpendLedger(t.maxPerCallAtomic, t.maxPerDayAtomic), () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: t.address, asaId: cfg.usdcAsaId })),
         paidFetch: makePaidFetch({ ...cfg, maxPerCallAtomic: t.maxPerCallAtomic, maxPerDayAtomic: t.maxPerDayAtomic }, t.secretKeyB64),
         hiddenHandles: (env.TRY_HIDDEN_HANDLES ?? "").split(",").map((h) => h.trim()).filter(Boolean),
+        operatorRecords: (env.TRY_OPERATOR_RECORDS ?? "").split(",").map((h) => h.trim()).filter(Boolean),
         // Fees come out of the trial wallet's ALGO: read it (cached 60 s) so trials pause before it runs dry.
         algoBalance: (() => {
           let c: { at: number; v: Promise<bigint> } | null = null;

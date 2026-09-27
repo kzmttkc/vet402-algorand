@@ -115,6 +115,8 @@ export interface TrialDeps {
   paidFetch: ProbeDeps["paidFetch"];
   /** X handles not shown (removal requests; env TRY_HIDDEN_HANDLES). Compared case-insensitively. */
   hiddenHandles?: string[];
+  /** Record tx ids of the operator's own tries made without ?from=operator… (env TRY_OPERATOR_RECORDS): shown, never counted. */
+  operatorRecords?: string[];
   /** The trial wallet's ALGO balance in microALGO (fees). Below TRY_MIN_ALGO_MICRO, or unreadable, nothing is paid. */
   algoBalance?: () => Promise<bigint>;
 }
@@ -393,7 +395,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
   /** The public view: hidden handles dropped; operator tries marked and left out of people / trials (countedLog). */
   const logOf = async (): Promise<ShownLog | null> => {
     if (!trial) return null;
-    const log = countedLog(await trial.store.log());
+    const log = countedLog(await trial.store.log(), trial.operatorRecords);
     return { ...log, entries: log.entries.map(({ handle, ...e }) => (handle && !hidden.has(handle.toLowerCase()) ? { ...e, handle } : e)) };
   };
   const handles = new QuoteLimiter(5, deps.now);

@@ -176,8 +176,10 @@ export interface TrialLog {
  * Claims carry no ?from= tag, so each operator try (one IP claim each) is taken off the IP-claim count.
  * The operator's one-per-person claim itself stays on the chain.
  */
-export function countedLog(log: TrialLog): TrialLog & { trials: number } {
-  const entries = log.entries.map((e) => (isOperatorTry(e) ? { ...e, operatorTest: true } : e));
+export function countedLog(log: TrialLog, operatorRecords: string[] = []): TrialLog & { trials: number } {
+  // Also the operator's own tries made without a ?from= tag, named by their record tx id (env TRY_OPERATOR_RECORDS).
+  const ops = new Set(operatorRecords.map((r) => r.trim().toUpperCase()).filter(Boolean));
+  const entries = log.entries.map((e) => (isOperatorTry(e) || (e.recordTx && ops.has(e.recordTx.toUpperCase())) ? { ...e, operatorTest: true } : e));
   const operator = entries.filter((e) => e.operatorTest).length;
   return { entries, people: Math.max(0, log.people - operator), trials: entries.length - operator };
 }
