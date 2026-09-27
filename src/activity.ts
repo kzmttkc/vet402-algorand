@@ -15,8 +15,9 @@
  *
  * Seller payments: every USDC transfer sent by the `payer` wallet to an address
  * that is not vet402's own. Each one is matched to the most recent earlier
- * customer payment (within its window) that still has room: a check (one
- * customer payment for one seller payment) has room for 1; a seller audit
+ * customer payment (within its window) that still has room: a check or a
+ * purchase (/v1/buy, priced at the seller's price + fee; one customer payment for
+ * one seller payment) has room for 1; a seller audit
  * (amount >= `auditPriceAtomic`) has room for up to `auditMaxTargets`, because one
  * audit buys several of the seller's resources. An audit is still one customer
  * payment: it is one row, with its seller payments listed under it.
@@ -34,7 +35,7 @@ export interface ActivityOptions {
   payTo: string;
   payer: string;
   feePayers?: string[];
-  /** Price of one check in atomic USDC; smaller deposits are not counted as customers. */
+  /** Lowest price vet402 charges in atomic USDC (a check, or a /v1/buy of the cheapest seller); smaller deposits are not counted as customers. */
   priceAtomic?: bigint;
   /** Max seconds between a customer payment and the seller payment it pays for. */
   pairWindowSec?: number;
@@ -56,7 +57,7 @@ export interface SellerPayment {
 }
 
 export interface ActivityRow {
-  /** "check" = one customer payment for one seller payment; "audit" = one customer payment for several. */
+  /** "check" = one customer payment for one seller payment (a /v1/check or a /v1/buy); "audit" = one customer payment for several. */
   kind: "check" | "audit";
   time: string;
   round: number;
@@ -327,8 +328,8 @@ export class ActivityLedger {
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
-        "A deposit smaller than the current check price is not counted as a customer payment (listed as below_price).",
-        `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check has room for one seller payment (within ${this.windowSec} s)${
+        `A deposit smaller than the lowest price vet402 charges${this.o.priceAtomic !== undefined ? ` (${atomicToUsdc(this.o.priceAtomic)} USDC)` : ""} is not counted as a customer payment (listed as below_price).`,
+        `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room: a check or a purchase (/v1/buy, whose price is the seller's price + vet402's fee) has room for one seller payment (within ${this.windowSec} s)${
           this.o.auditPriceAtomic !== undefined
             ? `; a seller audit (a customer payment of at least ${atomicToUsdc(this.o.auditPriceAtomic)} USDC) has room for up to ${this.o.auditMaxTargets ?? 10} (within ${this.auditWindowSec} s), because one audit buys several of the seller's resources`
             : ""

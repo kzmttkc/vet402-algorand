@@ -23,7 +23,7 @@ import { ExactAvmScheme } from "@x402/avm/exact/server";
 import { HTTPFacilitatorClient, type HTTPRequestContext } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402-avm/extensions";
-import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "./config.js";
+import { atomicToUsdc, loadConfig, minCustomerPriceAtomic, usdcToAtomic, type AppConfig } from "./config.js";
 import { loadKeys, loadPayer } from "./keys.js";
 import { SpendLedger } from "./caps.js";
 import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
@@ -36,6 +36,7 @@ import { registerBoard } from "./board.js";
 import { registerSeller } from "./seller.js";
 import { registerVerdictLookup } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
+import { registerBuy } from "./buy.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
@@ -289,6 +290,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
   registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
+  registerBuy(app, cfg, { payTo: deps.payTo, facilitator, guard: deps.guard, probeDeps }); // GET|POST /v1/buy, own settle-first middleware (buy.ts)
 
   app.use(
     settleFirstMiddleware(httpServer, {
@@ -398,7 +400,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     asaId: cfg.usdcAsaId,
     payTo,
     payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
-    priceAtomic: usdcToAtomic(cfg.checkPriceUsdc),
+    priceAtomic: minCustomerPriceAtomic(cfg), // a /v1/buy payment can be below the check price
     auditPriceAtomic: usdcToAtomic(cfg.auditPriceUsdc),
     auditMaxTargets: cfg.auditMaxTargets,
   });

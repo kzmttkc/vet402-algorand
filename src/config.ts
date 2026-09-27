@@ -42,6 +42,17 @@ export function atomicToUsdc(atomic: bigint): string {
   return `${neg ? "-" : ""}${whole}.${frac}`;
 }
 
+/**
+ * The smallest amount a customer can pay vet402: a check, or a purchase (/v1/buy) of the
+ * cheapest possible seller price (1 atomic unit) plus the fee. /activity counts payments
+ * from this amount up as customer payments.
+ */
+export function minCustomerPriceAtomic(cfg: Pick<AppConfig, "checkPriceUsdc" | "buyFeeAtomic">): bigint {
+  const check = usdcToAtomic(cfg.checkPriceUsdc);
+  const buy = cfg.buyFeeAtomic + 1n;
+  return check < buy ? check : buy;
+}
+
 export interface AppConfig {
   networkName: NetworkName;
   network: string; // CAIP-2
@@ -77,6 +88,8 @@ export interface AppConfig {
   auditDeadlineMs: number;
   /** Bazaar discovery feed the audit reads the seller's resources from. */
   bazaarUrl: string;
+  /** vet402's fee on GET|POST /v1/buy (atomic USDC): the customer pays the seller's price plus this. */
+  buyFeeAtomic: bigint;
 }
 
 const DEFAULT_CAPS: Record<NetworkName, { perCall: string; perDay: string }> = {
@@ -106,6 +119,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const auditPrice = atomicToUsdc(usdcToAtomic(env.AUDIT_PRICE_USDC ?? "0.50")).replace(/0{1,4}$/, "");
   const auditMaxSpend = usdcToAtomic(env.AUDIT_MAX_SPEND_USDC ?? "0.40");
   if (auditMaxSpend >= usdcToAtomic(auditPrice)) throw new Error("AUDIT_MAX_SPEND_USDC must be below AUDIT_PRICE_USDC");
+  // A /v1/buy payment is at most maxPerCall + fee. It must stay below the audit price, or /activity
+  // (which tells an audit from a check by amount) would count a purchase as an audit.
+  const buyFee = usdcToAtomic(env.BUY_FEE_USDC ?? "0.005");
+  if (buyFee <= 0n) throw new Error("BUY_FEE_USDC must be above 0");
+  if (maxPerCall + buyFee >= usdcToAtomic(auditPrice)) throw new Error("PROBE_MAX_PER_CALL_USDC + BUY_FEE_USDC must be below AUDIT_PRICE_USDC");
   const auditMaxTargets = Number(env.AUDIT_MAX_TARGETS ?? 10);
   if (!Number.isInteger(auditMaxTargets) || auditMaxTargets < 1 || auditMaxTargets > 50) throw new Error("AUDIT_MAX_TARGETS must be an integer 1..50");
   // The upper bound (60 s under the function limit) is checked in createApp: the limit lives in server.ts (`export const config`).
@@ -136,5 +154,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     auditMaxSpendAtomic: auditMaxSpend,
     auditDeadlineMs,
     bazaarUrl: env.BAZAAR_URL ?? "https://facilitator.goplausible.xyz/discovery/resources",
+    buyFeeAtomic: buyFee,
   };
 }

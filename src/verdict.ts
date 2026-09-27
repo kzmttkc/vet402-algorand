@@ -19,6 +19,7 @@ export const REASONS = [
   "empty_body", // paid, 200, JSON but empty ({} / [] / null / "")
   "delivery_missing_keys", // paid, 200, JSON, but a key the output schema lists as `required` is absent
   "probe_error", // network/timeout/unexpected error while probing
+  "price_changed", // /v1/buy: the seller's price or payTo is no longer the one the customer paid for: we did not pay
 ] as const;
 
 export type Reason = (typeof REASONS)[number];

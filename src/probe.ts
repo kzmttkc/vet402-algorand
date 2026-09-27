@@ -17,7 +17,7 @@ import { declarationFrom, sameNetwork, selectAccept, type AcceptLike, type Payme
 import { checkTarget } from "./target.js";
 import { exampleKeys, expectedKeys, judgeDelivery, type Reason, type Verdict } from "./verdict.js";
 
-const MAX_BODY_BYTES = 1_000_000;
+export const MAX_BODY_BYTES = 1_000_000;
 
 export interface ProbeResult {
   verdict: Verdict;
@@ -48,9 +48,10 @@ export interface ProbeDeps {
   ownAddresses?: string[];
 }
 
-async function readCapped(res: Response): Promise<string> {
+/** The body up to MAX_BODY_BYTES; `truncated` = there was more (the rest is not read). */
+export async function readCappedBytes(res: Response): Promise<{ bytes: Buffer; truncated: boolean }> {
   const reader = res.body?.getReader();
-  if (!reader) return "";
+  if (!reader) return { bytes: Buffer.alloc(0), truncated: false };
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
@@ -59,11 +60,15 @@ async function readCapped(res: Response): Promise<string> {
     total += value.byteLength;
     if (total > MAX_BODY_BYTES) {
       await reader.cancel();
-      break;
+      return { bytes: Buffer.concat(chunks), truncated: true };
     }
     chunks.push(value);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return { bytes: Buffer.concat(chunks), truncated: false };
+}
+
+export async function readCapped(res: Response): Promise<string> {
+  return (await readCappedBytes(res)).bytes.toString("utf8");
 }
 
 /**
@@ -97,11 +102,66 @@ export function parsePaymentRequired(
   return { pr: v2.data as unknown as PaymentRequiredLike, source: "body" };
 }
 
+/** Options used by /v1/buy (buy.ts). /v1/check and /v1/audit call probe() without them. */
+export interface ProbeOptions {
+  /** Request to send to the seller (default GET, no body). */
+  method?: "GET" | "POST";
+  body?: Uint8Array<ArrayBuffer>;
+  contentType?: string;
+  /**
+   * The accept the customer paid for. vet402 then pays exactly this one (same scheme, network,
+   * asset, payTo; the seller's amount may be lower, never higher). If the seller now asks for
+   * anything else, nothing is paid (reason price_changed).
+   */
+  expect?: AcceptLike;
+}
+
+/** What the seller delivered after being paid, byte for byte (only when it was paid). */
+export interface DeliveredBody {
+  status: number;
+  contentType: string | null;
+  bytes: Buffer;
+  /** The body was larger than MAX_BODY_BYTES; `bytes` holds only the first part. */
+  truncated: boolean;
+}
+
 export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, deps: ProbeDeps): Promise<ProbeResult> {
+  return (await probeWithBody(target, cfg, ledger, deps)).result;
+}
+
+/** probe() that also hands back the seller's paid response body (for /v1/buy). */
+export async function probeWithBody(
+  target: string,
+  cfg: AppConfig,
+  ledger: SpendGuard,
+  deps: ProbeDeps,
+  opts: ProbeOptions = {},
+): Promise<{ result: ProbeResult; delivered?: DeliveredBody }> {
+  let delivered: DeliveredBody | undefined;
+  const result = await probeCore(target, cfg, ledger, deps, opts, (d) => {
+    delivered = d;
+  });
+  return { result, delivered };
+}
+
+async function probeCore(
+  target: string,
+  cfg: AppConfig,
+  ledger: SpendGuard,
+  deps: ProbeDeps,
+  opts: ProbeOptions,
+  onDelivered: (d: DeliveredBody) => void,
+): Promise<ProbeResult> {
   const t = await checkTarget(target, cfg.allowPrivateTargets, deps.resolveHost);
   if (!t.ok) return { verdict: "REFUSE", reason: "invalid_target", target, detail: t.detail };
   const url = t.url.toString();
-  const init = (): RequestInit => ({ method: "GET", redirect: "manual", signal: AbortSignal.timeout(cfg.probeTimeoutMs) });
+  const method = opts.method ?? "GET";
+  const init = (): RequestInit => ({
+    method,
+    redirect: "manual",
+    signal: AbortSignal.timeout(cfg.probeTimeoutMs),
+    ...(method === "POST" ? { body: opts.body ?? new Uint8Array(0), headers: { "content-type": opts.contentType ?? "application/json" } } : {}),
+  });
 
   // 1) Look at the 402 without paying.
   let first: Response;
@@ -124,9 +184,35 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
   const declared = { description: decl.description, mimeType: decl.mimeType, expectedKeys: expectedKeys(decl), exampleKeys: exampleKeys(decl) };
 
   // 2) Choose what we would pay, and check caps before any signature exists.
-  const accept = selectAccept(pr.accepts, cfg.network, cfg.usdcAsaId);
-  if (!accept) {
+  const selected = selectAccept(pr.accepts, cfg.network, cfg.usdcAsaId);
+  if (!selected) {
     return { verdict: "REFUSE", reason: "no_supported_accept", target: url, declared, detail: `no exact/${cfg.network}/USDC ${cfg.usdcAsaId} accept` };
+  }
+  let accept = selected;
+  if (opts.expect) {
+    const e = opts.expect;
+    // The seller must still offer what the customer paid for; it may have lowered the price.
+    const same = pr.accepts.find(
+      (a) =>
+        a.scheme === e.scheme &&
+        sameNetwork(a.network, e.network) &&
+        String(a.asset) === String(e.asset) &&
+        a.payTo === e.payTo &&
+        /^\d+$/.test(String(a.amount)) &&
+        BigInt(a.amount) <= BigInt(e.amount),
+    );
+    if (!same) {
+      return {
+        verdict: "REFUSE",
+        reason: "price_changed",
+        target: url,
+        declared,
+        price: { amountAtomic: selected.amount, usdc: atomicToUsdc(BigInt(selected.amount)), payTo: selected.payTo, network: selected.network, asset: String(selected.asset) },
+        detail: `the seller now asks ${selected.amount} to ${selected.payTo}; the customer paid for ${e.amount} to ${e.payTo}. vet402 did not pay.`,
+      };
+    }
+    // Pay (and reserve) the seller's current price: the paying client is locked to at most this.
+    accept = same;
   }
   const amount = BigInt(accept.amount);
   const price = { amountAtomic: accept.amount, usdc: atomicToUsdc(amount), payTo: accept.payTo, network: accept.network, asset: String(accept.asset) };
@@ -162,7 +248,8 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
   if (paid.signed) ledger.commit(cap.reservationId);
   else ledger.release(cap.reservationId);
 
-  const bodyText = await readCapped(paid.response).catch(() => "");
+  const read = await readCappedBytes(paid.response).catch(() => ({ bytes: Buffer.alloc(0), truncated: false }));
+  const bodyText = read.bytes.toString("utf8");
   const downstreamPayment = paid.settle ?? undefined;
   if (!paid.settle || !paid.settle.success) {
     return {
@@ -175,6 +262,8 @@ export async function probe(target: string, cfg: AppConfig, ledger: SpendGuard, 
       detail: `status ${paid.response.status}${paid.settle?.errorReason ? `, ${paid.settle.errorReason}` : ", no settlement receipt"}`,
     };
   }
+
+  onDelivered({ status: paid.response.status, contentType: paid.response.headers.get("content-type"), bytes: read.bytes, truncated: read.truncated });
 
   // 4) Compare delivery with declaration.
   const j = judgeDelivery(decl, { status: paid.response.status, contentType: paid.response.headers.get("content-type"), bodyText });

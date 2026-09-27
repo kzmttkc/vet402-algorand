@@ -14,7 +14,7 @@ const ok = (body: unknown, status = 200) => ({ status, contentType: "application
 test("reason words are the fixed machine-readable set", () => {
   assert.deepEqual([...REASONS].sort(), [
     "cap_check_unavailable", "daily_cap_reached", "delivered", "delivery_missing_keys", "empty_body", "http_error", "invalid_target",
-    "no_supported_accept", "not_json", "not_x402", "payment_failed", "price_over_cap", "probe_error", "requirements_body_only", "self_dealing",
+    "no_supported_accept", "not_json", "not_x402", "payment_failed", "price_changed", "price_over_cap", "probe_error", "requirements_body_only", "self_dealing",
   ]);
   for (const r of REASONS) assert.match(r, /^[a-z0-9_]+$/);
 });

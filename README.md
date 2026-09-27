@@ -36,6 +36,7 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 | `not_json` / `empty_body` / `http_error` | REFUSE | yes |
 | `payment_failed` | REFUSE | attempted |
 | `price_over_cap` | REFUSE | no |
+| `price_changed` | REFUSE (`/v1/buy`: the seller now asks more, or another `payTo`, than the customer paid for) | no |
 | `daily_cap_reached` | REFUSE | no |
 | `cap_check_unavailable` | REFUSE | no |
 | `self_dealing` | REFUSE | no |
@@ -87,6 +88,41 @@ Locally, the TestNet test sellers are not in the Bazaar. `AUDIT_CATALOG_URLS=<ur
 
 - vet402 pays nobody for this answer: the customer's payment settles first and the handler only reads the files. No probe, no seller payment, no daily-cap spend.
 - A URL with no result → `404 no_result` on the unpaid request (no 402, nothing to pay), and again before settlement if a payment is sent anyway. `HEAD` is priced like `GET`; any path other than exactly `/v1/verdict` is refused before settlement.
+
+## Buy through vet402 (`/v1/buy`)
+
+`/v1/check` only tells you whether a seller delivers; the content stays with vet402, so a buyer who wants it pays twice. `GET|POST /v1/buy?url=<x402 URL>` buys it for you, checked, and hands over the seller's response.
+
+**Price (dynamic).** The unpaid request is free: vet402 reads the seller's 402 without paying and answers with a 402 whose `accepts[0].amount` = the seller's price (`exact`, USDC, this network) + `BUY_FEE_USDC` (default 0.005), in integer atomic USDC. `accepts[0].extra` names what you pay for: `sellerAmount`, `sellerPayTo`, `buyFee`. The JSON body shows the same as `buy.sellerPrice` / `fee` / `total`.
+
+**Refused before payment (nothing to sign, nothing charged).**
+
+| HTTP | reason | when |
+|---|---|---|
+| 422 | `price_over_cap` | seller price above `PROBE_MAX_PER_CALL_USDC` |
+| 422 | `no_supported_accept` | no `exact` USDC accept on this network (another network, another asset); `offered` lists what the seller asked |
+| 422 | `self_dealing` | the seller's `payTo` is a vet402 wallet |
+| 422 | `not_x402` / `requirements_body_only` | no 402, a 0 price, or requirements vet402 cannot pay |
+| 400 | `invalid_target` / `missing_url` / `invalid_json` | not `https`, a private address, no `url`, a POST body that is not JSON |
+| 405 | `method_not_allowed` | `HEAD` (it would deliver no body) |
+| 413 / 415 | `request_too_large` / `unsupported_media_type` | POST body above 64 KB, or not `application/json` |
+| 404 | `not_found` | any path other than exactly `/v1/buy` (`/v1/buy/`, `/V1/buy`, ...) |
+| 502 | `probe_error` | the seller's 402 could not be read |
+
+**Payment.** The paid request reads the seller's 402 again and computes the price again. x402 accepts a payment only if what you signed (amount and `extra`) equals that new computation, so if the seller's price or `payTo` changed since your free read, or the payment was altered, the answer is a 402 and nothing settles; ask again for the new price. vet402 checks the same three values once more before settling (`409 price_changed` if they differ) and that today's cap can still pay this seller (`503`, not charged).
+
+**After your payment settles** (settle-first), vet402 pays the seller through the same `probe()` as `/v1/check` (per-call and daily caps, `payTo` lock), at most the seller price you paid for. If the seller now asks more, or another `payTo`, vet402 does not pay it (`price_changed`).
+
+**What you get back.**
+
+- Seller paid: the seller's body **as it was delivered**, byte for byte, with its `content-type` (bodies up to 1 MB), and the seller's HTTP status. Headers: `x-vet402-verdict` (`ALLOW`/`REFUSE`), `x-vet402-reason` (the reason words above), `x-vet402-customer-tx`, `x-vet402-seller-tx`, `x-vet402-seller-price`, `x-vet402-seller-status`, and the x402 `PAYMENT-RESPONSE` of your payment. `REFUSE` (for example `delivery_missing_keys`) still comes with the body: you paid for it and it is yours, the header tells you it is not what the seller declared. The body is served with `x-content-type-options: nosniff` and `content-security-policy: sandbox`, so seller HTML never runs on vet402's origin.
+- Seller not paid after you paid (its payment failed, it changed its price, it could not be reached): `502` JSON `{ error: "seller_not_paid", reason, detail, customerPayment, downstreamPayment, refund: "none" }` with `x-vet402-verdict: REFUSE` and `x-vet402-customer-tx`.
+- Seller paid but its body is above 1 MB: `502` JSON `{ error: "response_too_large", ..., refund: "none" }` with both tx headers. vet402 does not forward part of a body.
+- **There are no refunds.** Everything vet402 can check without paying is checked before your payment settles; what can only go wrong after it (the seller's payment, the seller's answer) is reported with both tx ids.
+
+**POST.** vet402 forwards your body unchanged to the seller (both for the free price read and for the paid request). Only `application/json`, up to 64 KB. No header of yours is forwarded except `content-type`.
+
+On `/activity`, a purchase is one customer payment (seller price + fee) paired with one seller payment, like a check. `npx tsx scripts/buy-demo.ts <x402 URL>` buys once as the TestNet client and prints the confirmed round of both payments.
 
 ## Use from an agent (MCP)
 
@@ -163,6 +199,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `PAYER_MNEMONIC` | yes | (secret) | wallet that pays sellers; **encrypted env only** |
 | `VET402_PAY_TO` | no | MainNet default `RMMD7KW5…PIY33Q` | where customers pay vet402 |
 | `CHECK_PRICE_USDC` | no | `0.05` | customer price |
+| `BUY_FEE_USDC` | no | `0.005` | vet402's fee on `/v1/buy` (added to the seller's price); above 0, and `PROBE_MAX_PER_CALL_USDC` + fee must stay below `AUDIT_PRICE_USDC` |
 | `AUDIT_PRICE_USDC` | no | `0.50` | price of one seller audit |
 | `AUDIT_MAX_SPEND_USDC` | no | `0.40` | most one audit pays sellers; must be below `AUDIT_PRICE_USDC` |
 | `AUDIT_MAX_TARGETS` | no | `10` | most resources one audit checks (1–50) |
@@ -186,6 +223,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 |---|---|
 | `src/server.ts` | `GET /v1/check`, `GET /v1/audit`, Bazaar discovery, production wiring, Vercel default export |
 | `src/lookup.ts` | `GET /v1/verdict`: paid lookup of vet402's own earlier purchase (own settle-first middleware, pays no seller) |
+| `src/buy.ts` | `GET\|POST /v1/buy`: free price from the seller's 402, own settle-first middleware, body passed through |
 | `src/audit.ts` | seller audit: free plan from the Bazaar, audit budget, run through `probe()` |
 | `src/bazaar.ts` | Bazaar feed reader (cached), request built from the seller's example input (shared with the board) |
 | `src/settle-first.ts` | verify → preflight → **settle** → handler middleware |
@@ -202,9 +240,9 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 
 `GET /activity` (HTML) and `GET /activity.json` list every x402 payment vet402 has received, each next to the payment vet402 then made to the seller. Both are free (mounted before the payment middleware), read live from the Algorand indexer, and cached for 60 s (`Cache-Control: public, max-age=60, s-maxage=60`). Every tx id links to an explorer (allo.info on MainNet), so each row can be checked on-chain. If the indexer cannot be read, the routes answer 503; they never show an empty ledger in its place.
 
-- **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON.
+- **Customer payment**: a USDC transfer to `payTo` inside an atomic group that also holds a transaction from the x402 facilitator's fee payer (GoPlausible `ZMFK2OI7…RA22AA`). Only the facilitator can sign that transaction. Other USDC deposits to `payTo` (for example exchange withdrawals, or transfers by app call) are not rows; their tx ids are listed in `notCounted` in the JSON. The floor is the lowest price vet402 charges: a check, or a `/v1/buy` of the cheapest seller (1 atomic unit + `BUY_FEE_USDC`); smaller payments are `below_price`.
 - **Operator test**: the customer is vet402's own `payTo` or payer wallet (exact address match). These rows are marked `operator test` and are left out of the customer totals. The two MainNet checks in the run record below are operator tests.
-- **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room. A check has room for one seller payment (within 300 s). A seller audit (a customer payment of at least the audit price) has room for up to `AUDIT_MAX_TARGETS` (within 900 s), because one audit buys several resources. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
+- **Seller payment**: any USDC sent by the payer wallet to an address that is not vet402's own. It is matched to the most recent earlier customer payment that still has room. A check or a purchase (`/v1/buy`) has room for one seller payment (within 300 s). A seller audit (a customer payment of at least the audit price) has room for up to `AUDIT_MAX_TARGETS` (within 900 s), because one audit buys several resources. A seller payment with no such customer payment is listed under `unmatchedPayouts`, not hidden.
 - **Audits are one row.** An audit is one customer payment: it is counted once in the customer totals, marked `audit`, and its seller payments are listed under it (`sellerPayments[]` in the JSON; `seller`/`sellerTx` repeat the first one). The headline says how many seller payments were inside audits (`totals.audits`), so several seller payments per audit do not read as several customers.
 - Pairing uses amounts and times only (x402 transfers carry no reference). If a check and an audit run at the same moment, a seller payment can be credited to the wrong one of the two; customer counts are unaffected.
 - Totals: distinct paying customer addresses (operator excluded), customer payments and USDC, seller payments and USDC, audits, operator tests.
@@ -248,6 +286,18 @@ MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ
 `OZZH2TRA3MANN55OTTWOXVBDHRRYIJ52IBXEPVBBE4BNQUOR6CCQ` (04:42 UTC, 0.01 USDC to canix402) had no customer payment in front of it. An unpaid `HEAD /v1/check` skipped the payment check and reached the handler, which paid the seller. Fixed at 05:28 UTC in 3d1377f: HEAD is priced like GET, and the handler refuses without a settled customer payment. It shows on `/activity` under unmatched seller payments.
 
 ## TestNet run record
+
+### 2026-09-27 19:27 JST: first purchases through vet402 (`/v1/buy`)
+
+Local vet402 and the test sellers (`src/sellers.ts`), `npx tsx scripts/buy-demo.ts <url>`. Free price for each: seller 0.01 + fee 0.005 = 0.015 USDC.
+
+| target | HTTP | verdict | body returned | customer → vet402 (round) | vet402 → seller (round) |
+|---|---|---|---|---|---|
+| `/honest` | 200 | ALLOW delivered | `{"forecast":"sunny","temperature":21,"city":"Tokyo"}` | `2DOVNKF6ONFGV2H6S5HT7KN27AHWC4TF7NPERBAZCUU3EQUKUX7Q` (67710831) | `QUCDWVD2GTAO5XJRBWL5WE4KPX4KUHPZKDZN2JJXABQNCNBJ5RZQ` (67710833) |
+| `/liar` | 200 | REFUSE delivery_missing_keys | `{"message":"thanks for paying"}` | `77U2RWAGNCZ645SCTGPMZ6FF4FYT5WEYM4KLO2KUO67IZOCL325A` (67710835) | `HZKUB576WG4E56E34HPOAK7ZSMK3NDNGXGWDR7O2M62KJJIYS3TQ` (67710837) |
+| `/pricey` | 422 | price_over_cap (free read) | none, nothing charged | none | none |
+
+In both paid rows the customer's payment is in an earlier round than the seller's. `/activity.json` on the same server paired each 0.015 customer payment with its one 0.01 seller payment.
 
 ### 2026-09-27 JST: first seller audit (`/v1/audit`)
 
