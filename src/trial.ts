@@ -224,7 +224,8 @@ export class ChainTrialStore implements TrialStore {
     const algorand = this.client();
     const sender = this.o.trial.address;
     let g = algorand.newGroup();
-    for (const k of keys) g = g.addPayment({ sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${CLAIM}${k}`) });
+    // The lease makes a second claim of the same key within ~1000 rounds fail on the chain itself, whatever instance sends it.
+    for (const k of keys) g = g.addPayment({ sender, receiver: sender, amount: microAlgo(0), note: new TextEncoder().encode(`${CLAIM}${k}`), lease: createHash("sha256").update(`${CLAIM}${k}`).digest() });
     await g.send();
     for (const k of keys) this.local.add(k);
     this.cache = null;

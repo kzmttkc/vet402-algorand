@@ -696,3 +696,92 @@ test("/try next steps: sellers are sent to /seller/<host> (where the certificate
   assert.match(page, /'\/seller\/'\+encodeURIComponent\(c\.h/);
   assert.doesNotMatch(page, /\/cert\//);
 });
+
+/* ---------- second review: the trial wallet cannot be pointed at a new seller; per-seller cap; IPv6 /64 ---------- */
+
+const PUB = "https://seller.example";
+function pubSetup(o: { censusPayTo?: string; acceptPayTo?: string } = {}) {
+  const cfg = baseCfg();
+  const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
+  const deps = sellerDeps(seen, { payTo: o.acceptPayTo ?? SELLER });
+  deps.resolveHost = async () => ["93.184.216.34"];
+  const census = board([row(`${PUB}/listed`, { payTo: o.censusPayTo ?? SELLER }), row(`${PUB}/other`, { payTo: SELLER })]);
+  const app = createApp(cfg, {
+    payTo: VET402,
+    probeDeps: deps,
+    guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
+    facilitator: facilitator([]),
+    catalog: { items: async () => [] },
+    trial: { address: TRIAL, maxPerCallAtomic: 50_000n, maxPerDayAtomic: 3_000_000n, hashKey: Buffer.alloc(32, 9), store: new MemoryTrialStore(), guard: new LocalSpendGuard(new SpendLedger(50_000n, 3_000_000n)), paidFetch: trialPaidFetch(seen) },
+    tryBoard: { load: async (f: string) => (f.endsWith("census-latest.json") ? census : null), file: "/nonexistent/latest.json" },
+  });
+  return { app, seen };
+}
+
+test("trial: only a listed URL, paid to the payTo vet402 recorded for it", async () => {
+  const a = pubSetup();
+  const r1 = await run(a.app, { url: `${PUB}/not-in-the-list` }, "203.0.113.30");
+  assert.equal(r1.status, 422);
+  assert.equal(((await r1.json()) as { error: string }).error, "not_listed");
+  assert.equal((await run(a.app, { url: `${PUB}/listed` }, "203.0.113.31")).status, 200);
+  const b = pubSetup({ acceptPayTo: ALGO_ADDR }); // the seller now points its payTo elsewhere
+  const r2 = await run(b.app, { url: `${PUB}/listed` }, "203.0.113.32");
+  assert.equal(r2.status, 422);
+  assert.equal(((await r2.json()) as { reason: string }).reason, "payto_changed");
+  assert.deepEqual([a.seen.trialPaid.length, b.seen.trialPaid.length], [1, 0]);
+});
+
+test("trial: at most 3 free tries per seller host per day, whatever the IPs", async () => {
+  const { app, seen } = pubSetup();
+  for (let i = 0; i < 3; i++) assert.equal((await run(app, { url: `${PUB}/listed` }, `203.0.113.${40 + i}`)).status, 200);
+  const r = await run(app, { url: `${PUB}/other` }, "203.0.113.50");
+  assert.equal(r.status, 429);
+  assert.equal(((await r.json()) as { error: string }).error, "seller_tried_enough");
+  assert.equal(seen.trialPaid.length, 3);
+});
+
+test("trial: IPv6 addresses count per /64", async () => {
+  const { personKey } = await import("../src/try.js");
+  assert.equal(personKey("2001:db8:1:2:aaaa::1"), personKey("2001:0db8:0001:0002:ffff:1:2:3"));
+  assert.notEqual(personKey("2001:db8:1:2::1"), personKey("2001:db8:1:3::1"));
+  assert.equal(personKey("203.0.113.9"), "203.0.113.9");
+  const { app, seen } = pubSetup();
+  assert.equal((await run(app, { url: `${PUB}/listed` }, "2001:db8:1:2::1")).status, 200);
+  assert.equal((await run(app, { url: `${PUB}/listed` }, "2001:db8:1:2:dead:beef:0:9")).status, 403);
+  assert.equal(seen.trialPaid.length, 1);
+});
+
+test("/activity: a /v1/verdict lookup paid between a purchase (or a check) and its 0.001 seller payment does not take it", async () => {
+  const ASA_M = "31566704";
+  const FEE = "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
+  const PAYTO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
+  const MPAYER = "OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY";
+  const A = "CAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCAROLCARO";
+  const V = "EVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEVEEV";
+  const T0 = 1790479000;
+  const ax = (id: string, sender: string, receiver: string, amount: number, round: number, group?: string) => ({
+    id, sender, "tx-type": "axfer", fee: 0, ...(group ? { group } : {}), "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 1,
+    "asset-transfer-transaction": { "asset-id": Number(ASA_M), amount, receiver, "close-amount": 0 },
+  });
+  const feePay = (round: number, group: string) => ({ id: `FEE-${group}`, sender: FEE, "tx-type": "pay", fee: 2000, group, "confirmed-round": round, "round-time": T0 + round * 3, "intra-round-offset": 0, "payment-transaction": { amount: 0, receiver: FEE } });
+  for (const [first, amount, kind] of [["BUY1", 6_000, "buy"], ["CHECK1", 50_000, "check"]] as const) {
+    const c1 = ax(first, A, PAYTO, amount, 100, "G1");
+    const v = ax("VERDICT1", V, PAYTO, 1_000, 101, "G2");
+    const out = ax("OUT1", MPAYER, SELLER, 1_000, 102, "G3");
+    const accounts: Record<string, unknown[]> = { [PAYTO]: [c1, v], [MPAYER]: [out] };
+    const groups: Record<string, unknown[]> = { G1: [feePay(100, "G1"), c1], G2: [feePay(101, "G2"), v] };
+    const f = (async (url: string) => {
+      const u = new URL(url);
+      const m = u.pathname.match(/^\/v2\/accounts\/([A-Z2-7]+)\/transactions$/);
+      if (m) return accounts[m[1]] ? Response.json({ transactions: accounts[m[1]] }) : new Response("nf", { status: 404 });
+      if (u.pathname === "/v2/transactions") return Response.json({ transactions: groups[u.searchParams.get("group-id")!] ?? [] });
+      return new Response("?", { status: 400 });
+    }) as unknown as typeof fetch;
+    const r = await new ActivityLedger({ networkName: "mainnet", indexerUrl: "https://idx", asaId: ASA_M, payTo: PAYTO, payer: MPAYER, fetchImpl: f, priceAtomic: 50_000n, buyFeeAtomic: 5_000n, verdictPriceAtomic: 1_000n, auditPriceAtomic: 500_000n }).get();
+    const byTx = Object.fromEntries(r.rows.map((w) => [w.customerTx, w]));
+    assert.equal(byTx[first].kind, kind, first);
+    assert.equal(byTx[first].sellerTx, "OUT1", first);
+    assert.equal(byTx.VERDICT1.kind, "verdict", first);
+    assert.equal(r.totals.customers.payments, 2, first);
+  }
+});

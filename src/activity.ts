@@ -366,7 +366,8 @@ export class ActivityLedger {
     const rank = (c: Transfer, p: Transfer) => {
       const k = kindOf(c);
       if (k === "buy" && (c.amount - (this.o.buyFeeAtomic ?? 0n) === p.amount || atCost(c, p))) return 0;
-      return k === "check" || k === "audit" ? 1 : 2;
+      if (k === "check" || k === "audit") return 1;
+      return k === "verdict" ? 3 : 2; // a /v1/verdict-priced payment at cost only when nothing else can take it
     };
     for (const p of payouts) {
       let pick: Transfer | undefined;

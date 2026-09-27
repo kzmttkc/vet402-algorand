@@ -435,7 +435,8 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     ownAddresses: [payTo, payer.address],
   };
   // Free trials: a separate wallet, its own caps (0.05 per try, TRY_MAX_PER_DAY_USDC per day, read from the chain).
-  const t = loadTrialConfig(env);
+  // Free tries key on the client IP from the platform's headers: trust them only on Vercel (or on TestNet).
+  const t = env.VERCEL || cfg.networkName === "testnet" ? loadTrialConfig(env) : null;
   const trial: TrialDeps | undefined = t
     ? {
         address: t.address,

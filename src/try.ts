@@ -42,6 +42,8 @@ import { WALLET_JS, WALLET_JS_SHA } from "./web/wallet-bundle.gen.js";
 
 export const TRY_PREVIEWS_PER_MINUTE = 30;
 export const TRY_RUNS_PER_MINUTE = 5;
+/** Free tries paid to one seller host per UTC day (so one seller cannot drain the trial wallet). */
+export const TRY_PER_SELLER_PER_DAY = 3;
 const RUN_MAX_BODY = 4 * 1024;
 
 /** Most of the seller's answer the free trial shows, in bytes of text. */
@@ -134,6 +136,17 @@ export function clientIp(c: Context<SettleFirstEnv>): string {
   return fwd || "local";
 }
 
+/** The key "once per person" is counted by: an IPv4 address, or the /64 of an IPv6 address (one home or phone gets a whole /64). */
+export function personKey(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const full = ip.split("%")[0];
+  const [head, tail = ""] = full.split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail ? tail.split(":") : [];
+  const groups = full.includes("::") ? [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t] : h;
+  return `${groups.slice(0, 4).map((g) => (g || "0").toLowerCase().replace(/^0+(?=.)/, "")).join(":")}::/64`;
+}
+
 const short = (usdc: string) => usdc.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
 
 export interface SellerOption {
@@ -150,6 +163,21 @@ export interface SellerOption {
 }
 
 const CLASS_ORDER: Record<DisplayClass, number> = { DELIVERED: 0, MISMATCH: 1, UNCLEAR: 2, UNREACHABLE: 3 };
+
+/** The payTo vet402 recorded for each listed GET URL (newest record), for the free try's allowlist. */
+export function recordedPayTo(files: (BoardFile | null)[]): Map<string, string> {
+  const m = new Map<string, { at: string; payTo: string }>();
+  for (const f of files) {
+    for (const r of f?.rows ?? []) {
+      if (r.method !== "GET" || !r.payTo || r.verdict === "SKIPPED") continue;
+      const u = normalizeTargetUrl(r.url)?.toString();
+      if (!u) continue;
+      const prev = m.get(u);
+      if (!prev || prev.at < r.at) m.set(u, { at: r.at, payTo: r.payTo });
+    }
+  }
+  return new Map([...m].map(([u, v]) => [u, v.payTo]));
+}
 
 /** One option per method + URL (newest record wins), UNREACHABLE left out; DELIVERED first, then cheapest. */
 export function sellerOptions(files: (BoardFile | null)[]): SellerOption[] {
@@ -296,7 +324,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     }
     const handle = normalizeHandle(input.handle);
     if (!handle) return c.json({ error: "invalid_handle", detail: "An X handle: letters, digits and _ only, up to 15." }, 400);
-    const record = typeof input.record === "string" ? input.record : "";
+    const record = typeof input.record === "string" && /^[A-Z0-9]{1,52}$/.test(input.record) ? input.record : "";
     const token = typeof input.token === "string" ? input.token : "";
     const want = Buffer.from(handleToken(trial.hashKey, record));
     const got = Buffer.from(token);
@@ -375,7 +403,25 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     if (!t.ok) return c.json({ error: "invalid_target", detail: t.detail }, 400);
     const url = t.url.toString();
 
-    const keys = claimKeys(trial.hashKey, ip, address);
+    // Only sellers vet402 has already bought from (the list on the page), paid to the payTo it recorded then:
+    // nobody can point the trial wallet at a new URL of their own. Local TestNet runs (private targets) are exempt.
+    let listedPayTo: string | undefined;
+    if (!(cfg.allowPrivateTargets && ["localhost", "127.0.0.1", "[::1]"].includes(t.url.hostname))) {
+      const [daily, census] = await files();
+      listedPayTo = recordedPayTo([census, daily]).get(url);
+      if (!listedPayTo) return c.json({ error: "not_listed", detail: "The free try covers sellers vet402 has already bought from: pick one from the list. Any other URL can be checked for free or bought with your own wallet." }, 422);
+    }
+    try {
+      const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
+      const log = await trial.store.log();
+      if (log.entries.filter((e) => e.host === t.url.host && e.at.slice(0, 10) === today).length >= TRY_PER_SELLER_PER_DAY) {
+        return c.json({ error: "seller_tried_enough", detail: `This seller has had ${TRY_PER_SELLER_PER_DAY} free tries today. Pick another one, or come back tomorrow (UTC).` }, 429);
+      }
+    } catch {
+      return c.json({ error: "cannot_check", detail: "vet402 cannot read today's free tries, so it will not pay now. Try again shortly." }, 503);
+    }
+
+    const keys = claimKeys(trial.hashKey, personKey(ip), address);
     if (keys.some((k) => busy.has(k))) return c.json({ error: "already_running", detail: "Your free try is already running." }, 409);
     for (const k of keys) busy.add(k);
     try {
@@ -395,6 +441,9 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
       // Free look first (nothing signed, the try is not used): price, network, USDC, caps, not a vet402 wallet.
       const q = await quote({ method: "GET", path: BUY_PATH, url, body: () => null }, trialCfg, { probeDeps: trialProbeDeps, catalog: deps.catalog });
       if (!q.ok) return c.json({ error: "not_buyable", reason: q.body.reason, detail: q.body.detail, used: false }, 422);
+      if (listedPayTo !== undefined && q.accept.payTo !== listedPayTo) {
+        return c.json({ error: "not_buyable", reason: "payto_changed", detail: "This seller now asks to be paid to a different address than when vet402 bought from it, so the free try does not pay it.", used: false }, 422);
+      }
       if (q.sellerAtomic > h.remainingAtomic) return c.json({ error: "daily_cap_reached", detail: "Today's free tries are used up. Come back tomorrow (UTC)." }, 503);
       try {
         await trial.store.claim(keys);

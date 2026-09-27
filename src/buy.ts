@@ -471,8 +471,11 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
         let firstFor: string | undefined;
         if (extra.firstPurchase === true) {
           const sender = paymentSender(c.req.header("payment-signature") || c.req.header("x-payment"), deps.payTo);
-          if (typeof extra.payer !== "string" || sender !== extra.payer || paidOnce.has(extra.payer)) {
+          if (typeof extra.payer !== "string" || sender !== extra.payer) {
             return c.json({ verdict: "REFUSE", reason: "first_purchase_payer_mismatch", target: q.target, charged: false, detail: "the first-purchase price is for the address in ?payer=; this payment comes from another account. Nothing was charged." }, 409);
+          }
+          if (paidOnce.has(extra.payer)) {
+            return c.json({ verdict: "REFUSE", reason: "first_purchase_used", target: q.target, charged: false, detail: "this address's first purchase at cost is already being paid or was paid; ask for the price again. Nothing was charged." }, 409);
           }
           firstFor = extra.payer;
           paidOnce.add(firstFor); // held from here: a second at-cost payment from this address on this instance is refused (released if not settled)
