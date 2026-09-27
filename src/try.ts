@@ -7,7 +7,8 @@
  *                           never pays anyone, never sends a customer body (quote() in buy.ts). 30 reads/min per IP.
  *   GET  /try/sellers.json  the sellers vet402 has paid (board + census): the ones the free try can buy first
  *                           (GET, paid, DELIVERED or MISMATCH, within the trial cap), then "own wallet only" ones
- *   POST /try/run           "Try vet402 (free, once per person)": vet402 buys once with its trial wallet (trial.ts)
+ *   POST /try/run           "Try vet402 (free, once per person)": vet402 buys once with its trial wallet (trial.ts);
+ *                           one per address, up to TRY_PER_NETWORK (3) per IP so people sharing a network can each try
  *   GET  /try/log(.json)    public record of the trials: time, seller, result, tx (no IP, no hash)
  */
 import type { Context, Hono } from "hono";
@@ -36,7 +37,7 @@ import type { Catalog } from "./bazaar.js";
 import type { SpendGuard } from "./spend.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
 import { BASE_CSS, topNav } from "./landing.js";
-import { claimKeys, countedLog, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type TrialLog, type TrialStore } from "./trial.js";
+import { TRY_PER_NETWORK, claimKeys, countedLog, handleToken, isAlgorandAddress, normalizeFrom, normalizeHandle, type ClaimOutcome, type TrialLog, type TrialStore } from "./trial.js";
 import { timingSafeEqual } from "node:crypto";
 import type { SettleFirstEnv } from "./settle-first.js";
 import type { ActivityReport } from "./activity.js";
@@ -149,6 +150,15 @@ export function personKey(ip: string): string {
   return `${groups.slice(0, 4).map((g) => (g || "0").toLowerCase().replace(/^0+(?=.)/, "")).join(":")}::/64`;
 }
 
+/** The next step shown with every "already tried" refusal (the /try page makes it open the wallet card). */
+export const TRY_WALLET_NEXT = "You can still buy this one with your own wallet — no vet402 fee on your first purchase.";
+
+/** An "already tried" refusal in plain words: which one ran out (the address, or the network's tries), then what to do. */
+export function alreadyTried(reason: "address_used" | "network_used") {
+  const headline = reason === "address_used" ? "This address has already had its free try." : `This network has used its free tries (${TRY_PER_NETWORK} per network).`;
+  return { error: "already_tried", reason, detail: `${headline} ${TRY_WALLET_NEXT}`, headline, next: TRY_WALLET_NEXT };
+}
+
 const short = (usdc: string) => usdc.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
 
 export interface SellerOption {
@@ -259,8 +269,10 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
   const trial = deps.trial;
   const trialCfg: AppConfig | null = trial ? { ...cfg, maxPerCallAtomic: trial.maxPerCallAtomic, maxPerDayAtomic: trial.maxPerDayAtomic } : null;
   const trialProbeDeps: ProbeDeps | null = trial ? { ...deps.probeDeps, paidFetch: trial.paidFetch } : null;
-  /** Claim keys with a trial running on this instance. */
+  /** Address claim keys with a trial running on this instance (an IP may run several at once: it has TRY_PER_NETWORK slots). */
   const busy = new Set<string>();
+  /** vet402's own wallets (payTo, payer, the trial wallet, the Base payTo): never a visitor's address. */
+  const own = new Set([...(deps.probeDeps.ownAddresses ?? []), ...(trial ? [trial.address] : [])].map((a) => a.toLowerCase()));
 
   const files = () => Promise.all([load(file), load(censusFileFor(file))]);
   let optionsCache: { daily: BoardFile | null; census: BoardFile | null; list: SellerOption[] } | null = null;
@@ -441,6 +453,8 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     }
     const target = typeof input.url === "string" ? input.url.trim() : "";
     const address = typeof input.address === "string" && input.address.trim() ? input.address.trim() : undefined;
+    // Before anything is read or claimed: a vet402 wallet is not the visitor's (the Base payTo is refused here too, not as "not Algorand").
+    if (address !== undefined && own.has(address.toLowerCase())) return c.json({ error: "own_address", detail: "That is vet402's own address. Enter your own Algorand address, or leave it empty.", used: false }, 400);
     if (address !== undefined && !isAlgorandAddress(address)) return c.json({ error: "invalid_address", detail: "That is not an Algorand address." }, 400);
     const t = await checkTarget(target, cfg.allowPrivateTargets, deps.probeDeps.resolveHost);
     if (!t.ok) return c.json({ error: "invalid_target", detail: t.detail }, 400);
@@ -466,17 +480,18 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
       return c.json({ error: "cannot_check", detail: "vet402 cannot read today's free tries, so it will not pay now. Try again shortly." }, 503);
     }
 
-    const keys = claimKeys(trial.hashKey, personKey(ip), address);
-    if (keys.some((k) => busy.has(k))) return c.json({ error: "already_running", detail: "Your free try is already running." }, 409);
-    for (const k of keys) busy.add(k);
+    const [ipKey, addressKey] = claimKeys(trial.hashKey, personKey(ip), address);
+    if (addressKey && busy.has(addressKey)) return c.json({ error: "already_running", detail: "Your free try is already running." }, 409);
+    if (addressKey) busy.add(addressKey);
     try {
-      let used: boolean;
+      let state: { addressUsed: boolean; networkUsed: number };
       try {
-        used = await trial.store.isClaimed(keys);
+        state = await trial.store.claimState(ipKey, addressKey, TRY_PER_NETWORK);
       } catch (e) {
         return c.json({ error: "cannot_check", detail: `vet402 cannot check whether you have tried before, so it will not pay now (${String((e as Error).message ?? e).slice(0, 120)}). Try again shortly.` }, 503);
       }
-      if (used) return c.json({ error: "already_tried", detail: "You have used your free try. To buy again, pay with your own wallet through /v1/buy." }, 403);
+      if (state.addressUsed) return c.json(alreadyTried("address_used"), 403);
+      if (state.networkUsed >= TRY_PER_NETWORK) return c.json(alreadyTried("network_used"), 403);
       const h = await trial.guard.headroom();
       if (!h.ok) {
         return h.reason === "daily_cap_reached"
@@ -500,10 +515,18 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
         return c.json({ error: "cannot_record", detail: `vet402 could not reserve this seller's free try, so it did not pay (${String((e as Error).message ?? e).slice(0, 120)}).`, used: false }, 503);
       }
       if (slot === null) return sellerFull();
+      // The visitor's claim: a free IP slot and the address, together (both or neither). Simultaneous tries from one
+      // network each get their own slot; a 4th finds none and is refused before paying.
+      let claim: ClaimOutcome;
       try {
-        await trial.store.claim(keys);
+        claim = await trial.store.claimTry(ipKey, addressKey, TRY_PER_NETWORK);
       } catch (e) {
         return c.json({ error: "cannot_record", detail: `vet402 could not record your try, so it did not pay (${String((e as Error).message ?? e).slice(0, 120)}).` }, 503);
+      }
+      if (!claim.ok) {
+        return claim.reason === "busy"
+          ? c.json({ error: "already_running", detail: "Another free try with this address, or from this network, is being recorded right now. Wait a minute and try again.", used: false }, 409)
+          : c.json(alreadyTried(claim.reason), 403);
       }
 
       // Every probe guard applies: private targets, own wallets, one payment, payTo lock, per-call and daily caps.
@@ -543,7 +566,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
         { "cache-control": "no-store" },
       );
     } finally {
-      for (const k of keys) busy.delete(k);
+      if (addressKey) busy.delete(addressKey);
     }
   });
 }
@@ -679,7 +702,8 @@ const TRY_JS = String.raw`
     var body={url:c.u};var a=addr&&addr.value.trim();if(a)body.address=a;if(from)body.from=from;
     fetch('/try/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j}})}).then(function(x){
       outRun.textContent='';var j=x.j;
-      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='already_tried'||j.error==='daily_cap_reached')nextSteps(c);return}
+      if(x.s!==200&&j.error==='already_tried'&&j.headline){p(outRun,'err big',[j.headline]);if(j.next)walletNext(j.next);return}
+      if(x.s!==200){p(outRun,'err big',[j.detail||j.error||('HTTP '+x.s)]);if(j.error==='daily_cap_reached')nextSteps(c);return}
       var price=j.price?usd(j.price.usdc)+' USDC':'the price';
       p(outRun,'big '+(CLS[j.class]||''),[{DELIVERED:'Delivered.',MISMATCH:'Paid, and it did not match the listing.',UNREACHABLE:'Nothing to buy here.',UNCLEAR:'No clear answer this time.'}[j.class]||j.class]);
       var d=j.declared||{};
@@ -700,11 +724,15 @@ const TRY_JS = String.raw`
       if(j.record)nameForm(j.record);
     }).catch(function(e){outRun.textContent='';p(outRun,'err',['Something went wrong: '+e.message])}).then(function(){sync()});
   });
+  function walletNext(text){
+    if(!cfg.wallet){p(outRun,null,[text]);return}
+    var a=el('a',null,text+' →');a.href='#wallet';a.addEventListener('click',function(e){e.preventDefault();openWallet()});p(outRun,null,[a]);
+  }
   function nextSteps(c){
     var box=el('div','roles');
     var b=el('a');b.href=cfg.wallet?'#wallet':'/#developers';b.appendChild(el('b',null,'Try another seller or your own input'));b.appendChild(document.createTextNode('Your first purchase with your own wallet has no vet402 fee →'));
     if(cfg.wallet)b.addEventListener('click',function(e){e.preventDefault();openWallet()});
-    var d=el('a');d.href='https://github.com/kzmttkc/vet402-algorand/tree/main/mcp';d.rel='noopener';d.appendChild(el('b',null,'Add it to your agent in one line'));d.appendChild(document.createTextNode('The MCP server, or /v1/verdict for 0.001 USDC before each purchase →'));
+    var d=el('a');d.href='https://github.com/kzmttkc/vet402-algorand/tree/main/mcp';d.rel='noopener';d.appendChild(el('b',null,'Add it to your agent in one line'));d.appendChild(document.createTextNode('The MCP server, or a 0.001 USDC verdict lookup before each purchase →'));
     var s=el('a');s.href='/seller/'+encodeURIComponent(c.h||'');s.appendChild(el('b',null,'Sell an x402 API?'));s.appendChild(document.createTextNode('See your seller page and get a delivery certificate →'));
     box.appendChild(b);box.appendChild(d);box.appendChild(s);outRun.appendChild(box);
   }
@@ -834,7 +862,7 @@ ${topNav()}
 ${step2}
 ${wallet}
 ${o.trial ? `<div class="card" id="first" hidden><h2>First people to try vet402 on Algorand</h2><ol id="firstList"></ol><p class="hint">Listed only when they added their X handle themselves. To have yours removed, <a href="${BOARD_ISSUES_URL}" rel="noopener">open a GitHub issue</a>.</p></div>` : ""}
-<p class="next">Building an agent? The same checks are paid HTTP endpoints: <a href="/#developers">/v1/check, /v1/buy, /v1/verdict, /v1/audit and an MCP server</a>.</p>
+<p class="next">Building an agent? The same checks are <a href="/#developers">paid HTTP endpoints and an MCP server</a>.</p>
 </main>
 <footer>${o.trial ? `Trial wallet <code>${esc(o.trial.address.slice(0, 6))}…${esc(o.trial.address.slice(-6))}</code> · <a href="/try/log">every free try</a> · ` : ""}<a href="/board?view=census">Board</a> · <a href="/activity">Activity</a></footer>
 <script type="application/json" id="cfg">${cfgJson}</script>

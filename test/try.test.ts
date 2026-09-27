@@ -112,8 +112,8 @@ const board = (rows: BoardRow[]): BoardFile => ({
 
 const baseCfg = (env: NodeJS.ProcessEnv = {}): AppConfig => loadConfig({ ALLOW_PRIVATE_TARGETS: "1", ...env });
 
-function setup(o: { trial?: boolean; perDay?: bigint; amount?: (path: string) => string; payTo?: string; census?: BoardRow[] } = {}) {
-  const cfg = baseCfg();
+function setup(o: { trial?: boolean; perDay?: bigint; amount?: (path: string) => string; payTo?: string; census?: BoardRow[]; env?: NodeJS.ProcessEnv } = {}) {
+  const cfg = baseCfg(o.env);
   const trace: string[] = [];
   const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
   const store = new MemoryTrialStore();
@@ -233,7 +233,7 @@ test("/try and /try/sellers.json are free pages; the list puts DELIVERED first, 
   );
 });
 
-test("trial: vet402 pays once from the trial wallet; the same IP a second time is not paid", async () => {
+test("trial: vet402 pays once from the trial wallet for one visitor, and records one person", async () => {
   const { app, seen, trace } = setup();
   const first = await run(app, { url: `${HOST}/honest` });
   assert.equal(first.status, 200);
@@ -247,10 +247,6 @@ test("trial: vet402 pays once from the trial wallet; the same IP a second time i
   assert.equal(j.delivery.truncated, false);
   assert.equal(j.verdict, "ALLOW");
   assert.equal(j.because, "the answer is JSON and has every field the listing promised (forecast, temperature)");
-
-  const again = await run(app, { url: `${HOST}/honest` });
-  assert.equal(again.status, 403);
-  assert.equal(((await again.json()) as { error: string }).error, "already_tried");
   assert.equal(seen.trialPaid.length, 1);
 
   const log = (await (await app.request("/try/log.json")).json()) as { people: number; entries: { host: string; class: string }[] };
@@ -265,6 +261,11 @@ test("trial: an address already used counts as used from another IP too", async 
   assert.equal((await run(app, { url: `${HOST}/honest`, address: ALGO_ADDR }, "203.0.113.5")).status, 200);
   const r = await run(app, { url: `${HOST}/honest`, address: ALGO_ADDR }, "203.0.113.6");
   assert.equal(r.status, 403);
+  const j = (await r.json()) as { error: string; reason: string; detail: string; headline: string; next: string };
+  assert.deepEqual([j.error, j.reason], ["already_tried", "address_used"]);
+  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
+  assert.equal(j.headline, "This address has already had its free try.");
+  assert.equal(j.next, "You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
   assert.equal(seen.trialPaid.length, 1);
   assert.equal((await run(app, { url: `${HOST}/honest`, address: "not-an-address" }, "203.0.113.7")).status, 400);
 });
@@ -746,10 +747,17 @@ test("trial: IPv6 addresses count per /64", async () => {
   assert.equal(personKey("2001:db8:1:2:aaaa::1"), personKey("2001:0db8:0001:0002:ffff:1:2:3"));
   assert.notEqual(personKey("2001:db8:1:2::1"), personKey("2001:db8:1:3::1"));
   assert.equal(personKey("203.0.113.9"), "203.0.113.9");
-  const { app, seen } = pubSetup();
-  assert.equal((await run(app, { url: `${PUB}/listed` }, "2001:db8:1:2::1")).status, 200);
-  assert.equal((await run(app, { url: `${PUB}/listed` }, "2001:db8:1:2:dead:beef:0:9")).status, 403);
-  assert.equal(seen.trialPaid.length, 1);
+  const { app, seen } = setup();
+  // One /64 is one network: 3 tries in total across its addresses, then the network message (a seller host per try).
+  const u = (port: number) => `http://localhost:${port}/honest`;
+  assert.equal((await run(app, { url: u(4061) }, "2001:db8:1:2::1")).status, 200);
+  assert.equal((await run(app, { url: u(4062) }, "2001:db8:1:2:dead:beef:0:9")).status, 200);
+  assert.equal((await run(app, { url: u(4063) }, "2001:db8:1:2::77")).status, 200);
+  const r = await run(app, { url: u(4064) }, "2001:db8:1:2:ffff::5");
+  assert.equal(r.status, 403);
+  assert.equal(((await r.json()) as { reason: string }).reason, "network_used");
+  assert.equal((await run(app, { url: u(4064) }, "2001:db8:1:3::1")).status, 200); // another /64
+  assert.equal(seen.trialPaid.length, 4);
 });
 
 test("/activity: a /v1/verdict lookup paid between a purchase (or a check) and its 0.001 seller payment does not take it", async () => {
@@ -863,7 +871,7 @@ test("/activity with Base and trials: a Base customer pairs with the Algorand se
 /* ---------- W6: the operator's own tries are listed but never counted ---------- */
 
 test("W6: an operator-test try stays in the log (marked) but is not counted: one operator-test + one normal try = people 1, trials 1", async () => {
-  const { app } = setup();
+  const { app, store, hashKey } = setup();
   assert.equal((await run(app, { url: `${HOST}/honest`, from: "operator-test" }, "203.0.113.40")).status, 200);
   assert.equal((await run(app, { url: `${HOST}/honest`, from: "github" }, "203.0.113.41")).status, 200);
   const log = (await (await app.request("/try/log.json")).json()) as { people: number; trials: number; entries: { from?: string; operatorTest?: boolean }[] };
@@ -875,8 +883,9 @@ test("W6: an operator-test try stays in the log (marked) but is not counted: one
   const html = await (await app.request("/try/log")).text();
   assert.match(html, /<b>1<\/b> person has tried vet402 · <b>1<\/b> purchase \(plus 1 operator test, not counted\)/);
   assert.match(html, /operator test \(not counted\)/);
-  // The operator's one-per-person claim for that IP stays.
-  assert.equal((await run(app, { url: `${HOST}/honest` }, "203.0.113.40")).status, 403);
+  // The operator's claim for that IP stays: it holds slot 1 of the IP's 3, so two more people there can try.
+  const ipKey = claimKeys(hashKey, "203.0.113.40")[0];
+  assert.deepEqual(await store.claimState(ipKey, undefined, 3), { addressUsed: false, networkUsed: 1 });
 });
 
 test("W6: any ?from= starting with operator is an operator try; other tags are not", async () => {
@@ -968,4 +977,105 @@ test("W1: five simultaneous free tries of one seller pay at most 3 (a slot per (
   // A refused visitor's try is not used: the IPs refused for a full seller hold no claim.
   assert.equal(store.claimed.size, 3);
   assert.equal(store.slots.size, 3);
+});
+
+/* ---------- shared networks: up to 3 free tries per IP, one per address; plain refusals; vet402's own addresses ---------- */
+
+import algosdk from "algosdk";
+import { alreadyTried, TRY_WALLET_NEXT } from "../src/try.js";
+const newAddr = () => algosdk.generateAccount().addr.toString();
+/** A different seller host per try (the per-seller cap of 3 a day is not what these tests are about). */
+const sellerUrl = (i: number) => `http://localhost:${4031 + i}/honest`;
+const NETWORK_MSG = "This network has used its free tries (3 per network). You can still buy this one with your own wallet — no vet402 fee on your first purchase.";
+
+test("#1 shared network: one IP gets 3 free tries with 3 different addresses (3 x 200); the 4th is 403 with the network message and is not paid", async () => {
+  const { app, seen } = setup();
+  const ip = "198.51.100.7";
+  for (let i = 0; i < 3; i++) assert.equal((await run(app, { url: sellerUrl(i), address: newAddr() }, ip)).status, 200, `try ${i + 1}`);
+  const r = await run(app, { url: sellerUrl(3), address: newAddr() }, ip);
+  assert.equal(r.status, 403);
+  const j = (await r.json()) as { error: string; reason: string; detail: string; headline: string; next: string };
+  assert.deepEqual([j.error, j.reason, j.detail], ["already_tried", "network_used", NETWORK_MSG]);
+  assert.equal(j.headline, "This network has used its free tries (3 per network).");
+  assert.equal(j.next, TRY_WALLET_NEXT);
+  assert.equal(seen.trialPaid.length, 3);
+  // Without an address the same network is still full; another IP is not affected.
+  assert.equal(((await (await run(app, { url: sellerUrl(4) }, ip)).json()) as { reason: string }).reason, "network_used");
+  assert.equal((await run(app, { url: sellerUrl(4) }, "198.51.100.8")).status, 200);
+  // Each person behind the IP counts as one more person.
+  const log = (await (await app.request("/try/log.json")).json()) as { people: number; trials: number };
+  assert.deepEqual([log.people, log.trials], [4, 4]);
+});
+
+test("#2 an address used from one IP is 403 from another IP, with the address message (not the network one)", async () => {
+  const { app, seen } = setup();
+  const a = newAddr();
+  assert.equal((await run(app, { url: sellerUrl(0), address: a }, "198.51.100.20")).status, 200);
+  const r = await run(app, { url: sellerUrl(1), address: a }, "198.51.100.21");
+  assert.equal(r.status, 403);
+  const j = (await r.json()) as { reason: string; detail: string };
+  assert.equal(j.reason, "address_used");
+  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
+  assert.equal(seen.trialPaid.length, 1);
+});
+
+test("#3 an IP that claimed in the old format (one claim key, before slots) counts as slot 1 used: 2 tries left", async () => {
+  const { app, seen, store, hashKey } = setup();
+  const ip = "198.51.100.30";
+  store.claimed.add(claimKeys(hashKey, ip)[0]); // exactly the key (and on the chain the note name / lease) claims had before
+  assert.deepEqual(await store.claimState(claimKeys(hashKey, ip)[0], undefined, 3), { addressUsed: false, networkUsed: 1 });
+  assert.equal((await run(app, { url: sellerUrl(0) }, ip)).status, 200);
+  assert.equal((await run(app, { url: sellerUrl(1), address: newAddr() }, ip)).status, 200);
+  const r = await run(app, { url: sellerUrl(2) }, ip);
+  assert.equal(r.status, 403);
+  assert.equal(((await r.json()) as { reason: string }).reason, "network_used");
+  assert.equal(seen.trialPaid.length, 2);
+});
+
+test("#4 five simultaneous free tries from one IP (different sellers and addresses) pay at most 3", async () => {
+  const { app, seen, store } = setup();
+  const res = await Promise.all([0, 1, 2, 3, 4].map((i) => run(app, { url: sellerUrl(i), address: newAddr() }, "198.51.100.40")));
+  const codes = res.map((r) => r.status).sort();
+  assert.deepEqual(codes, [200, 200, 200, 403, 403]);
+  assert.equal(seen.trialPaid.length, 3);
+  const refused = await Promise.all(res.filter((r) => r.status === 403).map((r) => r.json() as Promise<{ reason: string }>));
+  assert.deepEqual(refused.map((j) => j.reason), ["network_used", "network_used"]);
+  // Only the 3 who were paid for hold a claim: 3 IP slots + their 3 addresses.
+  assert.equal([...store.claimed].filter((k) => k.startsWith("ip:")).length, 3);
+  assert.equal([...store.claimed].filter((k) => k.startsWith("ad:")).length, 3);
+});
+
+test("#5 a vet402 address (payTo, payer, trial wallet, Base payTo) is refused before any claim, and nothing is paid", async () => {
+  for (const a of [VET402, PAYER, TRIAL, BASE_PAY_TO_T, BASE_PAY_TO_T.toUpperCase().replace("0X", "0x")]) {
+    const { app, seen, store } = setup({ env: { BASE_ACCEPT: "on", BASE_PAY_TO: BASE_PAY_TO_T } });
+    const r = await run(app, { url: sellerUrl(0), address: a }, "198.51.100.50");
+    assert.equal(r.status, 400, a);
+    const j = (await r.json()) as { error: string; detail: string };
+    assert.equal(j.error, "own_address", a);
+    assert.match(j.detail, /^That is vet402's own address\./);
+    assert.deepEqual([store.claimed.size, store.slots.size, seen.trialPaid.length], [0, 0, 0], a);
+    // The network's tries are untouched: the same IP can still try with its own address.
+    assert.equal((await run(app, { url: sellerUrl(0), address: newAddr() }, "198.51.100.50")).status, 200);
+  }
+});
+
+test("#7 the /try page shows no path names (/v1/...): not in its text, not in any string the script puts on screen, not in a refusal", async () => {
+  const { app } = setup();
+  const page = await (await app.request("/try")).text();
+  const scripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const text = page.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<[^>]+>/g, " ");
+  assert.doesNotMatch(text, /\/v1\//, "visible page text");
+  // String literals in the script: the only /v1/ one is the URL it fetches the price from, never shown.
+  const literals = scripts.flatMap((js) => [...js.matchAll(/'((?:[^'\\\n]|\\.)*)'/g)].map((m) => m[1]));
+  assert.deepEqual(literals.filter((l) => /\/v1\//.test(l)), ["/v1/buy?url="]);
+  assert.match(page, /fetch\('\/v1\/buy\?url='/);
+  // Both refusals, as the server sends them, carry the wallet step and no path.
+  for (const reason of ["address_used", "network_used"] as const) {
+    const j = alreadyTried(reason);
+    assert.doesNotMatch(JSON.stringify(j), /\/v1\//);
+    assert.ok(j.detail.endsWith(TRY_WALLET_NEXT));
+  }
+  // The page turns the next step into a link that opens the wallet card.
+  assert.match(page, /j\.error==='already_tried'&&j\.headline/);
+  assert.match(page, /function walletNext\(text\)\{[\s\S]*?openWallet\(\)/);
 });

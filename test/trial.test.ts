@@ -6,7 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import algosdk from "algosdk";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils";
-import { ChainTrialStore, MemoryTrialStore, TRY_LEASE_ROUNDS, isLeaseConflict, leaseOf, loadTrialConfig, slotNote, type TrialConfig } from "../src/trial.js";
+import { ChainTrialStore, MemoryTrialStore, TRY_LEASE_ROUNDS, TRY_PER_NETWORK, ipSlotKey, isLeaseConflict, leaseOf, loadTrialConfig, slotNote, type TrialConfig } from "../src/trial.js";
 
 const mnemonic = algosdk.secretKeyToMnemonic(algosdk.generateAccount().sk);
 const trialCfg = (env: NodeJS.ProcessEnv = {}) => loadTrialConfig({ TRY_PAYER_MNEMONIC: mnemonic, ...env }, "/nonexistent");
@@ -124,17 +124,104 @@ test("W1: the memory store gives each slot once, per host and per date", async (
   assert.equal(await m.takeSellerSlot("a.example", "2026-09-28", 3), 1);
 });
 
-test("people on /try/log counts one per claim key, for claim notes written before (no nonce) and after (with nonce) this change", async () => {
+test("people on /try/log counts one per claim key, for claim notes written before (no nonce) and after (with nonce) this change, and one per IP slot", async () => {
   const cfg = trialCfg()!;
   const note = (s: string) => Buffer.from(s).toString("base64");
   const tx = (id: string, n: string) => ({ id, sender: cfg.address, "round-time": 1, "tx-type": "pay", note: note(n), "payment-transaction": { receiver: cfg.address, amount: 0 } });
   const f = (async (url: string) => {
     const p = Buffer.from(new URL(url).searchParams.get("note-prefix")!, "base64").toString("utf8");
-    const all = [tx("A", "vet402-try:v1:c:ip:aaaa"), tx("B", "vet402-try:v1:c:ip:bbbb:0123456789ab"), tx("C", "vet402-try:v1:c:ip:bbbb:ba9876543210"), tx("D", "vet402-try:v1:c:ip:cccc:0123456789ab")];
+    const all = [tx("A", "vet402-try:v1:c:ip:aaaa"), tx("B", "vet402-try:v1:c:ip:bbbb:0123456789ab"), tx("C", "vet402-try:v1:c:ip:bbbb:ba9876543210"), tx("D", "vet402-try:v1:c:ip:cccc:0123456789ab"), tx("E", "vet402-try:v1:c:ip:cccc#2:0123456789ab")];
     return Response.json({ transactions: all.filter((t) => Buffer.from(t.note, "base64").toString("utf8").startsWith(p)) });
   }) as unknown as typeof fetch;
   const log = await chainStore(cfg, { fetchImpl: f }).log();
-  assert.equal(log.people, 3);
-  assert.equal(await chainStore(cfg, { fetchImpl: f }).isClaimed(["ip:bbbb"]), true);
-  assert.equal(await chainStore(cfg, { fetchImpl: f }).isClaimed(["ip:dddd"]), false);
+  assert.equal(log.people, 4); // aaaa, bbbb (claimed twice: one key), cccc slot 1, cccc slot 2
+  assert.deepEqual(await chainStore(cfg, { fetchImpl: f }).claimState("ip:bbbb", undefined, 3), { addressUsed: false, networkUsed: 1 });
+  assert.deepEqual(await chainStore(cfg, { fetchImpl: f }).claimState("ip:cccc", undefined, 3), { addressUsed: false, networkUsed: 2 });
+  assert.deepEqual(await chainStore(cfg, { fetchImpl: f }).claimState("ip:dddd", undefined, 3), { addressUsed: false, networkUsed: 0 });
+});
+
+/* ---------- IP slots: up to 3 per IP, one per address, slot 1 = the claim written before slots ---------- */
+
+/** Chain store over a scripted indexer (these claim notes) whose claim sends are scripted by the group's first key. */
+function claimScripted(cfg: TrialConfig, onChain: string[], outcome: (keys: string[]) => "ok" | "lease" | "down" = () => "ok") {
+  const sent: string[][] = [];
+  const idx = (async (url: string) => {
+    const p = Buffer.from(new URL(url).searchParams.get("note-prefix")!, "base64").toString("utf8");
+    const transactions = onChain
+      .filter((n) => n.startsWith(p))
+      .map((n, i) => ({ id: `C${i}`, sender: cfg.address, "round-time": 1, "tx-type": "pay", note: Buffer.from(n).toString("base64"), "payment-transaction": { receiver: cfg.address, amount: 0 } }));
+    return Response.json({ transactions });
+  }) as unknown as typeof fetch;
+  class S extends ChainTrialStore {
+    override claimGroup(keys: string[]) {
+      return {
+        send: async () => {
+          sent.push(keys);
+          const o = outcome(keys);
+          if (o === "lease") throw new Error("TransactionPool.Remember: transaction XYZ: overlapping lease (sender, lease):(A, B)");
+          if (o === "down") throw new Error("algod 503");
+          return {};
+        },
+      } as unknown as ReturnType<ChainTrialStore["claimGroup"]>;
+    }
+  }
+  return { store: new S({ networkName: "testnet", indexerUrl: "https://idx.invalid", trial: cfg, fetchImpl: idx, algorand: offlineClient() }), sent };
+}
+
+test("IP slots: slot 1 has the very name and lease of the claims written before slots; slot n>1 is '<ip key>#n'; the claim group is [IP slot, address]", async () => {
+  assert.equal(TRY_PER_NETWORK, 3);
+  assert.equal(ipSlotKey("ip:aaaa", 1), "ip:aaaa");
+  assert.equal(ipSlotKey("ip:aaaa", 2), "ip:aaaa#2");
+  const cfg = trialCfg()!;
+  const g = await chainStore(cfg).claimGroup([ipSlotKey("ip:aaaa", 1), "ad:bbbb"]).buildTransactions();
+  assert.deepEqual(g.transactions[0].lease, leaseOf("vet402-try:v1:c:ip:aaaa"));
+  assert.match(new TextDecoder().decode(g.transactions[0].note), /^vet402-try:v1:c:ip:aaaa:[0-9a-f]{12}$/);
+  const g2 = await chainStore(cfg).claimGroup([ipSlotKey("ip:aaaa", 2)]).buildTransactions();
+  assert.deepEqual(g2.transactions[0].lease, leaseOf("vet402-try:v1:c:ip:aaaa#2"));
+  assert.notDeepEqual(g2.transactions[0].lease, g.transactions[0].lease);
+});
+
+test("#3 chain store: an IP claimed in the old format (no nonce, or with a nonce) is slot 1 used; the next claim takes slot 2, then 3, then none", async () => {
+  const cfg = trialCfg()!;
+  for (const old of ["vet402-try:v1:c:ip:aaaa", "vet402-try:v1:c:ip:aaaa:0123456789ab"]) {
+    const { store, sent } = claimScripted(cfg, [old]);
+    assert.deepEqual(await store.claimState("ip:aaaa", "ad:new1", 3), { addressUsed: false, networkUsed: 1 });
+    assert.deepEqual(await store.claimTry("ip:aaaa", "ad:new1", 3), { ok: true, slot: 2 });
+    assert.deepEqual(await store.claimTry("ip:aaaa", "ad:new2", 3), { ok: true, slot: 3 }); // this instance remembers slot 2
+    assert.deepEqual(await store.claimTry("ip:aaaa", "ad:new3", 3), { ok: false, reason: "network_used" });
+    assert.deepEqual(sent, [["ip:aaaa#2", "ad:new1"], ["ip:aaaa#3", "ad:new2"]]);
+  }
+});
+
+test("chain store: an address already on the chain is refused before any send, with address_used, whatever the IP", async () => {
+  const cfg = trialCfg()!;
+  const { store, sent } = claimScripted(cfg, ["vet402-try:v1:c:ad:used:0123456789ab"]);
+  assert.deepEqual(await store.claimState("ip:zzzz", "ad:used", 3), { addressUsed: true, networkUsed: 0 });
+  assert.deepEqual(await store.claimTry("ip:zzzz", "ad:used", 3), { ok: false, reason: "address_used" });
+  assert.deepEqual(sent, []);
+});
+
+test("#4 chain store: a slot another instance holds (lease taken) is skipped, so simultaneous claims from one IP get distinct slots and never more than 3", async () => {
+  const cfg = trialCfg()!;
+  // Slots 1 and 2 are being taken right now by other instances (not yet on the indexer): this claim gets slot 3.
+  const a = claimScripted(cfg, [], (k) => (k[0] === "ip:aaaa" || k[0] === "ip:aaaa#2" ? "lease" : "ok"));
+  assert.deepEqual(await a.store.claimTry("ip:aaaa", undefined, 3), { ok: true, slot: 3 });
+  assert.deepEqual(a.sent.map((k) => k[0]), ["ip:aaaa", "ip:aaaa#2", "ip:aaaa#3"]);
+  // Every slot held elsewhere: no claim, network_used without an address, "busy" with one (the address may be the one in flight).
+  const b = claimScripted(cfg, [], () => "lease");
+  assert.deepEqual(await b.store.claimTry("ip:aaaa", undefined, 3), { ok: false, reason: "network_used" });
+  assert.deepEqual(await b.store.claimTry("ip:aaaa", "ad:x", 3), { ok: false, reason: "busy" });
+  // Anything else stops the claim (the caller does not pay).
+  const c = claimScripted(cfg, [], () => "down");
+  await assert.rejects(c.store.claimTry("ip:aaaa", "ad:x", 3), /algod 503/);
+  assert.equal(c.sent.length, 1);
+});
+
+test("#4 memory store: five simultaneous claims from one IP get slots 1, 2, 3 and two network_used; an address is claimed once", async () => {
+  const m = new MemoryTrialStore();
+  const got = await Promise.all([1, 2, 3, 4, 5].map((i) => m.claimTry("ip:aaaa", `ad:${i}`, 3)));
+  assert.deepEqual(got, [{ ok: true, slot: 1 }, { ok: true, slot: 2 }, { ok: true, slot: 3 }, { ok: false, reason: "network_used" }, { ok: false, reason: "network_used" }]);
+  assert.deepEqual(await m.claimTry("ip:bbbb", "ad:1", 3), { ok: false, reason: "address_used" });
+  assert.equal(m.claimed.has("ad:4"), false); // a refused claim holds nothing
+  assert.equal((await m.log()).people, 3);
 });
