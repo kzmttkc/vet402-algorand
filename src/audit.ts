@@ -22,7 +22,7 @@
  */
 import { atomicToUsdc, usdcToAtomic, type AppConfig } from "./config.js";
 import { selectAccept, type AcceptLike } from "./declaration.js";
-import { buildRequest, isOwnHost, withInput, OWN_HOSTS, type BazaarItem } from "./bazaar.js";
+import { buildPaidRequest, isOwnHost, withInput, OWN_HOSTS, type BazaarItem } from "./bazaar.js";
 import { checkTarget } from "./target.js";
 import { probe, type ProbeDeps, type ProbeResult } from "./probe.js";
 import type { GuardDecision, SpendGuard } from "./spend.js";
@@ -76,6 +76,8 @@ export interface AuditTarget {
   body?: string;
   contentType?: string;
   input: string;
+  /** Placeholders in the seller's example replaced with fresh random values (e.g. ["hash"]). */
+  filled?: string[];
   payTo: string;
   listedPriceUsdc: string;
   description?: string;
@@ -88,6 +90,7 @@ export type NotCheckedReason =
   | "path_params"
   | "body_not_json"
   | "body_too_large"
+  | "placeholder_unfillable"
   | "bad_url"
   | "invalid_target"
   | "own_host"
@@ -195,9 +198,9 @@ export async function planAudit(sellerRaw: string | undefined, items: BazaarItem
     const skip = (reason: NotCheckedReason, detail?: string) =>
       notChecked.push({ resourceUrl: item.resourceUrl, method, reason, listedPriceUsdc, ...(detail ? { detail } : {}) });
 
-    const b = buildRequest(item);
+    const b = buildPaidRequest(item);
     if (!b.ok) {
-      skip(b.reason as NotCheckedReason);
+      skip(b.reason as NotCheckedReason, "fields" in b ? `placeholder vet402 does not make up: ${b.fields.join(", ")}` : undefined);
       continue;
     }
     if (own.has(accept.payTo)) {
@@ -229,6 +232,7 @@ export async function planAudit(sellerRaw: string | undefined, items: BazaarItem
       method: b.method,
       ...(b.body !== undefined ? { body: b.body, contentType: b.contentType } : {}),
       input: b.input,
+      ...(b.filled ? { filled: b.filled } : {}),
       payTo: accept.payTo,
       listedPriceUsdc,
       ...(item.description ? { description: item.description.slice(0, 200) } : {}),
@@ -392,6 +396,8 @@ export interface AuditResult {
   url: string;
   method: string;
   input: string;
+  /** Placeholders in the seller's example replaced with fresh random values (e.g. ["hash"]). */
+  filled?: string[];
   verdict: "ALLOW" | "REFUSE" | "SKIPPED";
   reason: string;
   class: AuditClass;
@@ -448,6 +454,7 @@ export async function runAudit(plan: AuditPlan, o: RunOptions): Promise<AuditRun
     url: t.url,
     method: t.method,
     input: t.input,
+    ...(t.filled ? { filled: t.filled } : {}),
     listedPriceUsdc: t.listedPriceUsdc,
     ...(o.customerTx ? { customerTx: o.customerTx } : {}),
   });

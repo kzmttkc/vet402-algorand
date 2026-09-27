@@ -24,7 +24,9 @@
  * - Each resource is bought at most once per UTC day: an attempt is journaled
  *   before paying, and a rerun skips anything already attempted (resume).
  * - Sellers get the example input they published in the Bazaar. PUT/DELETE,
- *   form bodies and path templates are not probed.
+ *   form bodies and path templates are not probed. A placeholder in it ("<sha256-hex-64-chars>")
+ *   gets a fresh random value each time; one vet402 cannot fill (an address, an email…) makes the
+ *   row REFUSE placeholder_unfillable, not paid (shown as UNCLEAR).
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -37,7 +39,7 @@ import { makePaidFetch, probe, type ProbeDeps, type ProbeResult } from "../src/p
 import { selectAccept } from "../src/declaration.js";
 import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
 import type { BoardFile, BoardRow } from "../src/board.js";
-import { DEFAULT_BAZAAR, OWN_HOSTS, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
+import { DEFAULT_BAZAAR, OWN_HOSTS, buildPaidRequest, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
 
 // Moved to src/bazaar.ts (shared with the paid seller audit); re-exported for existing callers.
 export { DEFAULT_BAZAAR, OWN_HOSTS, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem };
@@ -55,6 +57,10 @@ export interface Candidate {
   contentType?: string;
   /** What we send, for the board ("?a=1", "body {...}", "(none)"). */
   input: string;
+  /** Placeholders in the seller's example replaced with fresh random values (e.g. ["hash"]). */
+  filled?: string[];
+  /** Placeholders vet402 would not make up: this candidate is recorded as placeholder_unfillable and never bought. */
+  unfillable?: string[];
   priceAtomic?: bigint;
   payTo?: string;
   description?: string;
@@ -133,11 +139,13 @@ export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candi
       out("not_https");
       continue;
     }
-    const b = buildRequest(it);
-    if (!b.ok) {
-      out(b.reason);
+    const pr = buildPaidRequest(it);
+    // An example with a placeholder vet402 cannot fill stays a candidate: runSweep records it without paying.
+    if (!pr.ok && !("fields" in pr)) {
+      out(pr.reason);
       continue;
     }
+    const b = pr.ok ? pr : { ...pr, unfillable: pr.fields };
     const key = `${b.method} ${b.url}`;
     if (seen.has(key)) {
       out("duplicate_url");
@@ -149,8 +157,7 @@ export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candi
       url: b.url,
       host,
       method: b.method,
-      body: b.body,
-      contentType: b.contentType,
+      ...(b.ok ? { body: b.body, contentType: b.contentType, ...(b.filled ? { filled: b.filled } : {}) } : { unfillable: b.unfillable }),
       input: b.input,
       priceAtomic: price,
       payTo: accept.payTo,
@@ -164,10 +171,13 @@ export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candi
     const best = new Map<string, Candidate>();
     for (const c of list) {
       const b = best.get(c.host);
+      // Prefer a resource vet402 can actually send (no unfillable placeholder), then the cheapest.
       const better =
         !b ||
-        c.priceAtomic! < b.priceAtomic! ||
-        (c.priceAtomic === b.priceAtomic && ((c.settleCount ?? 0) > (b.settleCount ?? 0) || ((c.settleCount ?? 0) === (b.settleCount ?? 0) && c.url < b.url)));
+        (!!b.unfillable && !c.unfillable) ||
+        (!b.unfillable === !c.unfillable &&
+          (c.priceAtomic! < b.priceAtomic! ||
+            (c.priceAtomic === b.priceAtomic && ((c.settleCount ?? 0) > (b.settleCount ?? 0) || ((c.settleCount ?? 0) === (b.settleCount ?? 0) && c.url < b.url)))));
       if (better) best.set(c.host, c);
     }
     chosen = [...best.values()];
@@ -202,13 +212,14 @@ export function interleaveByHost<T extends { host: string }>(list: T[]): T[] {
 
 const CAP_STOP: Record<string, string> = { daily_cap_reached: "daily_cap", cap_check_unavailable: "cap_check_unavailable" };
 
-function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host" | "method" | "input" | "payTo" | "priceUsdc" | "declared"> {
+function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host" | "method" | "input" | "filled" | "payTo" | "priceUsdc" | "declared"> {
   return {
     at,
     url: c.url,
     host: c.host,
     method: c.method,
     input: c.input,
+    ...(c.filled?.length ? { filled: c.filled } : {}),
     payTo: c.payTo,
     priceUsdc: c.priceAtomic !== undefined ? atomicToUsdc(c.priceAtomic) : undefined,
     declared: c.description ? { description: clip(c.description, 200) } : undefined,
@@ -217,6 +228,19 @@ function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host"
 
 export function skippedRow(c: Candidate, reason: string, at: string, detail?: string): BoardRow {
   return { ...baseRow(c, at), verdict: "SKIPPED", reason, detail, paid: false };
+}
+
+/** A candidate whose example has a placeholder vet402 would not make up: recorded, never sent, never paid (UNCLEAR). */
+export function unfillableRow(c: Candidate, at: string): BoardRow {
+  const fields = c.unfillable ?? [];
+  return {
+    ...baseRow(c, at),
+    verdict: "REFUSE",
+    reason: "placeholder_unfillable",
+    detail: clip(`the seller's example input has a placeholder vet402 does not make up (${fields.join(", ")}): not sent, not paid`, 300),
+    unfillable: fields,
+    paid: false,
+  };
 }
 
 export function rowFromResult(c: Candidate, r: ProbeResult, at: string): BoardRow {
@@ -266,12 +290,15 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
   const clock = o.clock ?? Date.now;
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const gap = Math.max(0, o.hostGapMs ?? 0);
-  const pending = cands.filter((c) => !o.done?.has(c.key));
+  const todo = cands.filter((c) => !o.done?.has(c.key));
   const rows: BoardRow[] = [];
   const emit = (r: BoardRow) => {
     rows.push(r);
     o.onRow?.(r);
   };
+  // Nothing to send and nothing to pay: record these first, and never hand them to probeOne.
+  for (const c of todo) if (c.unfillable?.length) emit(unfillableRow(c, now().toISOString()));
+  const pending = todo.filter((c) => !c.unfillable?.length);
   let stop: { reason: string; detail?: string } | null = null;
   if (o.headroom) {
     const h = await o.headroom();
@@ -479,6 +506,9 @@ async function main(argv: string[]): Promise<void> {
   console.log(`mode ${census ? "census" : targets ? "targets" : "daily"} · ${cfg.networkName} ${cfg.network}`);
   console.log(`source ${selection.source}`);
   console.log(`excluded ${JSON.stringify(selection.excluded)}`);
+  const nFilled = candidates.filter((c) => c.filled?.length).length;
+  const nUnfillable = candidates.filter((c) => c.unfillable?.length).length;
+  if (nFilled || nUnfillable) console.log(`placeholders: ${nFilled} filled with fresh values · ${nUnfillable} not fillable (recorded as placeholder_unfillable, not paid)`);
   console.log(`board payer ${boardPayerAddress ?? "(unknown)"}${sharedWallet ? " (same wallet as /v1/check: its daily cap reads the same on-chain total)" : ""}`);
   console.log(`own addresses excluded: ${ownAddresses.join(", ")} · own hosts excluded: ${ownHosts.join(", ")}`);
 

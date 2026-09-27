@@ -21,6 +21,10 @@ export interface BoardRow {
   method: string;
   /** Short summary of the input vet402 sent (the seller's own Bazaar example). */
   input?: string;
+  /** Placeholders in that example vet402 replaced with fresh random values (e.g. ["hash"]). */
+  filled?: string[];
+  /** Placeholders vet402 would not make up (reason placeholder_unfillable: not sent, not paid). */
+  unfillable?: string[];
   declared?: { description?: string; mimeType?: string; expectedKeys?: string[] };
   priceUsdc?: string;
   payTo?: string;
@@ -86,6 +90,17 @@ function str(v: unknown, max = 300): string | undefined {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
+function strList(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v.slice(0, 20).map((k) => str(k, 80) ?? "").filter(Boolean);
+  return out.length ? out : undefined;
+}
+
+/** "vet402 filled hash with a fresh random value" for a row whose example had placeholders; "" otherwise. */
+export function filledNote(r: Pick<BoardRow, "filled">): string {
+  return r.filled?.length ? `vet402 filled ${r.filled.join(", ")} with a fresh random value (the seller's example had a placeholder)` : "";
+}
+
 function cleanRow(r: unknown): BoardRow | null {
   if (!r || typeof r !== "object") return null;
   const o = r as Record<string, unknown>;
@@ -99,6 +114,8 @@ function cleanRow(r: unknown): BoardRow | null {
     host: str(o.host, 200) ?? "",
     method: str(o.method, 10) ?? "GET",
     input: str(o.input, 300),
+    ...(strList(o.filled) ? { filled: strList(o.filled) } : {}),
+    ...(strList(o.unfillable) ? { unfillable: strList(o.unfillable) } : {}),
     declared: d
       ? {
           description: str(d.description, 200),
@@ -504,7 +521,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
       const cls = displayClass(r);
       return (
         `<tr id="row-${i}"><td>${esc(r.at.slice(11, 19))}</td>` +
-        `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}</td>` +
+        `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}${filledNote(r) ? `<br><small>${esc(filledNote(r))}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
         `<td class="v ${CSS_CLASS[cls]}">${cls}${cls === "UNCLEAR" ? `<br><small class="nc">${esc(UNCLEAR_NOTE)}</small>` : ""}</td>` +
         `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}</td>` +

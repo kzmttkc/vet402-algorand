@@ -7,6 +7,7 @@
  */
 import type { AcceptLike } from "./declaration.js";
 import type { ProbeDeps } from "./probe.js";
+import { fillPlaceholder, fillPlaceholders, placeholderHint, type FieldSchema } from "./placeholder.js";
 
 export const DEFAULT_BAZAAR = "https://facilitator.goplausible.xyz/discovery/resources";
 /** vet402's own hosts: never bought from (self-dealing by host). */
@@ -36,10 +37,25 @@ function clip(s: string, n: number): string {
 }
 
 export type BuiltRequest =
-  | { ok: true; url: string; method: "GET" | "POST"; body?: string; contentType?: string; input: string }
+  | {
+      ok: true;
+      url: string;
+      method: "GET" | "POST";
+      body?: string;
+      contentType?: string;
+      input: string;
+      /** Placeholders in the example replaced with fresh random values ("hash", "files[1].hash", "?id"). */
+      filled?: string[];
+      /** Placeholders vet402 would not make up (an address, an email, a key…): left as published. */
+      unfillable?: string[];
+    }
   | { ok: false; reason: string };
 
-/** Turn a Bazaar item into the request vet402 will send (the seller's own example input). */
+/**
+ * Turn a Bazaar item into the request vet402 will send (the seller's own example input).
+ * Placeholders in it ("<sha256-hex-64-chars>") get a fresh random value on every call (src/placeholder.ts);
+ * the ones vet402 cannot fill stay as published and are listed in `unfillable`.
+ */
 export function buildRequest(item: BazaarItem): BuiltRequest {
   const inp = item.discoveryInfo?.input ?? {};
   const method = String(inp.method ?? item.method ?? "GET").toUpperCase();
@@ -62,10 +78,21 @@ export function buildRequest(item: BazaarItem): BuiltRequest {
   if (q && typeof q === "object" && q.type === "http" && q.queryParams && typeof q.queryParams === "object") {
     q = q.queryParams as Record<string, unknown>;
   }
+  const filled: string[] = [];
+  const unfillable: string[] = [];
   if (q && typeof q === "object" && !Array.isArray(q)) {
     for (const [k, raw] of Object.entries(q)) {
       // A schema-style value ({type, description, example|default}) contributes its example/default only.
-      const v = raw && typeof raw === "object" ? ((raw as Record<string, unknown>).example ?? (raw as Record<string, unknown>).default) : raw;
+      const schema = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : undefined;
+      let v = schema ? (schema.example ?? schema.default) : raw;
+      const hint = typeof v === "string" ? placeholderHint(v) : undefined;
+      if (hint !== undefined) {
+        const f = fillPlaceholder(hint, (schema ?? {}) as FieldSchema);
+        if (f.ok) {
+          v = f.value;
+          filled.push(`?${k}`);
+        } else unfillable.push(`?${k}`);
+      }
       if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") u.searchParams.set(k, String(v));
     }
   }
@@ -73,12 +100,41 @@ export function buildRequest(item: BazaarItem): BuiltRequest {
   let contentType: string | undefined;
   if (method === "POST" && inp.body !== undefined) {
     if (inp.bodyType && inp.bodyType !== "json") return { ok: false, reason: "body_not_json" };
-    body = JSON.stringify(inp.body);
+    const f = fillPlaceholders(inp.body);
+    filled.push(...f.filled);
+    unfillable.push(...f.unfillable);
+    body = JSON.stringify(f.value);
     if (body.length > MAX_BODY_CHARS) return { ok: false, reason: "body_too_large" };
     contentType = "application/json";
   }
   const input = [u.search ? clip(u.search, 140) : "", body ? `body ${clip(body, 140)}` : ""].filter(Boolean).join(" ") || "(none)";
-  return { ok: true, url: u.toString(), method, body, contentType, input };
+  return {
+    ok: true,
+    url: u.toString(),
+    method,
+    body,
+    contentType,
+    input,
+    ...(filled.length ? { filled } : {}),
+    ...(unfillable.length ? { unfillable } : {}),
+  };
+}
+
+export type PaidRequest =
+  | Extract<BuiltRequest, { ok: true }>
+  | { ok: false; reason: "placeholder_unfillable"; url: string; method: "GET" | "POST"; input: string; fields: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * The request for a purchase paid with vet402's own money (census, board, seller audit): as buildRequest,
+ * but an example with a placeholder vet402 cannot fill is not bought (placeholder_unfillable).
+ */
+export function buildPaidRequest(item: BazaarItem): PaidRequest {
+  const b = buildRequest(item);
+  if (b.ok && b.unfillable?.length) {
+    return { ok: false, reason: "placeholder_unfillable", url: b.url, method: b.method, input: b.input, fields: b.unfillable };
+  }
+  return b;
 }
 
 /** Every item of the feed, following `offset` until `pagination.total`. */

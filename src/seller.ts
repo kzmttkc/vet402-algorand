@@ -24,6 +24,7 @@ import {
   type BoardRow,
   type DisplayClass,
   UNCLEAR_NOTE,
+  filledNote,
 } from "./board.js";
 import { certificateCtaHtml } from "./cert.js";
 
@@ -186,6 +187,7 @@ export function sellerHtml(v: SellerView, o: SellerPageOptions = AUDIT_OFF): str
         `<li class="card"><div class="top"><b class="${CSS_CLASS[r.cls]}">${r.cls}</b><span>${esc(r.day)} · ${r.source}${r.priceUsdc ? ` · ${esc(r.priceUsdc)} USDC` : ""}</span></div>` +
         `<div class="u">${esc(r.method)} ${esc(pathOf(r.url))}</div>` +
         (decl ? `<small>${esc(decl)}</small>` : "") +
+        (filledNote(r) ? `<div><small>${esc(filledNote(r))}</small></div>` : "") +
         `<div>reason <code>${esc(r.reason)}</code>${r.detail ? ` <small>${esc(r.detail)}</small>` : ""}</div>` +
         (r.cls === "UNCLEAR" ? `<div><small class="nc">${esc(UNCLEAR_NOTE)}</small></div>` : "") +
         `<div>vet402 → seller tx: ${link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx)}</a>` : "no payment was made"}</div>` +
