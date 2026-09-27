@@ -700,22 +700,23 @@ test("/try next steps: sellers are sent to /seller/<host> (where the certificate
 /* ---------- second review: the trial wallet cannot be pointed at a new seller; per-seller cap; IPv6 /64 ---------- */
 
 const PUB = "https://seller.example";
-function pubSetup(o: { censusPayTo?: string; acceptPayTo?: string } = {}) {
+function pubSetup(o: { censusPayTo?: string; acceptPayTo?: string; extraRows?: BoardRow[] } = {}) {
   const cfg = baseCfg();
   const seen: Seen = { looks: [], mainPaid: [], trialPaid: [] };
   const deps = sellerDeps(seen, { payTo: o.acceptPayTo ?? SELLER });
   deps.resolveHost = async () => ["93.184.216.34"];
-  const census = board([row(`${PUB}/listed`, { payTo: o.censusPayTo ?? SELLER }), row(`${PUB}/other`, { payTo: SELLER })]);
+  const store = new MemoryTrialStore();
+  const census = board([row(`${PUB}/listed`, { payTo: o.censusPayTo ?? SELLER }), row(`${PUB}/other`, { payTo: SELLER }), ...(o.extraRows ?? [])]);
   const app = createApp(cfg, {
     payTo: VET402,
     probeDeps: deps,
     guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
     facilitator: facilitator([]),
     catalog: { items: async () => [] },
-    trial: { address: TRIAL, maxPerCallAtomic: 50_000n, maxPerDayAtomic: 3_000_000n, hashKey: Buffer.alloc(32, 9), store: new MemoryTrialStore(), guard: new LocalSpendGuard(new SpendLedger(50_000n, 3_000_000n)), paidFetch: trialPaidFetch(seen) },
+    trial: { address: TRIAL, maxPerCallAtomic: 50_000n, maxPerDayAtomic: 3_000_000n, hashKey: Buffer.alloc(32, 9), store, guard: new LocalSpendGuard(new SpendLedger(50_000n, 3_000_000n)), paidFetch: trialPaidFetch(seen) },
     tryBoard: { load: async (f: string) => (f.endsWith("census-latest.json") ? census : null), file: "/nonexistent/latest.json" },
   });
-  return { app, seen };
+  return { app, seen, store };
 }
 
 test("trial: only a listed URL, paid to the payTo vet402 recorded for it", async () => {
@@ -890,4 +891,66 @@ test("W6: any ?from= starting with operator is an operator try; other tags are n
     { people: 1, trials: 1 },
   );
   assert.equal(countedLog({ people: 0, entries: [e("operator-test")] }).people, 0); // never below 0
+});
+
+/* ---------- W5: the list leads with sellers the free try can actually buy ---------- */
+
+test("W5: sellerOptions puts GET + paid + within-cap rows first (rows 1-10 all GET and paid); POST, over-cap and unclear rows follow, marked own wallet only; unpaid attempts are left out", async () => {
+  const rows: BoardRow[] = [];
+  // Cheap POST DELIVERED rows that used to sort to the top.
+  for (let i = 0; i < 6; i++) rows.push(row(`https://post${i}.example/x`, { method: "POST", priceUsdc: "0.0001" }));
+  // UNCLEAR on the page (REFUSE, payment_failed, never paid): not a seller vet402 has bought from.
+  for (let i = 0; i < 6; i++) rows.push(row(`https://fail${i}.example/x`, { verdict: "REFUSE", reason: "payment_failed", paid: false, priceUsdc: "0.00001" }));
+  rows.push(row("https://pricey.example/x", { priceUsdc: "0.20" }));
+  for (let i = 0; i < 12; i++) rows.push(row(`https://get${String(i).padStart(2, "0")}.example/x`, { priceUsdc: `0.0${(i % 5) + 1}` }));
+  rows.push(row("https://mismatch.example/x", { verdict: "REFUSE", reason: "delivery_missing_keys", paid: true, priceUsdc: "0.001" }));
+  const list = sellerOptions([board(rows)], { trialMaxAtomic: 50_000n });
+  const top10 = list.slice(0, 10);
+  assert.ok(top10.every((s) => s.m === "GET" && s.t && !s.w), JSON.stringify(top10));
+  assert.ok(top10.every((s) => s.c === "DELIVERED")); // DELIVERED first inside the free-try group
+  const free = list.filter((s) => s.t);
+  assert.equal(free.length, 13); // 12 GET DELIVERED + 1 GET MISMATCH
+  assert.equal(list.findIndex((s) => !s.t), free.length); // every free-try row comes before every other row
+  const w = Object.fromEntries(list.filter((s) => !s.t).map((s) => [s.h, s.w]));
+  assert.match(w["post0.example"]!, /^own wallet only: this seller needs a POST/);
+  assert.match(w["pricey.example"]!, /^own wallet only: its price is above/);
+  assert.equal(sellerOptions([board([row("https://fail.example/x", { verdict: "REFUSE", reason: "payment_failed", paid: false })])])[0], undefined);
+  assert.ok(!list.some((s) => s.h.startsWith("fail")), "attempts vet402 could not pay are not listed");
+});
+
+test("W5: POST /try/run on an UNCLEAR (payment_failed) URL is not_listed: no claim, no slot, no payment; /try/preview says so before the visitor tries", async () => {
+  const { app, seen, store } = pubSetup({ extraRows: [row(`${PUB}/flaky`, { verdict: "REFUSE", reason: "payment_failed", paid: false, payTo: SELLER })] });
+  const r = await run(app, { url: `${PUB}/flaky` }, "203.0.113.70");
+  assert.equal(r.status, 422);
+  const j = (await r.json()) as { error: string; used: boolean };
+  assert.deepEqual([j.error, j.used], ["not_listed", false]);
+  assert.deepEqual([store.claimed.size, seen.trialPaid.length], [0, 0]);
+  const pv = (await (await preview(app, `${PUB}/flaky`)).json()) as { trial: { available: boolean; reason: string } };
+  assert.deepEqual([pv.trial.available, pv.trial.reason], [false, "not_listed"]);
+  const ok = (await (await preview(app, `${PUB}/listed`)).json()) as { trial: { available: boolean } };
+  assert.equal(ok.trial.available, true);
+  // The same visitor can still use their try on a listed seller.
+  assert.equal((await run(app, { url: `${PUB}/listed` }, "203.0.113.70")).status, 200);
+});
+
+test("W5: a URL whose newest record was not paid leaves the allowlist even if an older record was paid", async () => {
+  const { recordedPayTo } = await import("../src/try.js");
+  const m = recordedPayTo([
+    board([
+      row(`${PUB}/a`, { at: "2026-09-26T00:00:00.000Z", payTo: SELLER }),
+      row(`${PUB}/a`, { at: "2026-09-27T00:00:00.000Z", verdict: "REFUSE", reason: "payment_failed", paid: false, payTo: SELLER }),
+      row(`${PUB}/b`, { payTo: SELLER }),
+      row(`${PUB}/c`, { method: "POST", payTo: SELLER }),
+    ]),
+  ]);
+  assert.deepEqual([...m.keys()], [`${PUB}/b`]);
+});
+
+test("W5: the /try page tags list rows the free try cannot buy in plain words", async () => {
+  const { app } = setup();
+  const page = await (await app.request("/try")).text();
+  assert.match(page, /free try · /);
+  assert.match(page, /el\('span','w',s\.w\)/);
+  assert.match(page, /Search the sellers vet402 has paid/);
+  assert.doesNotMatch(page, /Search the sellers vet402 has bought from/);
 });

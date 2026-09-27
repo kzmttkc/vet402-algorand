@@ -5,12 +5,13 @@
  *   GET  /try/preview?url=  free JSON: vet402's last recorded result for that URL (same data as /v1/verdict) and
  *                           today's price through /v1/buy (same reading as the unpaid /v1/buy 402). Never charges,
  *                           never pays anyone, never sends a customer body (quote() in buy.ts). 30 reads/min per IP.
- *   GET  /try/sellers.json  the sellers vet402 has bought from (board + census), DELIVERED first, cheapest first
+ *   GET  /try/sellers.json  the sellers vet402 has paid (board + census): the ones the free try can buy first
+ *                           (GET, paid, DELIVERED or MISMATCH, within the trial cap), then "own wallet only" ones
  *   POST /try/run           "Try vet402 (free, once per person)": vet402 buys once with its trial wallet (trial.ts)
  *   GET  /try/log(.json)    public record of the trials: time, seller, result, tx (no IP, no hash)
  */
 import type { Context, Hono } from "hono";
-import { atomicToUsdc, type AppConfig } from "./config.js";
+import { atomicToUsdc, usdcToAtomic, type AppConfig } from "./config.js";
 import {
   BOARD_ISSUES_URL,
   UNCLEAR_NOTE,
@@ -24,6 +25,7 @@ import {
   txLink,
   type BoardFile,
   type BoardLoader,
+  type BoardRow,
   type DisplayClass,
 } from "./board.js";
 import { lookupVerdict, normalizeTargetUrl } from "./lookup.js";
@@ -160,42 +162,80 @@ export interface SellerOption {
   c: DisplayClass;
   /** price USDC as recorded */
   p: string;
+  /** The free try can buy it: GET, vet402 paid it last time, DELIVERED or MISMATCH, within the trial cap. */
+  t: boolean;
+  /** Why not, in plain words (only when t is false), e.g. "own wallet only: this seller needs a POST". */
+  w?: string;
 }
+
+/** Local TestNet targets (ALLOW_PRIVATE_TARGETS only): exempt from the free try's list. */
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
 const CLASS_ORDER: Record<DisplayClass, number> = { DELIVERED: 0, MISMATCH: 1, UNCLEAR: 2, UNREACHABLE: 3 };
 
-/** The payTo vet402 recorded for each listed GET URL (newest record), for the free try's allowlist. */
+/** vet402 paid this seller on this record and could judge the delivery: DELIVERED or MISMATCH with a settled payment. */
+const paidAndJudged = (r: BoardRow) => r.paid === true && ["DELIVERED", "MISMATCH"].includes(displayClass(r));
+
+/**
+ * The payTo vet402 recorded for each GET URL the free try may pay, for its allowlist: the newest record of that URL
+ * must be a paid one (DELIVERED or MISMATCH). A URL whose last attempt did not get paid (UNCLEAR, payment_failed)
+ * is not listed, so a visitor's one try is not spent on a seller vet402 itself could not pay.
+ */
 export function recordedPayTo(files: (BoardFile | null)[]): Map<string, string> {
-  const m = new Map<string, { at: string; payTo: string }>();
+  const m = new Map<string, BoardRow>();
   for (const f of files) {
     for (const r of f?.rows ?? []) {
-      if (r.method !== "GET" || !r.payTo || r.verdict === "SKIPPED") continue;
+      if (r.method !== "GET" || r.verdict === "SKIPPED") continue;
       const u = normalizeTargetUrl(r.url)?.toString();
       if (!u) continue;
       const prev = m.get(u);
-      if (!prev || prev.at < r.at) m.set(u, { at: r.at, payTo: r.payTo });
+      if (!prev || prev.at < r.at) m.set(u, r);
     }
   }
-  return new Map([...m].map(([u, v]) => [u, v.payTo]));
+  return new Map([...m].filter(([, r]) => paidAndJudged(r) && r.payTo).map(([u, r]) => [u, r.payTo!]));
 }
 
-/** One option per method + URL (newest record wins), UNREACHABLE left out; DELIVERED first, then cheapest. */
-export function sellerOptions(files: (BoardFile | null)[]): SellerOption[] {
-  const m = new Map<string, SellerOption & { at: string }>();
+/**
+ * The sellers vet402 has paid: one option per method + URL (newest record wins), and only when that record was paid
+ * (an attempt vet402 could not pay, e.g. payment_failed, is left out: it is not a seller vet402 has bought from).
+ * The ones the free try can buy come first (GET, paid, DELIVERED or MISMATCH, price within `trialMaxAtomic`),
+ * then the rest, marked "own wallet only" with the reason; inside each, DELIVERED first, then cheapest.
+ */
+export function sellerOptions(files: (BoardFile | null)[], o: { trialMaxAtomic?: bigint } = {}): SellerOption[] {
+  const m = new Map<string, { r: BoardRow; at: string }>();
   for (const f of files) {
     for (const r of f?.rows ?? []) {
       if (r.verdict === "SKIPPED" || !normalizeTargetUrl(r.url)) continue;
       const key = `${r.method} ${r.url}`;
       const prev = m.get(key);
       if (prev && prev.at >= r.at) continue;
-      m.set(key, { u: r.url, m: r.method, h: hostOf(r), c: displayClass(r), p: r.priceUsdc ? short(r.priceUsdc) : "", at: r.at });
+      m.set(key, { r, at: r.at });
     }
   }
+  const overCap = (p?: string) => {
+    if (o.trialMaxAtomic === undefined) return false;
+    try {
+      return !p || usdcToAtomic(p) > o.trialMaxAtomic;
+    } catch {
+      return true;
+    }
+  };
   const price = (p: string) => (p ? Number(p) : Number.POSITIVE_INFINITY);
   return [...m.values()]
-    .filter((o) => o.c !== "UNREACHABLE")
-    .sort((a, b) => CLASS_ORDER[a.c] - CLASS_ORDER[b.c] || price(a.p) - price(b.p) || a.h.localeCompare(b.h) || a.u.localeCompare(b.u))
-    .map(({ at: _at, ...o }) => o);
+    .filter(({ r }) => r.paid === true && displayClass(r) !== "UNREACHABLE")
+    .map(({ r }): SellerOption => {
+      const c = displayClass(r);
+      const w =
+        r.method !== "GET"
+          ? `own wallet only: this seller needs a ${r.method}, and the free try only does GET`
+          : !paidAndJudged(r)
+            ? "own wallet only: vet402 could not tell what this seller delivered last time"
+            : overCap(r.priceUsdc)
+              ? "own wallet only: its price is above what the free try pays"
+              : undefined;
+      return { u: r.url, m: r.method, h: hostOf(r), c, p: r.priceUsdc ? short(r.priceUsdc) : "", t: !w, ...(w ? { w } : {}) };
+    })
+    .sort((a, b) => Number(b.t) - Number(a.t) || CLASS_ORDER[a.c] - CLASS_ORDER[b.c] || price(a.p) - price(b.p) || a.h.localeCompare(b.h) || a.u.localeCompare(b.u));
 }
 
 function priceOut(q: QuoteOutcome, network: string) {
@@ -249,7 +289,7 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
 
   app.get("/try/sellers.json", async (c) => {
     const [daily, census] = await files();
-    if (!optionsCache || optionsCache.daily !== daily || optionsCache.census !== census) optionsCache = { daily, census, list: sellerOptions([census, daily]) };
+    if (!optionsCache || optionsCache.daily !== daily || optionsCache.census !== census) optionsCache = { daily, census, list: sellerOptions([census, daily], { trialMaxAtomic: trial?.maxPerCallAtomic }) };
     return c.json({ sellers: optionsCache.list }, 200, { "cache-control": "public, max-age=300" });
   });
 
@@ -267,11 +307,13 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     ]);
     const lookup = lookupVerdict(u, { daily, census });
     const latest = lookup?.latest;
+    // Same allowlist as /try/run: a seller vet402 paid successfully last time (local TestNet targets exempt).
+    const listed = (cfg.allowPrivateTargets && LOCAL_HOSTS.includes(u.hostname)) || recordedPayTo([census, daily]).has(u.toString());
     const trialCheck = !trial
       ? { available: false, reason: "trials_off" }
-      : q.ok && q.priceRead === "get" && q.sellerAtomic <= trial.maxPerCallAtomic
+      : q.ok && q.priceRead === "get" && q.sellerAtomic <= trial.maxPerCallAtomic && listed
         ? { available: true, maxUsdc: atomicToUsdc(trial.maxPerCallAtomic) }
-        : { available: false, reason: !q.ok ? q.body.reason : q.priceRead !== "get" ? "post_only" : "price_over_trial_cap", maxUsdc: atomicToUsdc(trial.maxPerCallAtomic) };
+        : { available: false, reason: !q.ok ? q.body.reason : q.priceRead !== "get" ? "post_only" : q.sellerAtomic > trial.maxPerCallAtomic ? "price_over_trial_cap" : "not_listed", maxUsdc: atomicToUsdc(trial.maxPerCallAtomic) };
     return c.json(
       {
         url: u.href,
@@ -404,13 +446,13 @@ export function registerTry(app: Hono<SettleFirstEnv>, cfg: AppConfig, deps: Try
     if (!t.ok) return c.json({ error: "invalid_target", detail: t.detail }, 400);
     const url = t.url.toString();
 
-    // Only sellers vet402 has already bought from (the list on the page), paid to the payTo it recorded then:
+    // Only sellers vet402 paid successfully last time (the "free try" rows of the list), paid to the payTo it recorded then:
     // nobody can point the trial wallet at a new URL of their own. Local TestNet runs (private targets) are exempt.
     let listedPayTo: string | undefined;
-    if (!(cfg.allowPrivateTargets && ["localhost", "127.0.0.1", "[::1]"].includes(t.url.hostname))) {
+    if (!(cfg.allowPrivateTargets && LOCAL_HOSTS.includes(t.url.hostname))) {
       const [daily, census] = await files();
       listedPayTo = recordedPayTo([census, daily]).get(url);
-      if (!listedPayTo) return c.json({ error: "not_listed", detail: "The free try covers sellers vet402 has already bought from: pick one from the list. Any other URL can be checked for free or bought with your own wallet." }, 422);
+      if (!listedPayTo) return c.json({ error: "not_listed", detail: "The free try covers sellers vet402 paid successfully last time, with a plain GET: pick one marked \"free try\" in the list. Any other URL can be checked for free or bought with your own wallet.", used: false }, 422);
     }
     try {
       const today = new Date(deps.now?.() ?? Date.now()).toISOString().slice(0, 10);
@@ -514,6 +556,7 @@ input:focus{outline:2px solid var(--acc);outline-offset:1px}
 #list li:hover,#list li:focus{background:#172033;outline:none}
 #list .u{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 #list .m{flex:none;font-size:12px;color:var(--mut);white-space:nowrap}
+#list li{flex-wrap:wrap}#list .w{flex-basis:100%;font-size:12px;color:var(--mut)}
 .chip{font-size:11px;font-weight:700;letter-spacing:.03em;padding:1px 6px;border-radius:999px;border:1px solid currentColor;margin-right:6px}
 .hint{font-size:13px;color:var(--mut);margin:8px 0 0}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
@@ -557,7 +600,8 @@ const TRY_JS = String.raw`
     items.slice(0,40).forEach(function(s){
       var li=el('li');li.setAttribute('role','option');li.tabIndex=0;
       var u=el('span','u');u.appendChild(el('span','chip '+CLS[s.c],s.c));u.appendChild(document.createTextNode(s.u.replace(/^https?:\/\//,'')));
-      li.appendChild(u);li.appendChild(el('span','m',(s.m!=='GET'?s.m+' · ':'')+(s.p?s.p+' USDC':'')));
+      li.appendChild(u);li.appendChild(el('span','m',(s.t&&cfg.trial?'free try · ':'')+(s.m!=='GET'?s.m+' · ':'')+(s.p?s.p+' USDC':'')));
+      if(cfg.trial&&s.w)li.appendChild(el('span','w',s.w));
       li.addEventListener('click',function(){pick(s)});
       li.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();pick(s)}});
       list.appendChild(li);
@@ -569,10 +613,10 @@ const TRY_JS = String.raw`
     var words=v.split(/\s+/).filter(Boolean);
     var hits=sellers.filter(function(s){var t=(s.u+' '+s.c).toLowerCase();return words.every(function(w){return t.indexOf(w)>=0})});
     render(hits);
-    hint.textContent=sellers.length?(hits.length+' of '+sellers.length+' listings match. Sellers that delivered come first, cheapest first.'):'Loading the list…';
+    hint.textContent=sellers.length?(hits.length+' of '+sellers.length+' listings match. '+(cfg.trial?'The ones the free try can buy come first; the rest you can buy with your own wallet.':'Sellers that delivered come first, cheapest first.')):'Loading the list…';
     sync();
   }
-  function pick(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'');outPrev.textContent='';outRun.textContent='';wReset();sync()}
+  function pick(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'')+(cfg.trial&&s.w?' · '+s.w:'');outPrev.textContent='';outRun.textContent='';wReset();sync()}
   function sync(){var c=current();bPrev.disabled=!c;if(bRun)bRun.disabled=!c}
   q.addEventListener('input',function(){filter();wReset()});
   q.addEventListener('focus',function(){if(!q.value)filter()});
@@ -612,7 +656,7 @@ const TRY_JS = String.raw`
       if(l&&l.class!=='DELIVERED'&&l.reason)p(outPrev,'sub',['Reason code: '+l.reason+(l.detail?' ('+l.detail+')':'')]);
       p(outPrev,null,[priceSentence(j.buy)]);
       p(outPrev,'sub',[link(j.sellerPage,'Everything vet402 recorded for this seller')]);
-      if(bRun&&j.trial&&!j.trial.available){var why={post_only:'The free try buys with a plain GET; this seller needs a POST.',price_over_trial_cap:'The free try covers sellers up to '+usd(j.trial.maxUsdc)+' USDC.'}[j.trial.reason];if(why)p(outPrev,'sub',[why])}
+      if(bRun&&j.trial&&!j.trial.available){var why={post_only:'The free try buys with a plain GET; this seller needs a POST.',price_over_trial_cap:'The free try covers sellers up to '+usd(j.trial.maxUsdc)+' USDC.',not_listed:'The free try covers sellers vet402 paid successfully last time. You can buy this one with your own wallet.'}[j.trial.reason];if(why)p(outPrev,'sub',[why])}
       if(j.buy.ok)buyButton(outPrev,'Buy it through vet402 with your wallet');
     }).catch(function(e){outPrev.textContent='';p(outPrev,'err',['Could not check: '+e.message])}).then(function(){sync()});
   });
@@ -770,7 +814,7 @@ ${topNav()}
 <p class="lead">${o.trial ? "No wallet and no USDC needed. vet402 pays with its own wallet, checks what came back against the listing, and shows you the receipt." : "Pick a seller and see, for free, what vet402 got when it paid it with its own wallet."}</p>
 <p class="people" id="people"></p>
 <div class="card"><h2><span class="num">1</span>Pick a seller</h2>
-<label for="q">Search the sellers vet402 has bought from, or paste the URL of a paid API</label>
+<label for="q">Search the sellers vet402 has paid, or paste the URL of a paid API</label>
 <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. weather, news, https://…" aria-controls="list">
 <ul id="list" role="listbox" aria-label="sellers"></ul>
 <p class="hint" id="hint">Loading the list…</p>
