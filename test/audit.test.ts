@@ -16,7 +16,7 @@ import type { ProbeDeps } from "../src/probe.js";
 import type { BazaarItem, Catalog } from "../src/bazaar.js";
 import { parseSeller, planAudit, runAudit } from "../src/audit.js";
 import { readFileSync } from "node:fs";
-import { config as vercelFunctionConfig, VERCEL_MAX_DURATION_SEC } from "../src/server.js";
+import { config as vercelFunctionConfig, VERCEL_MAX_DURATION_SEC, AUDIT_DEADLINE_MARGIN_SEC } from "../src/server.js";
 
 const NET = ALGORAND_TESTNET_CAIP2;
 const ASA = "10458941";
@@ -531,11 +531,12 @@ test("function limit comes from server.ts `export const config`; AUDIT_DEADLINE_
   assert.equal(JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8")).functions, undefined);
   // Vercel reads the value statically: it must stay a literal in the source.
   assert.match(readFileSync(new URL("../src/server.ts", import.meta.url), "utf8"), /^export const config = \{ maxDuration: 300 \};$/m);
-  assert.equal(loadConfig({}).auditDeadlineMs, (VERCEL_MAX_DURATION_SEC - 60) * 1000);
+  assert.equal(loadConfig({}).auditDeadlineMs, 190_000);
+  assert.ok(loadConfig({}).auditDeadlineMs <= (VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC) * 1000);
   for (const bad of ["abc", "", "1e5", "-1", "0", "12.5"]) {
     assert.throws(() => loadConfig({ AUDIT_DEADLINE_MS: bad }), /AUDIT_DEADLINE_MS/, bad);
   }
-  const tooLong = baseCfg({ AUDIT_DEADLINE_MS: String((VERCEL_MAX_DURATION_SEC - 59) * 1000) });
-  assert.throws(() => appWith({ cfg: tooLong }), /AUDIT_DEADLINE_MS must be at most 240000/);
+  const tooLong = baseCfg({ AUDIT_DEADLINE_MS: String((VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC + 1) * 1000) });
+  assert.throws(() => appWith({ cfg: tooLong }), /AUDIT_DEADLINE_MS must be at most 195000/);
   assert.equal(loadConfig({ AUDIT_DEADLINE_MS: "120000" }).auditDeadlineMs, 120_000);
 });

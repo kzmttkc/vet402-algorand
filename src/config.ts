@@ -117,7 +117,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const auditMaxTargets = Number(env.AUDIT_MAX_TARGETS ?? 10);
   if (!Number.isInteger(auditMaxTargets) || auditMaxTargets < 1 || auditMaxTargets > 50) throw new Error("AUDIT_MAX_TARGETS must be an integer 1..50");
   // The upper bound (60 s under the function limit) is checked in createApp: the limit lives in server.ts (`export const config`).
-  const auditDeadlineRaw = env.AUDIT_DEADLINE_MS ?? "240000";
+  const auditDeadlineRaw = env.AUDIT_DEADLINE_MS ?? "190000";
   const auditDeadlineMs = /^\d+$/.test(auditDeadlineRaw.trim()) ? Number(auditDeadlineRaw.trim()) : NaN;
   if (!Number.isSafeInteger(auditDeadlineMs) || auditDeadlineMs <= 0) {
     throw new Error(`AUDIT_DEADLINE_MS must be a whole number of ms, got ${auditDeadlineRaw}`);

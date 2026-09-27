@@ -94,7 +94,7 @@ export interface AppDeps {
 export const config = { maxDuration: 300 };
 export const VERCEL_MAX_DURATION_SEC = config.maxDuration;
 /** An audit must end at least this long before the function limit (settlement, Bazaar read, response). */
-export const AUDIT_DEADLINE_MARGIN_SEC = 60;
+export const AUDIT_DEADLINE_MARGIN_SEC = 105; // 60 s for settle and planning + 41 s for the certificate record + slack
 
 export function createApp(cfg: AppConfig, deps: AppDeps) {
   const deadlineMax = (VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC) * 1000;

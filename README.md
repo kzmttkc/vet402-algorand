@@ -218,7 +218,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `AUDIT_PRICE_USDC` | no | `0.50` | price of one seller audit |
 | `AUDIT_MAX_SPEND_USDC` | no | `0.40` | most one audit pays sellers; must be below `AUDIT_PRICE_USDC` |
 | `AUDIT_MAX_TARGETS` | no | `10` | most resources one audit checks (1–50) |
-| `AUDIT_DEADLINE_MS` | no | `240000` | whole ms, at most 60 s under the function limit (`export const config = { maxDuration: 300 }` in `src/server.ts`); anything else refuses to start. The rest of an audit is SKIPPED after this |
+| `AUDIT_DEADLINE_MS` | no | `190000` | whole ms, at most 105 s under the function limit (room for settle, planning and the certificate record) (`export const config = { maxDuration: 300 }` in `src/server.ts`); anything else refuses to start. The rest of an audit is SKIPPED after this |
 | `BAZAAR_URL` | no | `https://facilitator.goplausible.xyz/discovery/resources` | where the audit lists a seller's resources |
 | `PROBE_MAX_PER_CALL_USDC` | no | `0.10` (MainNet) | per-seller-payment cap |
 | `PROBE_MAX_PER_DAY_USDC` | no | `3.00` (MainNet) | per-UTC-day cap (on-chain) |
