@@ -64,6 +64,10 @@ export interface AppConfig {
   /** Local spend ledger (backup to the indexer). undefined = in-memory only (serverless). */
   spendLedgerFile?: string;
   probeTimeoutMs: number;
+  /** Show the paid re-check (/v1/audit?seller=) on /seller pages. Off until /v1/audit is live (SELLER_PAGE_AUDIT=on). */
+  auditLinkEnabled: boolean;
+  /** Price of GET /v1/audit shown on /seller pages, in USDC. */
+  auditPriceUsdc: string;
 }
 
 const DEFAULT_CAPS: Record<NetworkName, { perCall: string; perDay: string }> = {
@@ -105,5 +109,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     keysFile: env.KEYS_FILE ?? `.keys/${networkName}.json`,
     spendLedgerFile: env.SPEND_LEDGER_FILE ?? (onServerless ? undefined : `state/spend-${networkName}.json`),
     probeTimeoutMs: Number(env.PROBE_TIMEOUT_MS ?? 20000),
+    auditLinkEnabled: env.SELLER_PAGE_AUDIT === "on",
+    auditPriceUsdc: atomicToUsdc(usdcToAtomic(env.AUDIT_PRICE_USDC ?? "0.50")).replace(/0{1,4}$/, ""),
   };
 }
