@@ -20,3 +20,18 @@ export function landingHtml(o: { network: string; priceUsdc: string; perCallUsdc
 <p><a href="https://github.com/kzmttkc/vet402-algorand">Source (MIT)</a> &middot; <a href="https://vet402.com">vet402.com</a></p>
 </body></html>`;
 }
+
+export const DEMO_VIDEO_URL = "https://github.com/kzmttkc/vet402-algorand/releases/download/demo-2026-09-27/vet402-algorand-demo.mp4";
+
+export function demoHtml(): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vet402 demo</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<style>body{margin:0;background:#0a0e17;color:#e8ecf3;font:16px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:24px auto;padding:0 16px}video{width:100%;border-radius:8px;background:#000}a{color:#93c5fd}</style>
+</head><body><main>
+<h1>vet402 on Algorand: demo</h1>
+<video controls preload="metadata" playsinline src="${DEMO_VIDEO_URL}"></video>
+<p><a href="${DEMO_VIDEO_URL}">Download the video (MP4)</a> &middot; <a href="/board?view=census">Census board</a> &middot; <a href="/activity">Activity ledger</a> &middot; <a href="https://github.com/kzmttkc/vet402-algorand">Source</a></p>
+</main></body></html>`;
+}

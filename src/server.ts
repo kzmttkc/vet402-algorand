@@ -27,7 +27,7 @@ import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
 import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
 import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
-import { FAVICON_ICO_B64, landingHtml } from "./landing.js";
+import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { registerBoard } from "./board.js";
 
@@ -109,6 +109,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   app.get("/favicon.ico", (c) =>
     c.body(Buffer.from(FAVICON_ICO_B64, "base64"), 200, { "content-type": "image/x-icon", "cache-control": "public, max-age=86400" }),
   );
+
+  app.get("/demo", (c) => c.html(demoHtml()));
 
   app.get("/", (c) => {
     const caps = { perCallUsdc: atomicToUsdc(cfg.maxPerCallAtomic), perDayUsdc: atomicToUsdc(cfg.maxPerDayAtomic) };
