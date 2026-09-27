@@ -102,7 +102,7 @@ ${topNav()}
 
 <section id="try">
 <h2>Try it in 3 steps</h2>
-<p class="kicker">No account. The first two steps cost nothing.</p>
+<p class="kicker">${o.trial ? "No account and no wallet. All three steps are free (step 3 once per person)." : "No account. The first two steps cost nothing."}</p>
 <ol class="steps">
 <li><span class="num">1</span><b>Pick a seller</b><p>Choose one from <a href="/board?view=census">the board</a>, or paste the URL of any paid API on Algorand.</p></li>
 <li><span class="num">2</span><b>See what vet402 got last time</b><p>Free. What it paid, whether the answer matched the listing, and the receipt.</p></li>
