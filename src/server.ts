@@ -34,6 +34,7 @@ import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { registerBoard } from "./board.js";
 import { registerSeller } from "./seller.js";
+import { registerVerdictLookup } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
 import { applyHeadroom, parseSeller, planAudit, runAudit, type AuditPlan, type PlanOutcome, type SellerRef } from "./audit.js";
 
@@ -173,7 +174,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
         },
       ],
       description:
-        "vet402 pays the x402 endpoint you name (only after your payment has settled), checks the delivery against its declared output (Bazaar schema / 402), and returns ALLOW or REFUSE with both payment tx ids and a summary of what was delivered.",
+        "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
       mimeType: "application/json",
       extensions: discovery,
     },
@@ -287,6 +288,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   }
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
+  registerVerdictLookup(app, cfg, resourceServer, deps.payTo); // paid, own settle-first: GET /v1/verdict (pays no seller)
 
   app.use(
     settleFirstMiddleware(httpServer, {

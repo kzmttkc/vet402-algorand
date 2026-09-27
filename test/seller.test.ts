@@ -69,7 +69,7 @@ test("seller view: latest row per resource across daily and census; delivered wi
   const words: [Partial<BoardRow>, string, string][] = [
     [{ verdict: "REFUSE", reason: "delivery_missing_keys", paid: true }, "mismatch", "#d73a3a"],
     [{ verdict: "REFUSE", reason: "not_x402", detail: "expected 402, got 410", paid: false }, "unreachable", "#8a8f98"],
-    [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 402, subcent_quota_exceeded", paid: false }, "unclear", "#c98a06"],
+    [{ verdict: "REFUSE", reason: "payment_failed", detail: "status 402, subcent_quota_exceeded", paid: false }, "unclear", "#9f9f9f"], // grey, not red
   ];
   for (const [r, word, color] of words) {
     const svg = badgeSvg(sellerView("s.example", { daily: null, census: file([r]) }));

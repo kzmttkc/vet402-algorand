@@ -264,6 +264,10 @@ export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
 export type DisplayClass = "DELIVERED" | "MISMATCH" | "UNREACHABLE" | "UNCLEAR";
 export const DISPLAY_CLASSES: DisplayClass[] = ["DELIVERED", "MISMATCH", "UNREACHABLE", "UNCLEAR"];
 
+/** Shown on every UNCLEAR row (/board, /seller): the result is not held against the seller. */
+export const UNCLEAR_NOTE =
+  "Not counted against this seller: vet402 or the payment path could not reach a result (for example rate limits or a facilitator quota).";
+
 /** Unpaid-look status codes that say more about vet402's request than about the seller. */
 const UNCLEAR_LOOK_STATUS = new Set([400, 403, 408, 429]);
 
@@ -502,7 +506,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
         `<tr id="row-${i}"><td>${esc(r.at.slice(11, 19))}</td>` +
         `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
-        `<td class="v ${CSS_CLASS[cls]}">${cls}</td>` +
+        `<td class="v ${CSS_CLASS[cls]}">${cls}${cls === "UNCLEAR" ? `<br><small class="nc">${esc(UNCLEAR_NOTE)}</small>` : ""}</td>` +
         `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}</td>` +
         `<td>${tx}</td></tr>`
       );
@@ -604,6 +608,7 @@ ${table}
     head(r.cls+' · '+r.reason);
     line(r.url+(r.price?' · '+r.price+' USDC':''));
     if(r.detail)line(r.detail);
+    if(r.cls==='UNCLEAR')line(${scriptJson(UNCLEAR_NOTE)});
     det.appendChild(document.createElement('br'));
     if(r.link){var a=document.createElement('a');a.href=r.link;a.rel='noopener';a.textContent='tx '+r.tx;det.appendChild(a)}
     else det.appendChild(document.createTextNode('no payment was made'));
@@ -636,6 +641,36 @@ ${table}
 </body></html>`;
 }
 
+/**
+ * vet402's own purchases, one line per payment (GET /board/payments.csv, free).
+ * A row counts only when the seller's settlement receipt said success and it carries a valid tx id;
+ * the same tx found in several files is listed once. Oldest first.
+ * Columns: time_utc, payer (vet402's wallet), seller_pay_to, host, amount_usdc, tx, class.
+ */
+export const PAYMENTS_CSV_HEADER = ["time_utc", "payer", "seller_pay_to", "host", "amount_usdc", "tx", "class"] as const;
+
+/** RFC 4180 cell; a leading = + - @ (spreadsheet formula) is neutralised with a quote mark. */
+function csvCell(v: unknown): string {
+  let s = String(v ?? "").replace(/[\r\n]+/g, " ");
+  if (/^[=+\-@\t]/.test(s)) s = `'${s}`;
+  return /[",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function paymentsCsv(files: (BoardFile | null)[]): string {
+  const seen = new Set<string>();
+  const out: { at: string; cells: unknown[] }[] = [];
+  for (const f of files) {
+    if (!f) continue;
+    for (const r of f.rows) {
+      if (!r.paid || !r.tx || !TXID.test(r.tx) || seen.has(r.tx)) continue;
+      seen.add(r.tx);
+      out.push({ at: r.at, cells: [r.at, f.payer ?? "", r.payTo ?? "", hostOf(r), r.priceUsdc ?? "", r.tx, displayClass(r)] });
+    }
+  }
+  out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  return [PAYMENTS_CSV_HEADER.join(","), ...out.map((o) => o.cells.map(csvCell).join(","))].join("\r\n") + "\r\n";
+}
+
 /** Register the free board routes. Call before the payment middleware. */
 export function registerBoard<E extends Env>(
   app: Hono<E>,
@@ -649,6 +684,17 @@ export function registerBoard<E extends Env>(
         ? { view: "census", path: censusFileFor(file, d), date: d }
         : { view: "census", path: censusFileFor(file) }
       : { view: "daily", path: file };
+  // Every census day on the fixed list, the latest census and the daily file: vet402's own payments, deduplicated by tx.
+  app.get("/board/payments.csv", async (c) => {
+    const names = [file, censusFileFor(file), ...CENSUS_DATES.filter(isBoardDate).map((d) => censusFileFor(file, d))];
+    const files = await Promise.all(names.map((n) => load(n)));
+    return c.body(paymentsCsv(files), 200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": 'inline; filename="vet402-payments.csv"',
+      "cache-control": "public, max-age=300",
+      "x-content-type-options": "nosniff",
+    });
+  });
   app.get("/board.json", async (c) => {
     const { path } = pick(c.req.query("view"), c.req.query("date"));
     c.header("cache-control", "public, max-age=300");

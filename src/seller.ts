@@ -23,6 +23,7 @@ import {
   type BoardLoader,
   type BoardRow,
   type DisplayClass,
+  UNCLEAR_NOTE,
 } from "./board.js";
 
 /** Public base URL used in the badge Markdown. */
@@ -114,7 +115,8 @@ const BADGE: Record<DisplayClass | "NONE", { color: string; word: string }> = {
   DELIVERED: { color: "#2e9e4f", word: "delivered" },
   MISMATCH: { color: "#d73a3a", word: "mismatch" },
   UNREACHABLE: { color: "#8a8f98", word: "unreachable" },
-  UNCLEAR: { color: "#c98a06", word: "unclear" },
+  // Grey, never red: an UNCLEAR result is not held against the seller.
+  UNCLEAR: { color: "#9f9f9f", word: "unclear" },
   NONE: { color: "#8a8f98", word: "not checked" },
 };
 
@@ -184,6 +186,7 @@ export function sellerHtml(v: SellerView, o: SellerPageOptions = AUDIT_OFF): str
         `<div class="u">${esc(r.method)} ${esc(pathOf(r.url))}</div>` +
         (decl ? `<small>${esc(decl)}</small>` : "") +
         `<div>reason <code>${esc(r.reason)}</code>${r.detail ? ` <small>${esc(r.detail)}</small>` : ""}</div>` +
+        (r.cls === "UNCLEAR" ? `<div><small class="nc">${esc(UNCLEAR_NOTE)}</small></div>` : "") +
         `<div>vet402 → seller tx: ${link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx)}</a>` : "no payment was made"}</div>` +
         `</li>`
       );

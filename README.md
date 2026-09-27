@@ -8,7 +8,7 @@ You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint it
 - the tx id of **your payment to vet402** and the tx id of **vet402's payment to the seller**, and
 - a short summary of what was delivered.
 
-**Live on Algorand MainNet:** `GET https://vet402-algorand.vercel.app/v1/check?url=<x402 endpoint>` (0.05 USDC, ASA 31566704, facilitator GoPlausible). Listed in the Bazaar discovery feed.
+**Live on Algorand MainNet:** `GET https://vet402-algorand.vercel.app/v1/check?url=<x402 endpoint>` (0.05 USDC, ASA 31566704, facilitator GoPlausible). Listed in the Bazaar discovery feed. `/v1/check` buys with `GET` only (no request body); `/v1/audit` and the board also send `POST` bodies.
 
 ## Orchestrator flow (settle-first)
 
@@ -80,6 +80,13 @@ What counts as a promise:
 Response: `results[]` (per resource: `verdict`, `reason`, `class`, `customerTx`, `downstreamPayment.transaction`, `price`, `delivery`), `summary` (`delivered` / `mismatch` / `unreachable` / `unclear` / `skipped`, number of seller payments, USDC spent), `customerPayment`, and the `plan`. `class` uses the same rules as the board: `mismatch` only when vet402 paid and the delivery did not match the declaration.
 
 Locally, the TestNet test sellers are not in the Bazaar. `AUDIT_CATALOG_URLS=<url,url,...>` lists them by URL instead (allowed only with `ALLOW_PRIVATE_TARGETS=1`). `npx tsx scripts/audit-demo.ts <seller>` pays for one audit as the TestNet client and prints each payment's confirmed round.
+
+## Look up a past result
+
+`GET /v1/verdict?url=<x402 URL>` (0.001 USDC, same 402 shape: `exact`, USDC ASA, `tag: x402-global-challenge`, Bazaar extension with input and output declared). It returns what vet402 recorded the last time it bought that URL with its own wallet (the files behind `/board`: `board/latest.json` and the latest census): `class` (`DELIVERED` / `MISMATCH` / `UNREACHABLE` / `UNCLEAR`), `reason`, `date`, `sellerTx` (vet402 → seller) and `countedAgainstSeller` (false for `UNCLEAR`). An exact URL match wins; otherwise the same origin and path with another query (`match: "path"`, the URL vet402 bought is in `latest.url`).
+
+- vet402 pays nobody for this answer: the customer's payment settles first and the handler only reads the files. No probe, no seller payment, no daily-cap spend.
+- A URL with no result → `404 no_result` on the unpaid request (no 402, nothing to pay), and again before settlement if a payment is sent anyway. `HEAD` is priced like `GET`; any path other than exactly `/v1/verdict` is refused before settlement.
 
 ## Use from an agent (MCP)
 
@@ -178,6 +185,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | path | role |
 |---|---|
 | `src/server.ts` | `GET /v1/check`, `GET /v1/audit`, Bazaar discovery, production wiring, Vercel default export |
+| `src/lookup.ts` | `GET /v1/verdict`: paid lookup of vet402's own earlier purchase (own settle-first middleware, pays no seller) |
 | `src/audit.ts` | seller audit: free plan from the Bazaar, audit budget, run through `probe()` |
 | `src/bazaar.ts` | Bazaar feed reader (cached), request built from the seller's example input (shared with the board) |
 | `src/settle-first.ts` | verify → preflight → **settle** → handler middleware |
@@ -210,6 +218,7 @@ The page needs only public addresses. The payer address is taken from `PAYER_MNE
 - **Daily** (`npx tsx scripts/board-sweep.ts`): from the Bazaar feed, MainNet USDC resources priced at or under the per-call cap, seen in the last 7 days, **one per host (the cheapest)**. vet402's own hosts and any resource paying one of vet402's addresses are excluded. Results go to `board/YYYY-MM-DD.json` and `board/latest.json`.
 - **Census** (`--census`): every listed resource under the per-call cap, once each. Results go to `board/census-YYYY-MM-DD.json` and `board/census-latest.json`. Concurrency is 1–4 (default 3). The order takes turns between hosts (round-robin), a host never has two purchases in flight, and purchases from one host are at least 2 s apart (`--host-gap-ms` can only raise it). `/board?view=census&date=YYYY-MM-DD` shows one day's census.
 - The census is rerun on 9/28 with the corrected verdict code; the 9/27 results are kept (`board/census-2026-09-27.json`). The workflow has a one-off schedule for it: 2026-09-28 00:30 UTC (`30 0 28 9 *`, mode census).
+- `GET /board/payments.csv` (free): vet402's own purchases, one line per settled payment (`time_utc`, `payer`, `seller_pay_to`, `host`, `amount_usdc`, `tx`, `class`), from the daily file and every census file, deduplicated by tx. To leave vet402's own purchases out when judging a leaderboard, use this CSV.
 - `GET /seller/<host>` (free) shows the latest result for each resource of one seller, with the vet402 → seller tx, and the Markdown for a README badge, `GET /badge/<host>.svg` (cached 1 hour). The paid re-check box (`/v1/audit?seller=`) is shown only with `SELLER_PAGE_AUDIT=on` (price `AUDIT_PRICE_USDC`, default 0.50).
 - `--dry-run` lists the targets and the cost estimate, and pays nothing. It needs no key. `--targets <url,...>` runs an explicit list (TestNet test sellers).
 - Each purchase goes through the normal `probe()`: per-call cap before any signature, and a daily cap read from the chain (indexer) with a local backup ledger. The board has its own daily cap, `BOARD_MAX_PER_DAY_USDC` (default = `PROBE_MAX_PER_DAY_USDC`), and its own ledger file. The `/v1/check` caps are unchanged. When the cap is hit, the remaining rows are written as `SKIPPED daily_cap` and the run stops.
