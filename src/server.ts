@@ -20,7 +20,7 @@ import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { x402HTTPResourceServer, x402ResourceServer } from "@x402/hono";
 import { ExactAvmScheme } from "@x402/avm/exact/server";
-import { HTTPFacilitatorClient } from "@x402/core/server";
+import { HTTPFacilitatorClient, type HTTPRequestContext } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402-avm/extensions";
 import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "./config.js";
@@ -80,7 +80,21 @@ export interface AppDeps {
   catalog?: Catalog;
 }
 
+/**
+ * Vercel function settings (read statically by Vercel from this entry file; a
+ * `functions` entry in vercel.json is not matched for zero-config Hono).
+ * An audit buys up to 10 resources in one request.
+ */
+export const config = { maxDuration: 300 };
+export const VERCEL_MAX_DURATION_SEC = config.maxDuration;
+/** An audit must end at least this long before the function limit (settlement, Bazaar read, response). */
+export const AUDIT_DEADLINE_MARGIN_SEC = 60;
+
 export function createApp(cfg: AppConfig, deps: AppDeps) {
+  const deadlineMax = (VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC) * 1000;
+  if (cfg.auditDeadlineMs > deadlineMax) {
+    throw new Error(`AUDIT_DEADLINE_MS must be at most ${deadlineMax} (${AUDIT_DEADLINE_MARGIN_SEC} s under the ${VERCEL_MAX_DURATION_SEC} s function limit), got ${cfg.auditDeadlineMs}`);
+  }
   const facilitator = deps.facilitator ?? new HTTPFacilitatorClient({ url: cfg.facilitatorUrl });
   const resourceServer = new x402ResourceServer(facilitator).register(cfg.network as `${string}:${string}`, new ExactAvmScheme());
   resourceServer.registerExtension(bazaarResourceServerExtension as unknown as ResourceServerExtension);
@@ -108,6 +122,21 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       },
     },
   });
+
+  const auditPriceAtomic = usdcToAtomic(cfg.auditPriceUsdc).toString();
+  /** `paying` of the cached plan for the request's seller; 0 when there is no plan (then no payment can match). */
+  const auditPayingFor = async (ctx: HTTPRequestContext): Promise<number> => {
+    const seller = ctx.adapter.getQueryParam?.("seller");
+    const s = Array.isArray(seller) ? seller[0] : seller;
+    const ref = parseSeller(s);
+    if (!ref || !s) return 0;
+    try {
+      const out = await cachedPlan(sellerKey(ref), s);
+      return out.ok ? out.plan.paying : 0;
+    } catch {
+      return 0;
+    }
+  };
 
   const auditDiscovery = declareDiscoveryExtension({
     input: { seller: "seller.example" },
@@ -152,7 +181,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       accepts: [
         {
           scheme: "exact",
-          price: `$${cfg.auditPriceUsdc}`,
+          // AssetAmount with the planned count: see "The number of resources to be paid" below.
+          price: async (ctx: HTTPRequestContext) => ({ amount: auditPriceAtomic, asset: cfg.usdcAsaId, extra: { auditPaying: await auditPayingFor(ctx) } }),
           network: cfg.network as `${string}:${string}`,
           payTo: deps.payTo,
           extra: { asset: cfg.usdcAsaId, tag: cfg.challengeTag },
@@ -173,15 +203,19 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
    * Audit plans. The unpaid request is cheap: plans (and negative answers) are cached
    * for PLAN_TTL_MS per seller, the Bazaar feed for 5 minutes, and today's daily-cap
    * headroom is read only for a paid request. The paid request takes the same cached
-   * plan when it is still there (else it plans again) and trims it to the headroom;
-   * it never pays for more resources than the last plan shown for that seller
-   * (`shownPaying`): the excess is SKIPPED plan_changed.
+   * plan when it is still there (else it plans again) and trims it to the headroom.
+   *
+   * The number of resources to be paid is part of the price itself: the 402's
+   * accepts[0].extra.auditPaying = N (see `auditPrice`). x402 only accepts a payment
+   * whose `accepted` equals the requirements computed for the paid request, so a
+   * payment signed for N is refused (402, not settled) on any instance whose plan now
+   * says something else, and an accepted payment carries its N: vet402 then pays for
+   * at most min(N, the paid-time plan trimmed to the daily headroom). Nothing of this
+   * depends on memory shared between instances.
    */
   const PLAN_TTL_MS = 5 * 60_000;
-  const SHOWN_TTL_MS = 30 * 60_000;
   const MAX_CACHED_SELLERS = 500;
   const planCache = new Map<string, { at: number; outcome: Promise<PlanOutcome> }>();
-  const shownPaying = new Map<string, { at: number; paying: number }>();
   const remember = <V extends { at: number }>(m: Map<string, V>, k: string, v: V) => {
     m.delete(k);
     m.set(k, v);
@@ -269,7 +303,6 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
           return { stop: bazaarDown(c, seller, e) };
         }
         if (!out.ok) return { stop: c.json(out.body, out.status) };
-        remember(shownPaying, sellerKey(ref), { at: Date.now(), paying: out.plan.paying });
         return { info: { audit: out.plan } };
       },
       preflight: async (c) => {
@@ -290,9 +323,10 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
           if (!out.ok) return c.json(out.body, out.status);
           const plan = applyHeadroom(out.plan, h.remainingAtomic);
           if (plan.paying === 0) return c.json({ error: "daily_cap_reached", seller, detail: "today's remaining cap cannot pay for any planned resource. Nothing was charged.", audit: plan }, 503);
-          const shown = shownPaying.get(sellerKey(ref));
-          const shownCount = shown && Date.now() - shown.at < SHOWN_TTL_MS ? shown.paying : out.plan.paying;
-          auditRuns.set(c.req.raw, { plan, maxPayments: Math.min(shownCount, plan.paying) });
+          // N the buyer accepted (verified: it equals the requirements computed for this request).
+          const shown = Number(c.get("paidRequirements")?.extra?.auditPaying);
+          if (!Number.isSafeInteger(shown) || shown < 1) return c.json({ error: "plan_changed", seller, detail: "the payment does not name how many resources it pays for. Nothing was charged." }, 409);
+          auditRuns.set(c.req.raw, { plan, maxPayments: Math.min(shown, plan.paying) });
           return null;
         }
         const target = c.req.query("url");

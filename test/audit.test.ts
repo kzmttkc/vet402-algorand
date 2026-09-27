@@ -16,7 +16,7 @@ import type { ProbeDeps } from "../src/probe.js";
 import type { BazaarItem, Catalog } from "../src/bazaar.js";
 import { parseSeller, planAudit, runAudit } from "../src/audit.js";
 import { readFileSync } from "node:fs";
-import { VERCEL_MAX_DURATION_SEC } from "../src/config.js";
+import { config as vercelFunctionConfig, VERCEL_MAX_DURATION_SEC } from "../src/server.js";
 
 const NET = ALGORAND_TESTNET_CAIP2;
 const ASA = "10458941";
@@ -170,8 +170,9 @@ test("seller with no listed resource: 404 before any 402, and a paid request is 
   const { app: empty } = appWith({ trace, items: [] });
   const payload = { x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } };
   const paid = await empty.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify(payload)).toString("base64") } });
-  assert.equal(paid.status, 404);
-  assert.deepEqual(trace, ["verify"], "verified only: the customer is not charged");
+  // The price names the planned count (auditPaying); with no plan now, no payment can match: 402, not verified, not settled.
+  assert.equal(paid.status, 402);
+  assert.deepEqual(trace, [], "the customer is not charged");
 });
 
 test("invalid or own seller is refused for free", async () => {
@@ -396,27 +397,55 @@ test("a target planned as 'read the price only' is never paid, even if its live 
   assert.equal(b.summary.sellerPayments, 2);
 });
 
-test("never more payments than the paying shown before payment (plan re-made after the cache expired)", async (t) => {
-  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-09-27T00:00:00Z") });
+test("the planned count is part of the price: accepts[0].extra.auditPaying equals the plan's paying", async () => {
+  const { app } = appWith({});
+  const res = await app.request(`/v1/audit?seller=${SELLER}`);
+  const pr = JSON.parse(Buffer.from(res.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+  assert.equal(pr.accepts[0].extra.auditPaying, 2);
+  assert.equal(((await res.json()) as { audit: { paying: number } }).audit.paying, 2);
+  assert.equal(pr.accepts[0].amount, "500000");
+});
+
+test("another instance whose plan now pays for more refuses the payment (402, not settled); never pays beyond the shown count", async () => {
+  const trace: Trace = [];
+  const depsA = sellerDeps(trace);
+  // Instance A shows /honest only (paying 1).
+  const { app: a } = appWith({ trace, deps: depsA, items: SELLER_ITEMS.slice(0, 1) });
+  const first = await a.request(`/v1/audit?seller=${SELLER}`);
+  const pr = JSON.parse(Buffer.from(first.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
+  assert.equal(pr.accepts[0].extra.auditPaying, 1);
+  const sig = Buffer.from(JSON.stringify({ x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } })).toString("base64");
+  // Instance B (no shared memory) sees the seller's new listings: its plan pays for 3.
+  const depsB = sellerDeps(trace);
+  const { app: b } = appWith({ trace, deps: depsB, items: [item("/honest0", "10000", { settleCount: 99 }), ...SELLER_ITEMS] });
+  const paid = await b.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": sig } });
+  assert.equal(paid.status, 402);
+  assert.ok(!trace.includes("settle"), "the customer is not charged");
+  assert.deepEqual([...depsA.paid, ...depsB.paid], []);
+  // Instance C with the same plan as shown accepts it and pays exactly as shown.
+  const depsC = sellerDeps(trace);
+  const { app: c } = appWith({ trace, deps: depsC, items: SELLER_ITEMS.slice(0, 1) });
+  const ok = await c.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": sig } });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(depsC.paid, ["/honest"]);
+});
+
+test("an accepted payment pays for at most min(shown N, paid-time plan after the daily headroom)", async () => {
+  const cfg = baseCfg({ PROBE_MAX_PER_CALL_USDC: "0.04", PROBE_MAX_PER_DAY_USDC: "0.04" });
+  const ledger = new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic);
   const trace: Trace = [];
   const deps = sellerDeps(trace);
-  let items = SELLER_ITEMS.slice(0, 1); // shown: /honest only
-  const cat: Catalog = { items: async () => items };
-  const { app } = appWith({ trace, deps, catalog: cat });
+  const items = [...SELLER_ITEMS.slice(0, 2), item("/honest2", "10000", { settleCount: 0 })];
+  const { app } = appWith({ cfg, trace, deps, items, guard: new LocalSpendGuard(ledger) });
   const first = await app.request(`/v1/audit?seller=${SELLER}`);
-  assert.equal(((await first.json()) as { audit: { paying: number } }).audit.paying, 1);
   const pr = JSON.parse(Buffer.from(first.headers.get("PAYMENT-REQUIRED")!, "base64").toString());
-  // The seller lists two more resources and the 5-minute plan cache expires before the buyer pays.
-  items = [item("/honest0", "10000", { settleCount: 99 }), ...SELLER_ITEMS];
-  t.mock.timers.tick(6 * 60_000);
-  const payload = { x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } };
-  const paid = await app.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify(payload)).toString("base64") } });
+  assert.equal(pr.accepts[0].extra.auditPaying, 3);
+  ledger.reserve(20_000n); // the day fills up between the quote and the payment: room for 2
+  const sig = Buffer.from(JSON.stringify({ x402Version: 2, resource: pr.resource, accepted: pr.accepts[0], payload: { paymentGroup: [], paymentIndex: 0 } })).toString("base64");
+  const paid = await app.request(`/v1/audit?seller=${SELLER}`, { headers: { "PAYMENT-SIGNATURE": sig } });
   const b = (await paid.json()) as AuditBody;
-  assert.equal(deps.paid.length, 1, "paid once, as shown");
-  assert.deepEqual(
-    b.results.filter((r) => r.verdict === "SKIPPED").map((r) => r.reason),
-    ["plan_changed", "plan_changed"],
-  );
+  assert.deepEqual(deps.paid, ["/honest", "/liar"]);
+  assert.equal(b.plan.notChecked.counts.over_daily_headroom, 1);
 });
 
 test("payTo lock: a live 402 asking a different payTo is refused before signing (payto_changed)", async () => {
@@ -495,12 +524,18 @@ test("runAudit: maxPayments stops paying at the shown count; the deadline leaves
   assert.deepEqual(slow.results.map((x) => x.reason), ["delivered", "time_limit", "time_limit"]);
 });
 
-test("config: AUDIT_DEADLINE_MS must be a number at least 60 s under vercel.json maxDuration", () => {
-  const vj = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  assert.equal(vj.functions["src/server.ts"].maxDuration, VERCEL_MAX_DURATION_SEC);
+test("function limit comes from server.ts `export const config`; AUDIT_DEADLINE_MS must be a number at least 60 s under it", () => {
+  assert.deepEqual(vercelFunctionConfig, { maxDuration: 300 });
+  assert.equal(VERCEL_MAX_DURATION_SEC, vercelFunctionConfig.maxDuration);
+  // vercel.json carries no `functions` entry: it is not matched for zero-config Hono.
+  assert.equal(JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8")).functions, undefined);
+  // Vercel reads the value statically: it must stay a literal in the source.
+  assert.match(readFileSync(new URL("../src/server.ts", import.meta.url), "utf8"), /^export const config = \{ maxDuration: 300 \};$/m);
   assert.equal(loadConfig({}).auditDeadlineMs, (VERCEL_MAX_DURATION_SEC - 60) * 1000);
-  for (const bad of ["abc", "", "1e5", "-1", "0", String((VERCEL_MAX_DURATION_SEC - 59) * 1000)]) {
+  for (const bad of ["abc", "", "1e5", "-1", "0", "12.5"]) {
     assert.throws(() => loadConfig({ AUDIT_DEADLINE_MS: bad }), /AUDIT_DEADLINE_MS/, bad);
   }
+  const tooLong = baseCfg({ AUDIT_DEADLINE_MS: String((VERCEL_MAX_DURATION_SEC - 59) * 1000) });
+  assert.throws(() => appWith({ cfg: tooLong }), /AUDIT_DEADLINE_MS must be at most 240000/);
   assert.equal(loadConfig({ AUDIT_DEADLINE_MS: "120000" }).auditDeadlineMs, 120_000);
 });

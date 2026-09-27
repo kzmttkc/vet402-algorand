@@ -22,10 +22,6 @@ export const MAINNET_DEFAULT_PAY_TO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVU
 
 export type NetworkName = "testnet" | "mainnet";
 
-/** Function time limit set in vercel.json (`functions["src/server.ts"].maxDuration`). Keep the two equal. */
-export const VERCEL_MAX_DURATION_SEC = 300;
-/** An audit must end at least this long before the function limit (settlement, Bazaar read, response). */
-export const AUDIT_DEADLINE_MARGIN_SEC = 60;
 
 /** USDC has 6 decimals on Algorand. 1 USDC = 1_000_000 atomic units. */
 export const USDC_DECIMALS = 6;
@@ -112,11 +108,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (auditMaxSpend >= usdcToAtomic(auditPrice)) throw new Error("AUDIT_MAX_SPEND_USDC must be below AUDIT_PRICE_USDC");
   const auditMaxTargets = Number(env.AUDIT_MAX_TARGETS ?? 10);
   if (!Number.isInteger(auditMaxTargets) || auditMaxTargets < 1 || auditMaxTargets > 50) throw new Error("AUDIT_MAX_TARGETS must be an integer 1..50");
-  const auditDeadlineRaw = env.AUDIT_DEADLINE_MS ?? String((VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC) * 1000);
+  // The upper bound (60 s under the function limit) is checked in createApp: the limit lives in server.ts (`export const config`).
+  const auditDeadlineRaw = env.AUDIT_DEADLINE_MS ?? "240000";
   const auditDeadlineMs = /^\d+$/.test(auditDeadlineRaw.trim()) ? Number(auditDeadlineRaw.trim()) : NaN;
-  const auditDeadlineMax = (VERCEL_MAX_DURATION_SEC - AUDIT_DEADLINE_MARGIN_SEC) * 1000;
-  if (!Number.isSafeInteger(auditDeadlineMs) || auditDeadlineMs <= 0 || auditDeadlineMs > auditDeadlineMax) {
-    throw new Error(`AUDIT_DEADLINE_MS must be a whole number of ms, 1..${auditDeadlineMax} (${AUDIT_DEADLINE_MARGIN_SEC} s under the ${VERCEL_MAX_DURATION_SEC} s function limit), got ${auditDeadlineRaw}`);
+  if (!Number.isSafeInteger(auditDeadlineMs) || auditDeadlineMs <= 0) {
+    throw new Error(`AUDIT_DEADLINE_MS must be a whole number of ms, got ${auditDeadlineRaw}`);
   }
   return {
     networkName,

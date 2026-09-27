@@ -26,7 +26,13 @@ export interface CustomerPayment {
   payTo: string;
 }
 
-export type SettleFirstEnv = { Variables: { customerPayment: CustomerPayment } };
+export type SettleFirstEnv = {
+  Variables: {
+    customerPayment: CustomerPayment;
+    /** The verified payment's requirements (equal to what the buyer accepted), set before preflight. */
+    paidRequirements: { amount: string; payTo: string; extra?: Record<string, unknown> };
+  };
+};
 
 export interface SettleFirstOptions {
   /** Runs after verify and before settle. Return a Response to stop (customer is NOT charged). */
@@ -93,6 +99,7 @@ export function settleFirstMiddleware(httpServer: x402HTTPResourceServer, opts: 
     }
 
     // payment-verified: free checks before we take the customer's money.
+    c.set("paidRequirements", result.paymentRequirements);
     if (opts.preflight) {
       const stop = await opts.preflight(c);
       if (stop) return stop;
