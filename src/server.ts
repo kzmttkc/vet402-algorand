@@ -27,6 +27,7 @@ import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
 import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
 import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
+import { FAVICON_ICO_B64, landingHtml } from "./landing.js";
 
 type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 
@@ -101,15 +102,24 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
 
   const app = new Hono<SettleFirstEnv>();
 
-  app.get("/", (c) =>
-    c.json({
-      service: "vet402 (Algorand)",
-      network: cfg.network,
-      endpoints: { "GET /v1/check?url=<x402 URL>": `${cfg.checkPriceUsdc} USDC` },
-      order: "customer payment settles first; the seller is paid only after that",
-      caps: { perCallUsdc: atomicToUsdc(cfg.maxPerCallAtomic), perDayUsdc: atomicToUsdc(cfg.maxPerDayAtomic) },
-    }),
+  app.get("/favicon.ico", (c) =>
+    c.body(Buffer.from(FAVICON_ICO_B64, "base64"), 200, { "content-type": "image/x-icon", "cache-control": "public, max-age=86400" }),
   );
+
+  app.get("/", (c) => {
+    const caps = { perCallUsdc: atomicToUsdc(cfg.maxPerCallAtomic), perDayUsdc: atomicToUsdc(cfg.maxPerDayAtomic) };
+    const accept = c.req.header("accept") ?? "";
+    if (accept.includes("application/json") && !accept.includes("text/html")) {
+      return c.json({
+        service: "vet402 (Algorand)",
+        network: cfg.network,
+        endpoints: { "GET /v1/check?url=<x402 URL>": `${cfg.checkPriceUsdc} USDC` },
+        order: "customer payment settles first; the seller is paid only after that",
+        caps,
+      });
+    }
+    return c.html(landingHtml({ network: cfg.network, priceUsdc: String(cfg.checkPriceUsdc), ...caps }));
+  });
 
   app.use(
     settleFirstMiddleware(httpServer, {
