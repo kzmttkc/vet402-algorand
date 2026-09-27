@@ -3,7 +3,7 @@
 # Secrets live in the GitHub environment "mainnet-board" (restrict it to the main branch):
 #   BOARD_PAYER_MNEMONIC  required on MainNet: a wallet used only by the board
 #                         (the script refuses the /v1/check payer wallet)
-#   PAYER_MNEMONIC        so the script can recognise the /v1/check payer address and exclude it
+#   (the /v1/check payer key is NOT given to this workflow; its public address is a constant in the script)
 name: board
 
 on:
@@ -51,7 +51,6 @@ jobs:
         run: echo "BOARD_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
       - name: Sweep
         env:
-          PAYER_MNEMONIC: ${{ secrets.PAYER_MNEMONIC }}
           BOARD_PAYER_MNEMONIC: ${{ secrets.BOARD_PAYER_MNEMONIC }}
         run: |
           args=()
