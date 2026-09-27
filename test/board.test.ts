@@ -428,10 +428,15 @@ test("loader: local file first; else GitHub raw for allow-listed names only; 5 s
   t += 31_000;
   await load(miss);
   assert.equal(urls.length, 3);
-  // Names outside the allow-list are never fetched.
-  assert.equal(await load(join(dir, "census-2026-09-27.json")), null);
+  // A dated census file (real date) is allowed; names outside the allow-list are never fetched.
+  status = 200;
+  assert.equal((await load(join(dir, "census-2026-09-27.json")))?.rows.length, 1);
+  assert.equal(urls.at(-1), `${BOARD_REMOTE_BASE}census-2026-09-27.json`);
+  for (const bad of ["census-2026-13-40.json", "census-2026-9-27.json", "census-2026-09-27.json.bak", "2026-09-27.json", "census-../x.json"]) {
+    assert.equal(await load(join(dir, "none", bad)), null, bad);
+  }
   assert.equal(await load(join(dir, "..", "secret.json")), null);
-  assert.equal(urls.length, 3);
+  assert.equal(urls.length, 4);
   // A failure with nothing cached is null (the page says not run yet).
   const cold = createBoardLoader({ fetchImpl: async () => new Response("", { status: 404 }) });
   assert.equal(await cold(join(dir, "none", "latest.json")), null);

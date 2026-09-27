@@ -8,7 +8,10 @@
  *   npx tsx scripts/board-sweep.ts --census                  # every resource once (board/census-YYYY-MM-DD.json)
  *   npx tsx scripts/board-sweep.ts --targets <url,url,...>   # explicit list (TestNet sellers)
  *
- * Options: --out <dir> --limit <n> --concurrency <1-4> --max-age-days <n> --bazaar <url> --share-payer-wallet
+ * Options: --out <dir> --limit <n> --concurrency <1-4> --host-gap-ms <n, min 2000> --max-age-days <n> --bazaar <url> --share-payer-wallet
+ *
+ * Pacing: census takes turns between hosts (round-robin), never has two purchases in flight to the
+ * same host, and waits at least 2 s between the end of one purchase from a host and the next one.
  *
  * Money rules:
  * - vet402 pays sellers directly. It never pays its own hosts or its own addresses
@@ -233,7 +236,29 @@ export function selectCandidates(items: BazaarItem[], o: SelectOptions): { candi
     if (n > 0) excluded.not_cheapest_on_host = n;
   }
   chosen.sort((a, b) => (a.priceAtomic! < b.priceAtomic! ? -1 : a.priceAtomic! > b.priceAtomic! ? 1 : a.host.localeCompare(b.host) || a.url.localeCompare(b.url)));
+  // Census: take turns between hosts, so no seller gets a burst of purchases (2026-09-27: 280 × 429 from one host).
+  if (!o.perHost) chosen = interleaveByHost(chosen);
   return { candidates: chosen, excluded };
+}
+
+/**
+ * Round-robin by host: one resource from each host in turn, keeping each host's own order
+ * and the hosts in the order they first appear. The same host sits next to itself only in
+ * the tail, once every other host has run out.
+ */
+export function interleaveByHost<T extends { host: string }>(list: T[]): T[] {
+  const queues = new Map<string, T[]>();
+  for (const c of list) {
+    const q = queues.get(c.host);
+    if (q) q.push(c);
+    else queues.set(c.host, [c]);
+  }
+  const out: T[] = [];
+  const qs = [...queues.values()];
+  for (let round = 0; out.length < list.length; round++) {
+    for (const q of qs) if (round < q.length) out.push(q[round]);
+  }
+  return out;
 }
 
 export async function fetchBazaar(base = DEFAULT_BAZAAR, fetchImpl: typeof fetch = fetch): Promise<BazaarItem[]> {
@@ -307,6 +332,14 @@ export interface RunOptions {
   probeOne: (c: Candidate) => Promise<ProbeResult>;
   headroom?: () => Promise<{ ok: true } | { ok: false; reason: string; detail?: string }>;
   concurrency?: number;
+  /**
+   * Minimum wait between the end of one purchase from a host and the start of the next one
+   * from the same host (ms). Default 0. A host never has two purchases in flight at once.
+   */
+  hostGapMs?: number;
+  /** Test hooks: clock (ms) and sleep. */
+  clock?: () => number;
+  sleep?: (ms: number) => Promise<void>;
   /** Keys already attempted today (never bought twice). */
   done?: Set<string>;
   onAttempt?: (key: string) => void;
@@ -320,6 +353,9 @@ export interface RunOptions {
  */
 export async function runSweep(cands: Candidate[], o: RunOptions): Promise<BoardRow[]> {
   const now = o.now ?? (() => new Date());
+  const clock = o.clock ?? Date.now;
+  const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const gap = Math.max(0, o.hostGapMs ?? 0);
   const pending = cands.filter((c) => !o.done?.has(c.key));
   const rows: BoardRow[] = [];
   const emit = (r: BoardRow) => {
@@ -331,16 +367,54 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
     const h = await o.headroom();
     if (!h.ok) stop = { reason: CAP_STOP[h.reason] ?? h.reason, detail: h.detail };
   }
-  let next = 0;
+  const started = new Array<boolean>(pending.length).fill(false);
+  let first = 0; // every index below this has started
+  const busy = new Set<string>();
+  const lastEnd = new Map<string, number>();
+  // Wakes workers waiting for a host to become free.
+  let wake: (() => void) | null = null;
+  let woken = new Promise<void>((r) => (wake = r));
+  const signal = () => {
+    const w = wake;
+    woken = new Promise<void>((r) => (wake = r));
+    w?.();
+  };
+  /** Next candidate whose host is idle and past its gap; else how long to wait (Infinity = until a host frees up). */
+  const pick = (): { i: number } | { waitMs: number } | null => {
+    while (first < pending.length && started[first]) first++;
+    if (first >= pending.length) return null;
+    let waitMs = Infinity;
+    const t = clock();
+    for (let i = first; i < pending.length; i++) {
+      if (started[i]) continue;
+      const h = pending[i].host;
+      if (busy.has(h)) continue;
+      const ready = (lastEnd.get(h) ?? -Infinity) + gap - t;
+      if (ready <= 0) return { i };
+      waitMs = Math.min(waitMs, ready);
+    }
+    return { waitMs };
+  };
   const worker = async () => {
-    while (!stop && next < pending.length) {
-      const c = pending[next++];
+    while (!stop) {
+      const p = pick();
+      if (!p) return;
+      if ("waitMs" in p) {
+        await (Number.isFinite(p.waitMs) ? Promise.race([sleep(p.waitMs), woken]) : woken);
+        continue;
+      }
+      started[p.i] = true;
+      const c = pending[p.i];
+      busy.add(c.host);
       o.onAttempt?.(c.key);
       let r: ProbeResult;
       try {
         r = await o.probeOne(c);
       } catch (e) {
         r = { verdict: "REFUSE", reason: "probe_error", target: c.url, detail: String((e as Error).message ?? e).slice(0, 200) };
+      } finally {
+        busy.delete(c.host);
+        lastEnd.set(c.host, clock());
       }
       const capStop = CAP_STOP[r.reason];
       if (capStop) {
@@ -351,12 +425,13 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
       } else {
         emit(rowFromResult(c, r, now().toISOString()));
       }
+      signal();
     }
   };
   const n = Math.max(1, Math.min(4, o.concurrency ?? 1));
   await Promise.all(Array.from({ length: n }, worker));
   const s = stop as { reason: string; detail?: string } | null;
-  if (s) for (; next < pending.length; next++) emit(skippedRow(pending[next], s.reason, now().toISOString()));
+  if (s) for (let i = 0; i < pending.length; i++) if (!started[i]) emit(skippedRow(pending[i], s.reason, now().toISOString()));
   return rows;
 }
 
@@ -393,6 +468,13 @@ function writeJsonAtomic(file: string, data: unknown): void {
 function argValue(argv: string[], name: string): string | undefined {
   const i = argv.indexOf(name);
   return i >= 0 ? argv[i + 1] : undefined;
+}
+
+/** At least 2 s between purchases from one host; --host-gap-ms can only make it longer. */
+export const MIN_HOST_GAP_MS = 2000;
+export function hostGapMs(argv: string[]): number {
+  const v = Number(argValue(argv, "--host-gap-ms") ?? MIN_HOST_GAP_MS);
+  return Number.isFinite(v) ? Math.max(MIN_HOST_GAP_MS, v) : MIN_HOST_GAP_MS;
 }
 
 function addressOfMnemonic(m: string | undefined): string | undefined {
@@ -510,6 +592,13 @@ async function main(argv: string[]): Promise<void> {
     console.log(
       `candidates ${candidates.length} · hosts ${hosts} · estimate ${atomicToUsdc(estimate)} USDC · board daily cap ${atomicToUsdc(boardPerDay)} USDC · spent today ${spent !== undefined ? atomicToUsdc(spent) : "unknown"} USDC · would buy ${fit}, would skip ${candidates.length - fit} (daily_cap)`,
     );
+    let tail = 0;
+    for (let i = candidates.length - 1; i >= 0 && candidates[i].host === candidates[candidates.length - 1]?.host; i--) tail++;
+    let adjacent = 0;
+    for (let i = 1; i < candidates.length; i++) if (candidates[i].host === candidates[i - 1].host) adjacent++;
+    console.log(
+      `pacing: ${census ? "round-robin by host" : "one per host"} · never two purchases in flight to one host · ≥ ${hostGapMs(argv)} ms between purchases from one host · same host next to itself ${adjacent} times (tail run ${tail > 1 ? `${tail} × ${candidates[candidates.length - 1].host}` : "none"})`,
+    );
     console.log("dry-run: no payment was made and no file was written.");
     return;
   }
@@ -575,6 +664,7 @@ async function main(argv: string[]): Promise<void> {
     probeOne: (c) => probe(c.url, boardCfg, guard, withInput(baseDeps, c)),
     headroom: async () => (h0.ok ? { ok: true } : { ok: false, reason: h0.reason, detail: h0.detail }),
     concurrency: census ? Number(argValue(argv, "--concurrency") ?? 3) : 1,
+    hostGapMs: hostGapMs(argv),
     done,
     onAttempt: (k) => {
       attempts.push(k);

@@ -59,10 +59,23 @@ export function defaultBoardFile(env: NodeJS.ProcessEnv = process.env): string {
   return env.BOARD_FILE ?? join(process.cwd(), "board", "latest.json");
 }
 
-/** The census file sits next to the daily file. */
-export function censusFileFor(dailyFile: string): string {
-  return join(dirname(dailyFile), "census-latest.json");
+/** The census file sits next to the daily file. With a date (YYYY-MM-DD), that day's census. */
+export function censusFileFor(dailyFile: string, date?: string): string {
+  return join(dirname(dailyFile), date ? `census-${date}.json` : "census-latest.json");
 }
+
+/** A real calendar day written YYYY-MM-DD, nothing else. */
+export function isBoardDate(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return Number.isFinite(t) && new Date(t).toISOString().slice(0, 10) === v;
+}
+
+/**
+ * Census days the /board census view offers as tabs (census-YYYY-MM-DD.json). 09-27 is the first census;
+ * 09-28 reruns it with the corrected verdict code (the 09-27 file is kept as it was).
+ */
+export const CENSUS_DATES: readonly string[] = ["2026-09-27", "2026-09-28"];
 
 const TXID = /^[A-Z2-7]{52}$/;
 const VERDICTS: BoardVerdict[] = ["ALLOW", "REFUSE", "SKIPPED"];
@@ -155,6 +168,12 @@ export function readBoard(file: string): BoardFile | null {
  */
 export const BOARD_REMOTE_BASE = "https://raw.githubusercontent.com/kzmttkc/vet402-algorand/main/board/";
 export const BOARD_REMOTE_FILES: readonly string[] = ["latest.json", "census-latest.json"];
+/** Dated census files may also be fetched: census-YYYY-MM-DD.json, a real date, nothing else. */
+export function isRemoteBoardName(name: string): boolean {
+  if (BOARD_REMOTE_FILES.includes(name)) return true;
+  const m = /^census-(\d{4}-\d{2}-\d{2})\.json$/.exec(name);
+  return !!m && isBoardDate(m[1]);
+}
 const REMOTE_MAX_BYTES = 16 * 1024 * 1024;
 
 export interface BoardLoaderOptions {
@@ -168,6 +187,13 @@ export interface BoardLoaderOptions {
 }
 
 export type BoardLoader = (file: string) => Promise<BoardFile | null>;
+
+let shared: BoardLoader | null = null;
+/** One loader (one cache) for /board and /seller in this process. */
+export function sharedBoardLoader(): BoardLoader {
+  shared ??= createBoardLoader({ remote: process.env.BOARD_REMOTE !== "off" });
+  return shared;
+}
 
 /**
  * Local file first; if it is missing, the same file name from GitHub raw.
@@ -201,7 +227,7 @@ export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
     const local = readBoard(file);
     if (local) return local;
     const name = basename(file);
-    if (!remote || !BOARD_REMOTE_FILES.includes(name)) return null;
+    if (!remote || !isRemoteBoardName(name)) return null;
     const hit = cache.get(name);
     if (hit && hit.until > now()) return hit.board;
     const running = inflight.get(name);
@@ -259,7 +285,7 @@ export interface HostSummary {
   cls: DisplayClass;
 }
 
-function hostOf(r: BoardRow): string {
+export function hostOf(r: Pick<BoardRow, "host" | "url">): string {
   if (r.host) return r.host;
   try {
     return new URL(r.url).host;
@@ -387,6 +413,7 @@ function scriptJson(v: unknown): string {
 function rowsJson(board: BoardFile | null): string {
   const rows = (board?.rows ?? []).map((r) => ({
     url: r.url,
+    host: hostOf(r),
     cls: displayClass(r),
     reason: r.reason,
     detail: r.detail ?? "",
@@ -404,7 +431,30 @@ function fmt(n: number): string {
 
 export type BoardView = "daily" | "census";
 
-export function boardHtml(board: BoardFile | null, view: BoardView = "daily"): string {
+export interface BoardHtmlOptions {
+  /** Census day asked for with ?date= (undefined = the latest census). */
+  date?: string;
+  /** Census days offered as tabs. Default CENSUS_DATES plus the shown file's day. */
+  censusDates?: readonly string[];
+}
+
+/** Census day tabs: "latest" plus each known day. */
+function censusDateNav(board: BoardFile | null, o: BoardHtmlOptions): string {
+  const days = [...new Set([...(o.censusDates ?? CENSUS_DATES), ...(isBoardDate(board?.date) ? [board!.date] : [])])].filter(isBoardDate).sort();
+  const link = (href: string, label: string, current: boolean) => `<a href="${esc(href)}"${current ? ' aria-current="page"' : ""}>${esc(label)}</a>`;
+  return (
+    `<nav class="tabs dates" aria-label="census day">` +
+    link("/board?view=census", "latest", !o.date) +
+    days.map((d) => link(`/board?view=census&date=${d}`, d, o.date === d)).join("") +
+    `</nav>`
+  );
+}
+
+export function sellerPath(host: string): string {
+  return `/seller/${encodeURIComponent(host)}`;
+}
+
+export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o: BoardHtmlOptions = {}): string {
   const has = !!board && board.rows.length > 0;
   const rows = board?.rows ?? [];
   const netLabel = board?.networkName === "mainnet" ? "Algorand MainNet" : board?.networkName === "testnet" ? "Algorand TestNet" : esc(board?.networkName ?? "");
@@ -416,10 +466,12 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily"): s
   const { svg, cycleMs } = networkSvg(points, view === "census" ? "data-h" : "data-i");
   const c = countBy(rows, displayClass);
   const what = view === "census" ? "listed resources" : "sellers";
-  const tabs = `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a></nav>`;
+  const tabs =
+    `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a></nav>` +
+    (view === "census" ? censusDateNav(board, o) : "");
   const headline = has
     ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${fmt(rows.length)}</b> ${what} · <b class="delivered">${fmt(c.DELIVERED)} DELIVERED</b> · <b class="mismatch">${fmt(c.MISMATCH)} MISMATCH</b> · <b class="unreach">${fmt(c.UNREACHABLE)} UNREACHABLE</b> · <b class="unclear">${fmt(c.UNCLEAR)} UNCLEAR</b> · paid <b>${esc(board!.totals.paidUsdc)}</b> USDC</p>`
-    : `<p class="kpi">Not run yet. vet402 has not run a sweep, so there is nothing to show.</p>`;
+    : `<p class="kpi">Not run yet${o.date ? ` for ${esc(o.date)}` : ""}. vet402 has not run a sweep${o.date ? " on that day" : ""}, so there is nothing to show.</p>`;
   let sellers = "";
   if (has && view === "census") {
     const hc = countBy(hosts, (h) => h.cls);
@@ -441,7 +493,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily"): s
       const cls = displayClass(r);
       return (
         `<tr id="row-${i}"><td>${esc(r.at.slice(11, 19))}</td>` +
-        `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}</td>` +
+        `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
         `<td class="v ${CSS_CLASS[cls]}">${cls}</td>` +
         `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}</td>` +
@@ -470,6 +522,8 @@ a{color:#93c5fd}
 .tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:0 0 10px;font-size:13px}
 .tabs a{padding:3px 10px;border:1px solid var(--line);border-radius:999px;color:var(--mut);text-decoration:none}
 .tabs a[aria-current]{color:var(--fg);border-color:#60a5fa}
+.tabs.dates{margin-top:-4px;font-size:12px}
+a.sl{font-size:12px;white-space:nowrap}
 .kpi{margin:4px 0 0;color:var(--mut);font-size:14px}
 .kpi b,.sellers b{color:var(--fg);white-space:nowrap}
 .delivered{color:var(--delivered)!important} .mismatch{color:var(--mismatch)!important} .unreach{color:#9ca3af!important} .unclear{color:var(--unclear)!important}
@@ -546,6 +600,12 @@ ${table}
     det.appendChild(document.createElement('br'));
     if(r.link){var a=document.createElement('a');a.href=r.link;a.rel='noopener';a.textContent='tx '+r.tx;det.appendChild(a)}
     else det.appendChild(document.createTextNode('no payment was made'));
+    sellerLink(r.host);
+  }
+  function sellerLink(h){
+    if(!h)return;
+    det.appendChild(document.createElement('br'));
+    var s=document.createElement('a');s.href='/seller/'+encodeURIComponent(h);s.textContent='seller page: '+h;det.appendChild(s);
   }
   function showHost(i,n){
     var h=hosts[i];if(!h)return;
@@ -554,6 +614,7 @@ ${table}
     var c=h.counts;
     line(h.listings+' listed · delivered '+c.DELIVERED+' · mismatch '+c.MISMATCH+' · unreachable '+c.UNREACHABLE+' · unclear '+c.UNCLEAR);
     line(h.paid?'vet402 paid this seller at least once':'no payment was made');
+    sellerLink(h.host);
   }
   document.querySelectorAll('.node').forEach(function(n){
     var hi=n.getAttribute('data-h');
@@ -572,18 +633,23 @@ ${table}
 export function registerBoard<E extends Env>(
   app: Hono<E>,
   file: string = defaultBoardFile(),
-  load: BoardLoader = createBoardLoader({ remote: process.env.BOARD_REMOTE !== "off" }),
+  load: BoardLoader = sharedBoardLoader(),
 ): void {
-  const pick = (v: string | undefined): { view: BoardView; path: string } =>
-    v === "census" ? { view: "census", path: censusFileFor(file) } : { view: "daily", path: file };
+  // ?date= is honoured only for the census view and only as a real YYYY-MM-DD; anything else is the latest file.
+  const pick = (v: string | undefined, d: string | undefined): { view: BoardView; path: string; date?: string } =>
+    v === "census"
+      ? isBoardDate(d)
+        ? { view: "census", path: censusFileFor(file, d), date: d }
+        : { view: "census", path: censusFileFor(file) }
+      : { view: "daily", path: file };
   app.get("/board.json", async (c) => {
-    const { path } = pick(c.req.query("view"));
+    const { path } = pick(c.req.query("view"), c.req.query("date"));
     c.header("cache-control", "public, max-age=300");
     return c.json((await load(path)) ?? { version: 1, rows: [], note: "not run yet" });
   });
   app.get("/board", async (c) => {
-    const { view, path } = pick(c.req.query("view"));
+    const { view, path, date } = pick(c.req.query("view"), c.req.query("date"));
     c.header("cache-control", "public, max-age=300");
-    return c.html(boardHtml(await load(path), view));
+    return c.html(boardHtml(await load(path), view, { date }));
   });
 }

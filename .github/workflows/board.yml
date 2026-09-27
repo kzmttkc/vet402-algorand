@@ -9,6 +9,9 @@ name: board
 on:
   schedule:
     - cron: "0 21 * * *" # 21:00 UTC = 06:00 JST (well before 00:00 UTC, the cap's day boundary)
+    # One-off census rerun with the corrected verdict code: 2026-09-28 00:30 UTC = 09:30 JST.
+    # cron has no year, so the Sweep step runs it only in 2026 (every other year it does nothing).
+    - cron: "30 0 28 9 *"
   workflow_dispatch:
     inputs:
       mode:
@@ -37,9 +40,11 @@ jobs:
     env:
       X402_NETWORK: mainnet
       I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes"
-      MODE: ${{ inputs.mode || 'daily' }}
+      # A scheduled run has no inputs: the 09-28 schedule is the census, the daily schedule is daily.
+      MODE: ${{ inputs.mode || (github.event.schedule == '30 0 28 9 *' && 'census') || 'daily' }}
       DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
-      BOARD_MAX_PER_DAY_USDC: ${{ inputs.mode == 'census' && '60' || '3' }}
+      BOARD_MAX_PER_DAY_USDC: ${{ (inputs.mode == 'census' || github.event.schedule == '30 0 28 9 *') && '60' || '3' }}
+      CENSUS_ONE_OFF: ${{ github.event.schedule == '30 0 28 9 *' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,6 +58,9 @@ jobs:
         env:
           BOARD_PAYER_MNEMONIC: ${{ secrets.BOARD_PAYER_MNEMONIC }}
         run: |
+          if [ "$CENSUS_ONE_OFF" = "true" ] && [ "$(date -u +%Y)" != "2026" ]; then
+            echo "the one-off census schedule is for 2026 only; nothing to do"; exit 0
+          fi
           args=()
           if [ "$MODE" = "census" ]; then args+=(--census); fi
           if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
