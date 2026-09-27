@@ -149,12 +149,10 @@ test("operator self-tests are flagged and excluded from customer totals (exact a
   assert.equal(by.ALICE1.operatorTest, false);
   assert.equal(by.LOOK1.operatorTest, false); // shares the payer's first 4 chars, still not ours
   assert.deepEqual(r.totals.customers, { addresses: 3, payments: 4, usdc: "0.200000" });
-  assert.deepEqual(r.totals.operatorTests, { payments: 2, usdc: "0.100000" });
+  assert.deepEqual(r.totals.operatorTests, { payments: 2, usdc: "0.100000", sellerPayments: 1, sellerUsdc: "0.010000" });
   // Payer's own funding (inner, incoming) is not a seller payment; an outgoing one via an app is, and is shown unmatched.
   // Headline counts only payouts matched to a customer payment; unmatched ones are reported separately.
-  assert.equal(r.totals.sellerPayments.payments, 3);
-  assert.equal(r.totals.sellerPayments.unmatched, 2);
-  assert.equal(Number(r.totals.sellerPayments.usdc) + Number(r.totals.sellerPayments.unmatchedUsdc), 0.035);
+  assert.deepEqual(r.totals.sellerPayments, { payments: 2, usdc: "0.015000", unmatched: 2, unmatchedUsdc: "0.010000" });
 });
 
 test("each seller payment pairs with the most recent earlier unpaired customer payment", async () => {

@@ -75,7 +75,7 @@ export interface ActivityReport {
   generatedAt: string;
   totals: {
     customers: { addresses: number; payments: number; usdc: string };
-    operatorTests: { payments: number; usdc: string };
+    operatorTests: { payments: number; usdc: string; sellerPayments: number; sellerUsdc: string };
     sellerPayments: { payments: number; usdc: string; unmatched: number; unmatchedUsdc: string };
   };
   /** Newest first. */
@@ -269,7 +269,9 @@ export class ActivityLedger {
 
     const real = customers.filter((c) => !own.has(c.sender));
     const ops = customers.filter((c) => own.has(c.sender));
-    const matched = payouts.filter((p) => !unmatched.includes(p));
+    // Headline: seller payments made for paying customers only; operator tests are reported with operatorTests.
+    const matched = real.flatMap((c) => (pairedWith.has(c.tx) ? [pairedWith.get(c.tx)!] : []));
+    const opPayouts = ops.flatMap((c) => (pairedWith.has(c.tx) ? [pairedWith.get(c.tx)!] : []));
     const sum = (ts: Transfer[]) => atomicToUsdc(ts.reduce((s, t) => s + t.amount, 0n));
     return {
       network: this.o.networkName,
@@ -281,15 +283,16 @@ export class ActivityLedger {
       generatedAt: new Date(this.now()).toISOString(),
       totals: {
         customers: { addresses: new Set(real.map((c) => c.sender)).size, payments: real.length, usdc: sum(real) },
-        operatorTests: { payments: ops.length, usdc: sum(ops) },
+        operatorTests: { payments: ops.length, usdc: sum(ops), sellerPayments: opPayouts.length, sellerUsdc: sum(opPayouts) },
         sellerPayments: { payments: matched.length, usdc: sum(matched), unmatched: unmatched.length, unmatchedUsdc: sum(unmatched) },
       },
       rows,
-      unmatchedPayouts: unmatched.reverse().map((p) => ({ time: iso(p.time), round: p.round, seller: p.receiver, tx: p.tx, amountUsdc: atomicToUsdc(p.amount) })),
+      unmatchedPayouts: [...unmatched].reverse().map((p) => ({ time: iso(p.time), round: p.round, seller: p.receiver, tx: p.tx, amountUsdc: atomicToUsdc(p.amount) })),
       notCounted: notCounted.sort((a, b) => b.round - a.round),
       method: [
         `Customer payment = USDC (ASA ${asaId}) sent to payTo inside an atomic group that also holds a transaction from the x402 facilitator fee payer (${this.feePayers.join(", ")}). Other deposits to payTo are not counted.`,
         "Operator test = the customer is vet402's own payTo or payer wallet. Not counted as a customer.",
+        "A deposit smaller than the current check price is not counted as a customer payment (listed as below_price).",
         `Seller payment = USDC sent by the payer wallet to any address that is not vet402's own. It is matched to the most recent earlier customer payment (within ${this.windowSec} s) that has no seller payment yet; otherwise it is listed as unmatched.`,
         "A customer payment with no seller payment means vet402 refused before paying the seller (for example price over cap or payment failure at the seller).",
       ],
