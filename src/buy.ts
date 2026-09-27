@@ -256,15 +256,24 @@ export async function neverPaidVet402(o: { indexerUrl: string; asaId: string; pa
   return false;
 }
 
-/** Sender of the paying transaction in an x402 AVM PAYMENT-SIGNATURE header, or null. */
-export function paymentSender(header: string | undefined): string | null {
+/**
+ * Sender of the payment to `payTo` in an x402 AVM PAYMENT-SIGNATURE header, or null.
+ * Not only the transaction at paymentIndex: the group must hold exactly one asset transfer to `payTo`,
+ * at paymentIndex, so no other transaction in the group can be the one that actually pays.
+ */
+export function paymentSender(header: string | undefined, payTo?: string): string | null {
   if (!header) return null;
   try {
     const p = decodePaymentSignatureHeader(header) as { payload?: { paymentGroup?: string[]; paymentIndex?: number } };
     const g = p.payload?.paymentGroup;
     const i = p.payload?.paymentIndex ?? 0;
     if (!Array.isArray(g) || typeof g[i] !== "string") return null;
-    return decodeSignedTransaction(g[i]).txn.sender.toString();
+    const txns = g.map((b) => decodeSignedTransaction(b).txn);
+    if (payTo !== undefined) {
+      const toPayTo = txns.map((t, k) => (t.assetTransfer?.receiver?.toString() === payTo ? k : -1)).filter((k) => k >= 0);
+      if (toPayTo.length !== 1 || toPayTo[0] !== i) return null;
+    }
+    return txns[i].sender.toString();
   } catch {
     return null;
   }
@@ -461,15 +470,19 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
         const extra = c.get("paidRequirements")?.extra ?? {};
         let firstFor: string | undefined;
         if (extra.firstPurchase === true) {
-          const sender = paymentSender(c.req.header("payment-signature") || c.req.header("x-payment"));
-          if (typeof extra.payer !== "string" || sender !== extra.payer) {
+          const sender = paymentSender(c.req.header("payment-signature") || c.req.header("x-payment"), deps.payTo);
+          if (typeof extra.payer !== "string" || sender !== extra.payer || paidOnce.has(extra.payer)) {
             return c.json({ verdict: "REFUSE", reason: "first_purchase_payer_mismatch", target: q.target, charged: false, detail: "the first-purchase price is for the address in ?payer=; this payment comes from another account. Nothing was charged." }, 409);
           }
           firstFor = extra.payer;
+          paidOnce.add(firstFor); // held from here: a second at-cost payment from this address on this instance is refused (released if not settled)
         }
         // Hold the seller's price on the daily cap now, so a concurrent purchase cannot take it after this customer paid.
         const r = await deps.guard.reserve(q.sellerAtomic);
-        if (!r.ok) return c.json({ verdict: "REFUSE", reason: r.reason, target: q.target, charged: false, detail: r.detail }, r.reason === "price_over_cap" ? 422 : 503);
+        if (!r.ok) {
+          if (firstFor) paidOnce.delete(firstFor);
+          return c.json({ verdict: "REFUSE", reason: r.reason, target: q.target, charged: false, detail: r.detail }, r.reason === "price_over_cap" ? 422 : 503);
+        }
         approved.set(c.req.raw, { q, reservationId: r.reservationId, firstFor });
         return null;
       },
@@ -478,6 +491,7 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
         if (!a) return;
         approved.delete(c.req.raw);
         deps.guard.release(a.reservationId);
+        if (a.firstFor) paidOnce.delete(a.firstFor);
       },
     }),
   );
@@ -488,8 +502,7 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
     if (!customerPayment) return c.json({ error: "payment_required" }, 402);
     const a = approved.get(c.req.raw);
     if (!a) return c.json({ verdict: "REFUSE", reason: "probe_error", detail: "purchase not approved in preflight", customerPayment, refund: "none" }, 500, paidHeaders("REFUSE", "probe_error", customerPayment));
-    const { q, reservationId, firstFor } = a;
-    if (firstFor) paidOnce.add(firstFor); // settled: the next purchase from this address is at the normal price
+    const { q, reservationId } = a; // an at-cost payer stays in paidOnce: the next purchase from it is at the normal price
     let out: Awaited<ReturnType<typeof probeWithBody>>;
     try {
       out = await probeWithBody(q.target, cfg, deps.guard, deps.probeDeps, {

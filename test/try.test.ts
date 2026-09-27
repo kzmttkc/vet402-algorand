@@ -397,7 +397,7 @@ async function account() {
   const seed = randomBytes(32);
   const address = addressFromSeed(seed);
   const signer = toClientAvmSigner(Buffer.concat([seed, Buffer.from(publicKeyFromSeed(seed))]).toString("base64"));
-  const signedTransfer = async (amount: bigint) => {
+  const signedTransfer = async (amount: bigint, receiver = BUY_PAYTO) => {
     const txn = new Transaction({
       type: TransactionType.AssetTransfer,
       sender: Address.fromString(address),
@@ -405,13 +405,16 @@ async function account() {
       lastValid: 1000n,
       genesisId: "testnet-v1.0",
       genesisHash: Buffer.from("SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=", "base64"),
-      assetTransfer: { assetId: BigInt(ASA), amount, receiver: Address.fromString(ALGO_ADDR) },
+      assetTransfer: { assetId: BigInt(ASA), amount, receiver: Address.fromString(receiver) },
     });
     const [signed] = await signer.signTransactions([encodeTransactionRaw(txn)]);
     return Buffer.from(signed!).toString("base64");
   };
   return { address, signedTransfer };
 }
+
+/** A real address as payTo here: the preflight reads the transfer's receiver from the signed transaction. */
+const BUY_PAYTO = "RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q";
 
 function buyApp(paid: Set<string>) {
   const cfg = baseCfg();
@@ -420,7 +423,7 @@ function buyApp(paid: Set<string>) {
   const deps = sellerDeps(seen);
   deps.paidFetch = trialPaidFetch(seen); // the seller is paid by vet402's payer here
   const app = createApp(cfg, {
-    payTo: VET402,
+    payTo: BUY_PAYTO,
     probeDeps: deps,
     guard: new LocalSpendGuard(new SpendLedger(cfg.maxPerCallAtomic, cfg.maxPerDayAtomic)),
     facilitator: facilitator(trace),
@@ -482,7 +485,13 @@ test("first purchase at cost cannot be forged: a lowered amount, a dropped payer
   const r4 = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, pr.resource, [await b.signedTransfer(10_000n)]) } });
   assert.equal(r4.status, 409);
   assert.equal(((await r4.json()) as { reason: string; charged: boolean }).reason, "first_purchase_payer_mismatch");
-  // 5) ?payer= that is not an address: the normal price.
+  // 5) A's transfer at paymentIndex, plus B's transfer to payTo elsewhere in the group: refused before settling.
+  const r5 = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, pr.resource, [await a.signedTransfer(10_000n), await b.signedTransfer(10_000n)]) } });
+  assert.equal(r5.status, 409);
+  // 6) A's transfer to someone else than payTo: no payment to vet402 in the group, refused.
+  const r6 = await app.request(buyUrl(a.address), { headers: { "PAYMENT-SIGNATURE": sigHeader(acc, pr.resource, [await a.signedTransfer(10_000n, ALGO_ADDR)]) } });
+  assert.equal(r6.status, 409);
+  // 7) ?payer= that is not an address: the normal price.
   assert.equal(decode402(await app.request(buyUrl("NOTANADDRESS"))).accepts[0].amount, "15000");
   assert.ok(!trace.includes("settle"), "nothing may settle");
   assert.equal(seen.trialPaid.length, 0);
