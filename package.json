@@ -1,0 +1,38 @@
+{
+  "name": "vet402-algorand",
+  "version": "1.0.0",
+  "description": "vet402 on Algorand: pay a downstream x402 endpoint, check delivery against its declaration, return ALLOW/REFUSE with evidence",
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "keys:gen": "tsx scripts/gen-keys.ts",
+    "setup:testnet": "tsx scripts/setup-testnet.ts",
+    "balances": "tsx scripts/balances.ts",
+    "server": "tsx src/server.ts",
+    "sellers": "tsx src/sellers.ts",
+    "demo": "tsx src/client-demo.ts",
+    "probe:once": "tsx scripts/probe-once.ts"
+  },
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@algorandfoundation/algokit-utils": "^10.0.0-alpha.46",
+    "@hono/node-server": "^2.1.1",
+    "@x402-avm/extensions": "2.6.1",
+    "@x402/avm": "2.11.0",
+    "@x402/core": "2.11.0",
+    "@x402/fetch": "2.11.0",
+    "@x402/hono": "2.11.0",
+    "dotenv": "^18.0.4",
+    "hono": "^4.13.9"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}
