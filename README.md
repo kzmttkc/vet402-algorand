@@ -8,6 +8,8 @@ You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint it
 - the tx id of **your payment to vet402** and the tx id of **vet402's payment to the seller**, and
 - a short summary of what was delivered.
 
+**Live on Algorand MainNet:** `GET https://vet402-algorand.vercel.app/v1/check?url=<x402 endpoint>` (0.05 USDC, ASA 31566704, facilitator GoPlausible). Listed in the Bazaar discovery feed.
+
 ## Orchestrator flow (settle-first)
 
 ```
@@ -111,6 +113,21 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `src/client-demo.ts` / `src/sellers.ts` | customer role, TestNet test sellers |
 | `scripts/` | key generation (TestNet, MainNet payer), balances, TestNet setup, single probe |
 | `test/` | offline unit tests (`node:test`) |
+
+## MainNet run record
+
+### 2026-09-27 12:1x JST: first MainNet checks (operator smoke test)
+
+The paying client here is vet402's own payer wallet, so these two calls are a deployment check by the operator, not customer usage.
+
+| target | verdict | payment 1 (client → vet402) | payment 2 (vet402 → seller) |
+|---|---|---|---|
+| blocksigner.org/commission/pulse (0.01 USDC) | ALLOW delivered | UTFFAINOX54Y4BI6K5ANNVWQRXGYM56P7NETSMCD4QYCGO5TJVOA (round 65431727, 0.05 USDC) | 4GMCTRIGQYL3Z5DRHKIBFOUKHNG5NNAYR7ZNYFU5ICCUCAC7F3TA (round 65431730, 0.01 USDC) |
+| agent402.tools/api/time (0.001 USDC) | REFUSE payment_failed (the seller's facilitator answered `subcent_quota_exceeded`) | QU6RPL2CKPD4SLDARRKM637PFPHHGCWQUWCW7WCJXHTKLBCXRL2A (round 65431721, 0.05 USDC) | not paid |
+
+Rounds were read from `mainnet-idx.algonode.cloud`. The customer's payment confirms before the seller payment.
+
+MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ6PDBNPIY33Q`, vet402 payer `OZ3KMLALTO67BZLYLCZOT7IJBGN7JTO5A3MJHI2267EKQDASFKS52KU6VY`.
 
 ## TestNet run record
 
