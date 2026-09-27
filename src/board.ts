@@ -656,19 +656,92 @@ function csvCell(v: unknown): string {
   return /[",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function paymentsCsv(files: (BoardFile | null)[]): string {
+/** One board file, read for vet402's own purchases. */
+export interface PurchaseSource {
+  kind: "daily" | "census";
+  board: BoardFile | null;
+}
+export interface PaidPurchase {
+  row: BoardRow & { tx: string };
+  kind: PurchaseSource["kind"];
+  board: BoardFile;
+}
+
+/** Settled vet402 payments (paid and a valid tx id), each tx once (first file wins), oldest first. */
+export function paidPurchases(sources: PurchaseSource[]): PaidPurchase[] {
   const seen = new Set<string>();
-  const out: { at: string; cells: unknown[] }[] = [];
-  for (const f of files) {
-    if (!f) continue;
-    for (const r of f.rows) {
+  const out: PaidPurchase[] = [];
+  for (const { kind, board } of sources) {
+    if (!board) continue;
+    for (const r of board.rows) {
       if (!r.paid || !r.tx || !TXID.test(r.tx) || seen.has(r.tx)) continue;
       seen.add(r.tx);
-      out.push({ at: r.at, cells: [r.at, f.payer ?? "", r.payTo ?? "", hostOf(r), r.priceUsdc ?? "", r.tx, displayClass(r)] });
+      out.push({ row: r as BoardRow & { tx: string }, kind, board });
     }
   }
-  out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
-  return [PAYMENTS_CSV_HEADER.join(","), ...out.map((o) => o.cells.map(csvCell).join(","))].join("\r\n") + "\r\n";
+  return out.sort((a, b) => (a.row.at < b.row.at ? -1 : a.row.at > b.row.at ? 1 : 0));
+}
+
+/** The files the purchase exports read: the daily file, the latest census, and every census day on the fixed list. */
+export async function loadPurchaseSources(file: string, load: BoardLoader): Promise<PurchaseSource[]> {
+  const names: [PurchaseSource["kind"], string][] = [
+    ["daily", file],
+    ["census", censusFileFor(file)],
+    ...CENSUS_DATES.filter(isBoardDate).map((d): [PurchaseSource["kind"], string] => ["census", censusFileFor(file, d)]),
+  ];
+  return Promise.all(names.map(async ([kind, n]) => ({ kind, board: await load(n) })));
+}
+
+export function paymentsCsv(files: (BoardFile | null)[]): string {
+  const rows = paidPurchases(files.map((board) => ({ kind: "census" as const, board }))).map(({ row: r, board: f }) =>
+    [r.at, f.payer ?? "", r.payTo ?? "", hostOf(r), r.priceUsdc ?? "", r.tx, displayClass(r)].map(csvCell).join(","),
+  );
+  return [PAYMENTS_CSV_HEADER.join(","), ...rows].join("\r\n") + "\r\n";
+}
+
+/** Receipt page for a settled tx at the facilitator (the string only; vet402 never fetches it). */
+export const RECEIPT_BASE = "https://facilitator.goplausible.xyz/api/receipt/";
+
+export interface VerdictFeedItem {
+  /** vet402 -> seller settlement tx. */
+  purchaseTx: string;
+  network: string;
+  payer: string;
+  payTo: string;
+  host: string;
+  resource: string;
+  amountUsdc: string;
+  class: DisplayClass;
+  reason: string;
+  checkedAt: string;
+  receiptUrl: string;
+  /** The board file that recorded it, named by its day: census-YYYY-MM-DD.json or YYYY-MM-DD.json (daily). */
+  sourceFile: string;
+}
+
+function sourceFileName(kind: PurchaseSource["kind"], b: BoardFile): string {
+  const day = isBoardDate(b.date) ? b.date : null;
+  if (kind === "census") return day ? `census-${day}.json` : "census-latest.json";
+  return day ? `${day}.json` : "latest.json";
+}
+
+/** GET /board/verdicts.json: one item per settled vet402 purchase (unpaid rows are left out). */
+export function verdictsFeed(sources: PurchaseSource[]): { version: 1; count: number; verdicts: VerdictFeedItem[] } {
+  const verdicts = paidPurchases(sources).map(({ row: r, kind, board: b }) => ({
+    purchaseTx: r.tx,
+    network: b.network,
+    payer: b.payer ?? "",
+    payTo: r.payTo ?? "",
+    host: hostOf(r),
+    resource: r.url,
+    amountUsdc: r.priceUsdc ?? "",
+    class: displayClass(r),
+    reason: r.reason,
+    checkedAt: r.at,
+    receiptUrl: RECEIPT_BASE + encodeURIComponent(r.tx),
+    sourceFile: sourceFileName(kind, b),
+  }));
+  return { version: 1, count: verdicts.length, verdicts };
 }
 
 /** Register the free board routes. Call before the payment middleware. */
@@ -686,14 +759,18 @@ export function registerBoard<E extends Env>(
       : { view: "daily", path: file };
   // Every census day on the fixed list, the latest census and the daily file: vet402's own payments, deduplicated by tx.
   app.get("/board/payments.csv", async (c) => {
-    const names = [file, censusFileFor(file), ...CENSUS_DATES.filter(isBoardDate).map((d) => censusFileFor(file, d))];
-    const files = await Promise.all(names.map((n) => load(n)));
+    const files = (await loadPurchaseSources(file, load)).map((s) => s.board);
     return c.body(paymentsCsv(files), 200, {
       "content-type": "text/csv; charset=utf-8",
       "content-disposition": 'inline; filename="vet402-payments.csv"',
       "cache-control": "public, max-age=300",
       "x-content-type-options": "nosniff",
     });
+  });
+  // Same files as payments.csv, as JSON: one item per settled purchase.
+  app.get("/board/verdicts.json", async (c) => {
+    c.header("cache-control", "public, max-age=300");
+    return c.json(verdictsFeed(await loadPurchaseSources(file, load)));
   });
   app.get("/board.json", async (c) => {
     const { path } = pick(c.req.query("view"), c.req.query("date"));
