@@ -305,7 +305,9 @@ With `BASE_ACCEPT=on` and `BASE_PAY_TO=<0x address>`, every paid route (`/v1/che
 
 Published board files are corrected only toward what the chain shows, and every correction is listed here. The previous values stay in git history.
 
-- **2026-09-28**: `board/census-2026-09-27.json`, `board/census-2026-09-28.json` (and `census-latest.json`): 3 rows in each file (host `gateway-x402.vercel.app`, 0.005–0.01 USDC each) were recorded as not paid. The facilitator had answered "transaction already in ledger", which vet402 read as a refused payment. The indexer shows vet402's USDC transfer in the same group, settled about 3 s before the row's time. The rows now read `paid: true` with vet402's transfer tx, and `totals.paidUsdc` rose by 0.025 USDC in each file (09-27: 16.052200 → 16.077200). They are shown as "Paid on chain, answered 402, delivered nothing". Found by comparing the files with the chain; checked with `npx tsx scripts/board-sweep.ts --repair-settled <file>` (reads the indexer, pays nothing). Commit 3db3e6e.
+- **2026-09-28**: `board/census-2026-09-27.json`, `board/census-2026-09-28.json` (and `census-latest.json`): 3 rows in each file (host `gateway-x402.vercel.app`, 0.005–0.01 USDC each) were recorded as not paid. The facilitator had answered "transaction already in ledger", which vet402 read as a refused payment. The indexer shows vet402's USDC transfer in the same group, settled about 3 s before the row's time. The rows now read `paid: true` with vet402's transfer tx, and `totals.paidUsdc` rose by 0.025 USDC in each file (09-27: 16.052200 → 16.077200). They are shown as "Paid on chain, answered 402, delivered nothing". Found by comparing the files with the chain; checked with `npx tsx scripts/board-sweep.ts --repair-settled <file>` (reads the indexer, pays nothing). Commit 127addc.
+
+- **2026-09-29**: the commit history was rewritten once to change the author name on every commit. File contents are unchanged apart from the author name in `LICENSE`, `README.md` and the `package.json` files; commit ids changed (for example, the correction above was 3db3e6e before).
 
 ## MainNet run record
 
