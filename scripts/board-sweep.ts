@@ -8,10 +8,22 @@
  *   npx tsx scripts/board-sweep.ts --census                  # every resource once (board/census-YYYY-MM-DD.json)
  *   npx tsx scripts/board-sweep.ts --targets <url,url,...>   # explicit list (TestNet sellers)
  *
- * Options: --out <dir> --limit <n> --concurrency <1-4> --host-gap-ms <n, min 2000> --max-age-days <n> --bazaar <url> --share-payer-wallet
+ *   npx tsx scripts/board-sweep.ts --repair-settled <file> [--write]   # re-check "already in ledger" rows on chain (no payment)
  *
- * Pacing: census takes turns between hosts (round-robin), never has two purchases in flight to the
- * same host, and waits at least 2 s between the end of one purchase from a host and the next one.
+ * Options: --out <dir> --limit <n> --concurrency <1-4> --host-gap-ms <n, min 60000> --max-age-days <n> --bazaar <url> --share-payer-wallet
+ *
+ * Fairness to sellers (2026-09-28: 581 purchases from agent402.tools in about 30 minutes, answered
+ * with 429 and the facilitator's subcent quota):
+ * - At most MAX_PER_HOST_PER_RUN (5) purchases per seller host per run, counting what was already
+ *   attempted today (resume). The rest of that host's resources are written as SKIPPED
+ *   not_measured_this_run: vet402 did not contact them, and they are not counted against the seller.
+ *   Which 5 rotates by UTC day, so later runs reach the rest.
+ * - Census takes turns between hosts (round-robin), never has two purchases in flight to the same
+ *   host, and waits at least 60 s between the end of one purchase from a host and the next one.
+ *
+ * Recording: when a seller's facilitator answers "transaction already in ledger", the payment did
+ * settle. The run reads the group of that tx from the indexer and, when vet402's own transfer to the
+ * seller is there, records the row as paid with that tx (src/settled.ts). Read-only; the caps are not touched.
  *
  * Money rules:
  * - vet402 pays sellers directly. It never pays its own hosts or its own addresses
@@ -39,6 +51,7 @@ import { makePaidFetch, probe, type ProbeDeps, type ProbeResult } from "../src/p
 import { selectAccept } from "../src/declaration.js";
 import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
 import { notSent, type BoardFile, type BoardRow } from "../src/board.js";
+import { alreadyInLedgerTx, findSettledPaymentWithRetry, type SettledPayment } from "../src/settled.js";
 import { DEFAULT_BAZAAR, OWN_HOSTS, buildPaidRequest, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
 
 // Moved to src/bazaar.ts (shared with the paid seller audit); re-exported for existing callers.
@@ -215,6 +228,74 @@ export function interleaveByHost<T extends { host: string }>(list: T[]): T[] {
   return out;
 }
 
+/** At most this many purchases per seller host per run (today's earlier attempts count). */
+export const MAX_PER_HOST_PER_RUN = 5;
+
+/** SKIPPED reason for a resource left out by the per-host limit: not contacted, not counted against the seller. */
+export const NOT_MEASURED = "not_measured_this_run";
+
+/**
+ * Rotate each host's own resources by `shift(host, n)` places, keeping the slots each host holds in
+ * the list (so a round-robin order stays round-robin). With a per-day shift, the first few of a host
+ * are different resources on different days.
+ */
+export function rotateWithinHost<T extends { host: string }>(list: T[], shift: (host: string, n: number) => number): T[] {
+  const slots = new Map<string, number[]>();
+  list.forEach((c, i) => {
+    const s = slots.get(c.host);
+    if (s) s.push(i);
+    else slots.set(c.host, [i]);
+  });
+  const out = list.slice();
+  for (const idx of slots.values()) {
+    const n = idx.length;
+    const k = ((Math.trunc(shift(list[idx[0]].host, n)) % n) + n) % n;
+    if (k === 0) continue;
+    idx.forEach((slot, j) => (out[slot] = list[idx[(j + k) % n]]));
+  }
+  return out;
+}
+
+/** Per-day shift: UTC day d starts each host at resource d·max (mod n). */
+export function dayShift(date: string, max: number): (host: string, n: number) => number {
+  const day = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
+  return (_h, n) => (Number.isFinite(day) ? (day * max) % n : 0);
+}
+
+/** The first (max − already attempted) resources of each host, in list order; the rest are not bought this run. */
+export function limitPerHost<T extends { host: string }>(list: T[], max: number, prior?: Map<string, number>): { take: T[]; rest: T[] } {
+  const used = new Map<string, number>(prior ?? []);
+  const take: T[] = [];
+  const rest: T[] = [];
+  for (const c of list) {
+    const n = used.get(c.host) ?? 0;
+    if (n < max) {
+      take.push(c);
+      used.set(c.host, n + 1);
+    } else rest.push(c);
+  }
+  return { take, rest };
+}
+
+/** Host of a "METHOD url" key ("" if the url does not parse). */
+export function hostOfKey(key: string): string {
+  try {
+    return new URL(key.slice(key.indexOf(" ") + 1)).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/** Purchases already attempted today per host (from the resume keys). */
+export function attemptsPerHost(keys: Iterable<string>): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const k of keys) {
+    const h = hostOfKey(k);
+    if (h) m.set(h, (m.get(h) ?? 0) + 1);
+  }
+  return m;
+}
+
 const CAP_STOP: Record<string, string> = { daily_cap_reached: "daily_cap", cap_check_unavailable: "cap_check_unavailable" };
 
 function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host" | "method" | "input" | "filled" | "payTo" | "priceUsdc" | "declared"> {
@@ -234,6 +315,34 @@ function baseRow(c: Candidate, at: string): Pick<BoardRow, "at" | "url" | "host"
 export function skippedRow(c: Candidate, reason: string, at: string, detail?: string): BoardRow {
   return { ...baseRow(c, at), verdict: "SKIPPED", reason, detail, paid: false };
 }
+
+/** A resource left out by the per-host limit: not contacted this run, not paid, not counted against the seller. */
+export function notMeasuredRow(c: Candidate, at: string, max: number): BoardRow {
+  return skippedRow(
+    c,
+    NOT_MEASURED,
+    at,
+    `not measured this run: vet402 buys at most ${max} resources per seller host per run, at least 60 s apart; not contacted, not paid, not counted against the seller`,
+  );
+}
+
+/**
+ * A payment_failed row whose payment was found settled on chain ("transaction already in ledger"):
+ * paid, with vet402's own transfer as tx and the amount that moved. verdict/reason stay as recorded.
+ */
+export function markSettled(row: BoardRow, s: SettledPayment, errorTx: string): BoardRow {
+  return {
+    ...row,
+    paid: true,
+    tx: s.tx,
+    priceUsdc: atomicToUsdc(s.amountAtomic),
+    // Fits the 300-character detail the board keeps: the error names errorTx, this names vet402's transfer.
+    detail: clip(`${row.detail ?? ""} · settled on chain: vet402's transfer ${s.tx} (same group, round ${s.round}); no delivery`, 300),
+  };
+}
+
+/** Looks up vet402's settled transfer for a payment_failed "already in ledger" answer (null = not found). */
+export type SettledCheck = (c: Candidate, errorTx: string, window: { from: number; to: number }) => Promise<SettledPayment | null>;
 
 /** A candidate whose example has a placeholder vet402 would not make up: recorded, never sent, never paid (UNCLEAR). */
 export function unfillableRow(c: Candidate, at: string): BoardRow {
@@ -276,6 +385,17 @@ export interface RunOptions {
    * from the same host (ms). Default 0. A host never has two purchases in flight at once.
    */
   hostGapMs?: number;
+  /**
+   * At most this many purchases per host in this run (default: no limit). The rest are written as
+   * SKIPPED not_measured_this_run and never handed to probeOne.
+   */
+  maxPerHost?: number;
+  /** Purchases already attempted today per host; they count toward maxPerHost. */
+  priorPerHost?: Map<string, number>;
+  /** "transaction already in ledger": look the payment up on chain and record it as paid when it settled. */
+  checkSettled?: SettledCheck;
+  /** Tx ids already recorded today (a settled lookup never records one of these a second time). */
+  knownTx?: Set<string>;
   /** Test hooks: clock (ms) and sleep. */
   clock?: () => number;
   sleep?: (ms: number) => Promise<void>;
@@ -303,7 +423,12 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
   };
   // Nothing to send and nothing to pay: record these first, and never hand them to probeOne.
   for (const c of todo) if (c.unfillable?.length) emit(unfillableRow(c, now().toISOString()));
-  const pending = todo.filter((c) => !c.unfillable?.length);
+  const sendable = todo.filter((c) => !c.unfillable?.length);
+  // Fairness: at most maxPerHost purchases per host (today's earlier attempts count); the rest are not contacted.
+  const max = o.maxPerHost ?? Infinity;
+  const { take: pending, rest } = Number.isFinite(max) ? limitPerHost(sendable, max, o.priorPerHost) : { take: sendable, rest: [] as Candidate[] };
+  for (const c of rest) emit(notMeasuredRow(c, now().toISOString(), max));
+  const knownTx = new Set(o.knownTx ?? []);
   let stop: { reason: string; detail?: string } | null = null;
   if (o.headroom) {
     const h = await o.headroom();
@@ -349,6 +474,7 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
       const c = pending[p.i];
       busy.add(c.host);
       o.onAttempt?.(c.key);
+      const attemptStart = clock();
       let r: ProbeResult;
       try {
         r = await o.probeOne(c);
@@ -365,7 +491,27 @@ export async function runSweep(cands: Candidate[], o: RunOptions): Promise<Board
         if (r.price) row.priceUsdc = r.price.usdc;
         emit(row);
       } else {
-        emit(rowFromResult(c, r, now().toISOString()));
+        let row = rowFromResult(c, r, now().toISOString());
+        if (row.tx) knownTx.add(row.tx);
+        const errorTx = r.reason === "payment_failed" && !row.paid ? alreadyInLedgerTx(r.detail) : undefined;
+        if (errorTx && o.checkSettled) {
+          // From a minute before this purchase started to a minute after its answer (unix seconds).
+          const window = { from: Math.floor(attemptStart / 1000) - 60, to: Math.ceil(clock() / 1000) + 60 };
+          try {
+            // Match against what vet402 approved on the live 402 (payTo and price), not the Bazaar listing.
+            const approved: Candidate = r.price ? { ...c, payTo: r.price.payTo, priceAtomic: BigInt(r.price.amountAtomic) } : c;
+            const s = await o.checkSettled(approved, errorTx, window);
+            if (s && !knownTx.has(s.tx)) {
+              row = markSettled(row, s, errorTx);
+              knownTx.add(s.tx);
+            } else {
+              row = { ...row, detail: clip(`${row.detail ?? ""} · ${s ? "its transfer is already recorded on another row" : "not found settled on chain"}`, 300) };
+            }
+          } catch (e) {
+            row = { ...row, detail: clip(`${row.detail ?? ""} · on-chain check failed: ${String((e as Error).message ?? e)}`, 300) };
+          }
+        }
+        emit(row);
       }
       signal();
     }
@@ -401,6 +547,46 @@ export function resumeState(prev: { rows?: BoardRow[]; attempts?: string[] } | n
   return { keep, done, interrupted };
 }
 
+/**
+ * Re-check a written board file: every payment_failed "already in ledger" row not yet paid is looked up
+ * on chain (window: 15 min before the row's time to 1 min after) and marked paid when vet402's transfer
+ * is found. Totals are recomputed. Returns the rows it changed.
+ */
+export async function repairSettled(
+  board: { rows: BoardRow[]; totals?: BoardFile["totals"] },
+  check: SettledCheck,
+): Promise<{ changed: BoardRow[]; notFound: string[] }> {
+  const known = new Set(board.rows.filter((r) => r.paid && r.tx).map((r) => r.tx!));
+  const changed: BoardRow[] = [];
+  const notFound: string[] = [];
+  for (let i = 0; i < board.rows.length; i++) {
+    const r = board.rows[i];
+    const errorTx = r.reason === "payment_failed" && !r.paid ? alreadyInLedgerTx(r.detail) : undefined;
+    const at = Date.parse(r.at);
+    if (!errorTx || !r.payTo || !r.priceUsdc || !Number.isFinite(at)) continue;
+    const c: Candidate = { key: `${r.method} ${r.url}`, url: r.url, host: r.host, method: r.method as "GET" | "POST", input: r.input ?? "", payTo: r.payTo, priceAtomic: usdcToAtomic(r.priceUsdc) };
+    const s = await check(c, errorTx, { from: Math.floor(at / 1000) - 900, to: Math.ceil(at / 1000) + 60 });
+    if (!s || known.has(s.tx)) {
+      notFound.push(errorTx);
+      continue;
+    }
+    known.add(s.tx);
+    board.rows[i] = markSettled(r, s, errorTx);
+    changed.push(board.rows[i]);
+  }
+  // Only the paid total moves (verdicts and reasons are unchanged); the rest of the file stays as written.
+  if (changed.length && board.totals) board.totals = { ...board.totals, paidUsdc: totalsOf(board.rows).paidUsdc };
+  return { changed, notFound };
+}
+
+/** The indexer lookup used by a run and by --repair-settled. */
+export function indexerSettledCheck(cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">, payer: string): SettledCheck {
+  return (c, errorTx, window) =>
+    c.payTo && c.priceAtomic !== undefined
+      ? findSettledPaymentWithRetry({ indexerUrl: cfg.indexerUrl, txid: errorTx, payer, payTo: c.payTo, asaId: cfg.usdcAsaId, maxAmountAtomic: c.priceAtomic, window })
+      : Promise.resolve(null);
+}
+
 function writeJsonAtomic(file: string, data: unknown): void {
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
@@ -413,8 +599,8 @@ function argValue(argv: string[], name: string): string | undefined {
   return i >= 0 ? argv[i + 1] : undefined;
 }
 
-/** At least 2 s between purchases from one host; --host-gap-ms can only make it longer. */
-export const MIN_HOST_GAP_MS = 2000;
+/** At least 60 s between purchases from one host; --host-gap-ms can only make it longer. */
+export const MIN_HOST_GAP_MS = 60_000;
 export function hostGapMs(argv: string[]): number {
   const v = Number(argValue(argv, "--host-gap-ms") ?? MIN_HOST_GAP_MS);
   return Number.isFinite(v) ? Math.max(MIN_HOST_GAP_MS, v) : MIN_HOST_GAP_MS;
@@ -425,7 +611,26 @@ function addressOfMnemonic(m: string | undefined): string | undefined {
   return s ? addressFromSeed(seedFromMnemonic(s)) : undefined;
 }
 
+/** --repair-settled <file> [--write]: re-check "already in ledger" rows of a written file on chain. No key, no payment. */
+async function repairMain(argv: string[], file: string): Promise<void> {
+  const cfg: AppConfig = loadConfig({ ...process.env, I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" });
+  const board = JSON.parse(readFileSync(file, "utf8")) as BoardFile;
+  if (!board.payer) throw new Error(`${file} has no payer`);
+  if (board.network !== cfg.network) throw new Error(`${file} is ${board.network}; this run reads ${cfg.network} (set X402_NETWORK)`);
+  const before = board.totals?.paidUsdc;
+  const { changed, notFound } = await repairSettled(board, indexerSettledCheck(cfg, board.payer));
+  for (const r of changed) console.log(`paid    ${r.priceUsdc}  ${r.host}  tx ${r.tx}`);
+  for (const t of notFound) console.log(`not found settled: ${t}`);
+  console.log(`${file}: ${changed.length} row(s) found settled on chain · paid ${before} → ${board.totals?.paidUsdc} USDC`);
+  if (changed.length && argv.includes("--write")) {
+    writeJsonAtomic(file, board);
+    console.log(`written: ${file}`);
+  } else if (changed.length) console.log("not written (add --write)");
+}
+
 async function main(argv: string[]): Promise<void> {
+  const repair = argValue(argv, "--repair-settled");
+  if (repair) return repairMain(argv, repair);
   const dryRun = argv.includes("--dry-run");
   const census = argv.includes("--census");
   const env = process.env;
@@ -491,12 +696,13 @@ async function main(argv: string[]): Promise<void> {
     candidates = r.candidates;
     selection = { source: `${bazaar} (${items.length} items)`, candidates: candidates.length, excluded: r.excluded };
   }
-  const limit = argValue(argv, "--limit");
-  if (limit) candidates = candidates.slice(0, Number(limit));
-
   // The day is fixed at start: file names, the indexer's "sent today" window and the ledger's
   // day all use it, even if the run crosses 00:00 UTC.
   const date = now.toISOString().slice(0, 10);
+  // Census: each day starts each host at a different resource, so the per-host limit reaches the rest on later days.
+  if (census) candidates = rotateWithinHost(candidates, dayShift(date, MAX_PER_HOST_PER_RUN));
+  const limit = argValue(argv, "--limit");
+  if (limit) candidates = candidates.slice(0, Number(limit));
   const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
   const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
   const latest = join(outDir, census ? "census-latest.json" : "latest.json");
@@ -507,7 +713,7 @@ async function main(argv: string[]): Promise<void> {
   const otherFile = join(outDir, census ? `${date}.json` : `census-${date}.json`);
   const ledgerFile = join(outDir, `spend-${cfg.networkName}.json`);
 
-  const estimate = candidates.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
+  const listedEstimate = candidates.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
   const hosts = new Set(candidates.map((c) => c.host)).size;
   console.log(`mode ${census ? "census" : targets ? "targets" : "daily"} · ${cfg.networkName} ${cfg.network}`);
   console.log(`source ${selection.source}`);
@@ -519,9 +725,14 @@ async function main(argv: string[]): Promise<void> {
   console.log(`own addresses excluded: ${ownAddresses.join(", ")} · own hosts excluded: ${ownHosts.join(", ")}`);
 
   if (dryRun) {
-    const show = census ? candidates.slice(0, 20) : candidates;
+    // The same plan runSweep makes (no resume files are read in a dry run): unfillable rows are not sent, then ≤ 5 per host.
+    const { take: plan, rest: notMeasured } = limitPerHost(
+      candidates.filter((c) => !c.unfillable?.length),
+      MAX_PER_HOST_PER_RUN,
+    );
+    const show = census ? plan.slice(0, 20) : plan;
     for (const c of show) console.log(`  ${c.priceAtomic !== undefined ? atomicToUsdc(c.priceAtomic) : "?"}  ${c.method.padEnd(4)} ${c.url.slice(0, 110)}  ${c.lastSeen?.slice(0, 10) ?? ""}`);
-    if (show.length < candidates.length) console.log(`  … ${candidates.length - show.length} more`);
+    if (show.length < plan.length) console.log(`  … ${plan.length - show.length} more`);
     let spent: bigint | undefined;
     try {
       spent = readSpent ? await readSpent() : undefined;
@@ -530,20 +741,33 @@ async function main(argv: string[]): Promise<void> {
     }
     let fit = 0;
     let acc = spent ?? 0n;
-    for (const c of candidates) {
+    for (const c of plan) {
       if (acc + (c.priceAtomic ?? 0n) > boardPerDay) break;
       acc += c.priceAtomic ?? 0n;
       fit++;
     }
+    const perHost = (xs: Candidate[]) => {
+      const m = new Map<string, number>();
+      for (const c of xs) m.set(c.host, (m.get(c.host) ?? 0) + 1);
+      const top = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
+      return top ? `${top[1]} (${top[0]})` : "0";
+    };
+    const planEstimate = plan.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
     console.log(
-      `candidates ${candidates.length} · hosts ${hosts} · estimate ${atomicToUsdc(estimate)} USDC · board daily cap ${atomicToUsdc(boardPerDay)} USDC · spent today ${spent !== undefined ? atomicToUsdc(spent) : "unknown"} USDC · would buy ${fit}, would skip ${candidates.length - fit} (daily_cap)`,
+      `listed ${candidates.length} · hosts ${hosts} · most per host ${perHost(candidates)} · listed total ${atomicToUsdc(listedEstimate)} USDC`,
+    );
+    console.log(
+      `this run: buy ${plan.length} (≤ ${MAX_PER_HOST_PER_RUN} per host; most per host ${perHost(plan)}) · estimate ${atomicToUsdc(planEstimate)} USDC · not measured this run ${notMeasured.length} (SKIPPED ${NOT_MEASURED}, not paid)`,
+    );
+    console.log(
+      `board daily cap ${atomicToUsdc(boardPerDay)} USDC · spent today ${spent !== undefined ? atomicToUsdc(spent) : "unknown"} USDC · would buy ${fit}, would skip ${plan.length - fit} (daily_cap)`,
     );
     let tail = 0;
-    for (let i = candidates.length - 1; i >= 0 && candidates[i].host === candidates[candidates.length - 1]?.host; i--) tail++;
+    for (let i = plan.length - 1; i >= 0 && plan[i].host === plan[plan.length - 1]?.host; i--) tail++;
     let adjacent = 0;
-    for (let i = 1; i < candidates.length; i++) if (candidates[i].host === candidates[i - 1].host) adjacent++;
+    for (let i = 1; i < plan.length; i++) if (plan[i].host === plan[i - 1].host) adjacent++;
     console.log(
-      `pacing: ${census ? "round-robin by host" : "one per host"} · never two purchases in flight to one host · ≥ ${hostGapMs(argv)} ms between purchases from one host · same host next to itself ${adjacent} times (tail run ${tail > 1 ? `${tail} × ${candidates[candidates.length - 1].host}` : "none"})`,
+      `pacing: ${census ? "round-robin by host" : "one per host"} · never two purchases in flight to one host · ≥ ${hostGapMs(argv)} ms between purchases from one host · same host next to itself ${adjacent} times (tail run ${tail > 1 ? `${tail} × ${plan[plan.length - 1].host}` : "none"})`,
     );
     console.log("dry-run: no payment was made and no file was written.");
     return;
@@ -604,13 +828,30 @@ async function main(argv: string[]): Promise<void> {
     ownAddresses,
   };
   const h0 = await guard.headroom();
-  console.log(`buying ${candidates.filter((c) => !done.has(c.key)).length} (already done today: ${done.size}) · estimate ${atomicToUsdc(estimate)} USDC · headroom ${h0.ok ? atomicToUsdc(h0.remainingAtomic) : h0.reason}`);
+  // Today's earlier attempts (this file and the other mode's) count toward the per-host limit.
+  const priorPerHost = attemptsPerHost(done);
+  const plan = limitPerHost(
+    candidates.filter((c) => !done.has(c.key) && !c.unfillable?.length),
+    MAX_PER_HOST_PER_RUN,
+    priorPerHost,
+  );
+  const estimate = plan.take.reduce((s, c) => s + (c.priceAtomic ?? 0n), 0n);
+  console.log(
+    `buying ${plan.take.length} (≤ ${MAX_PER_HOST_PER_RUN} per host; not measured this run ${plan.rest.length}; already done today: ${done.size}) · estimate ${atomicToUsdc(estimate)} USDC · headroom ${h0.ok ? atomicToUsdc(h0.remainingAtomic) : h0.reason}`,
+  );
+  // Tx ids already recorded today: an "already in ledger" lookup never records one of them again.
+  const knownTx = new Set<string>();
+  for (const f of [file, otherFile]) for (const r of readJson(f)?.rows ?? []) if (r.paid && r.tx) knownTx.add(r.tx);
 
   await runSweep(candidates, {
     probeOne: (c) => probe(c.requestUrl ?? c.url, boardCfg, guard, withInput(baseDeps, c)),
     headroom: async () => (h0.ok ? { ok: true } : { ok: false, reason: h0.reason, detail: h0.detail }),
     concurrency: census ? Number(argValue(argv, "--concurrency") ?? 3) : 1,
     hostGapMs: hostGapMs(argv),
+    maxPerHost: MAX_PER_HOST_PER_RUN,
+    priorPerHost,
+    checkSettled: indexerSettledCheck(cfg, boardPayerAddress!),
+    knownTx,
     done,
     onAttempt: (k) => {
       attempts.push(k);

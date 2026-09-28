@@ -32,7 +32,10 @@ export interface BoardRow {
   /** Reason word from verdict.ts, or daily_cap / cap_check_unavailable for skipped rows. */
   reason: string;
   detail?: string;
-  /** true only when the seller's settlement receipt said success. */
+  /**
+   * true when the seller's settlement receipt said success, or when the payment was found settled on
+   * chain after the facilitator answered "transaction already in ledger" (src/settled.ts; detail says so).
+   */
   paid: boolean;
   /** vet402 -> seller transaction id. */
   tx?: string;
@@ -282,6 +285,8 @@ export function createBoardLoader(o: BoardLoaderOptions = {}): BoardLoader {
  *
  * DELIVERED   ALLOW.
  * MISMATCH    vet402 paid (settlement receipt said success) and the delivery did not match what it compared against.
+ *             A payment found settled on chain after a payment_failed answer is not a MISMATCH: nothing was
+ *             delivered to compare, so it stays UNCLEAR (it still counts as paid in totals and payments.csv).
  * UNREACHABLE the URL did not answer with a 402 (404, 410, 405, 401, 200, 5xx…) or its host does not resolve.
  * UNCLEAR     vet402 or the payment path could not reach a result: rate limits, facilitator quota, payment
  *             not settled for any reason, timeouts, fetch errors, vet402's own price cap or daily cap,
@@ -301,7 +306,7 @@ const UNCLEAR_LOOK_STATUS = new Set([400, 403, 408, 429]);
 export function displayClass(r: Pick<BoardRow, "verdict" | "reason" | "detail" | "paid">): DisplayClass {
   if (r.verdict === "ALLOW") return "DELIVERED";
   if (r.verdict !== "REFUSE") return "UNCLEAR";
-  if (r.paid) return "MISMATCH";
+  if (r.paid && r.reason !== "payment_failed") return "MISMATCH";
   if (r.reason === "not_x402") {
     const m = /^expected 402, got (\d{3})\b/.exec(r.detail ?? "");
     if (!m) return "UNCLEAR";
@@ -670,7 +675,7 @@ ${table}
 
 /**
  * vet402's own purchases, one line per payment (GET /board/payments.csv, free).
- * A row counts only when the seller's settlement receipt said success and it carries a valid tx id;
+ * A row counts only when it is paid (settlement receipt success, or found settled on chain) and carries a valid tx id;
  * the same tx found in several files is listed once. Oldest first.
  * Columns: time_utc, payer (vet402's wallet), seller_pay_to, host, amount_usdc, tx, class.
  */

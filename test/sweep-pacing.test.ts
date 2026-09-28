@@ -165,10 +165,10 @@ test("runSweep with pacing: the cap stop still stops everything; the rest are SK
   assert.equal(rows.filter((r) => r.verdict === "SKIPPED").length, cs.length - 2);
 });
 
-test("--host-gap-ms: at least 2 s; a larger value is kept; junk falls back to 2 s", () => {
-  assert.equal(MIN_HOST_GAP_MS, 2000);
-  assert.equal(hostGapMs([]), 2000);
-  assert.equal(hostGapMs(["--host-gap-ms", "500"]), 2000);
-  assert.equal(hostGapMs(["--host-gap-ms", "5000"]), 5000);
-  assert.equal(hostGapMs(["--host-gap-ms", "abc"]), 2000);
+test("--host-gap-ms: at least 60 s; a larger value is kept; junk falls back to 60 s", () => {
+  assert.equal(MIN_HOST_GAP_MS, 60_000);
+  assert.equal(hostGapMs([]), 60_000);
+  assert.equal(hostGapMs(["--host-gap-ms", "2000"]), 60_000);
+  assert.equal(hostGapMs(["--host-gap-ms", "90000"]), 90_000);
+  assert.equal(hostGapMs(["--host-gap-ms", "abc"]), 60_000);
 });
