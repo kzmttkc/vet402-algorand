@@ -247,6 +247,7 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 | `src/caps.ts` | per-call cap and local backup ledger |
 | `src/verdict.ts` | declaration-vs-delivery check, reason words |
 | `src/declaration.ts` / `src/target.ts` | seller declaration parsing, URL guard |
+| `src/fairness.ts` | `GET /fairness`: vet402's payments to other challenge teams (leaderboard + indexer, read live) |
 | `src/client-demo.ts` / `src/sellers.ts` | customer role, TestNet test sellers |
 | `scripts/` | key generation (TestNet, MainNet payer), balances, TestNet setup, single probe |
 | `test/` | offline unit tests (`node:test`) |
@@ -263,6 +264,17 @@ Transactions: `https://lora.algokit.io/{testnet,mainnet}/transaction/<txid>`.
 - Totals: distinct paying customer addresses (operator excluded), customer payments and USDC, seller payments and USDC, audits, operator tests.
 
 The page needs only public addresses. The payer address is taken from `PAYER_MNEMONIC` as before, or from `VET402_PAYER_ADDRESS` if set.
+
+## Fairness: payments to other challenge teams
+
+vet402 buys from every listing by the same public rules (see [Daily delivery board](#daily-delivery-board)), and that includes the other teams in the Algorand x402 challenge. Those purchases are x402 payments to them, so they can raise their volume on the challenge leaderboard, not vet402's. `GET /fairness` (HTML) and `GET /fairness.json` list every one of them. Both are free and read-only, and are mounted on MainNet only.
+
+- **vet402 takes no money from any participant for buying from them, and there is no arrangement to buy from each other.** The page also lists, from the chain, any USDC that a participant address sent to one of vet402's addresses, so the claim can be checked.
+- **Participants**: every challenge-tagged merchant on GoPlausible's leaderboard (`/data/leaderboards?range=all&env=mainnet&src=x402-global-challenge&group=merchant&cat=merchants`, every page), except vet402's own merchant (matched by `payTo` or by id, `FAIRNESS_OWN_MERCHANT_IDS`, default `f24265ae51cee85e`). A participant's addresses are its `address` plus every Algorand MainNet address in its `accounts` (some teams list more than one; TestNet accounts are ignored).
+- **Payments**: USDC (ASA 31566704) asset transfers sent by vet402's three wallets (the payer `OZ3KML…`, the board wallet `HVRJUK…` and the free-try wallet `2MSEYN…`), read from the Algorand indexer. ALGO payments (the try wallet's 0-ALGO notes), zero-amount transfers and transfers to vet402's own addresses are not counted. The addresses can be overridden with `VET402_PAYER_ADDRESS`, `VET402_BOARD_PAYER_ADDRESS` and `VET402_TRIAL_ADDRESS`.
+- **Why vet402 paid**: a board-wallet payment is the per-listing census or the daily sweep, matched by the tx id the run recorded or by the run's time window (the same board files as `/board/payments.csv`); a try-wallet payment is a free try; a payer payment is a check someone asked vet402 for. Teams with many payments have many listings: the census buys each listed resource once per run, and the page shows each team's listings in the latest census.
+- **The chain is the record, not the census file.** A census row can say `payment_failed` ("transaction already in ledger") although the payment did settle; the page counts it, because it is on chain.
+- **Freshness**: cached for 10 minutes (`Cache-Control: public, max-age=600, s-maxage=600`). If the indexer or the leaderboard cannot be read, the page says it cannot read the numbers now and shows none (503; the JSON answers `{"error":"cannot_read_now"}`); it never shows old or partial totals.
 
 ## Pay in Base USDC (`BASE_ACCEPT`, off by default)
 

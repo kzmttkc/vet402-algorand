@@ -33,7 +33,8 @@ import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, shareInitialize, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
-import { registerBoard, type BoardLoader } from "./board.js";
+import { defaultBoardFile, registerBoard, sharedBoardLoader, type BoardLoader } from "./board.js";
+import { FairnessLedger, MAINNET_WALLETS, boardRunsFrom, registerFairness, type FairnessReport } from "./fairness.js";
 import { registerSeller } from "./seller.js";
 import { registerFixFirst } from "./fix-first.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
@@ -85,6 +86,8 @@ export interface AppDeps {
   facilitator?: FacilitatorLike;
   /** Public activity ledger (GET /activity, /activity.json). Omitted = routes not mounted. */
   activity?: { get(): Promise<ActivityReport> };
+  /** Payments to other challenge teams (GET /fairness, /fairness.json). Omitted = routes not mounted. */
+  fairness?: { get(): Promise<FairnessReport> };
   /** Where /v1/audit reads a seller's resources. Default: the Bazaar feed at cfg.bazaarUrl (cached). */
   catalog?: Catalog;
   /** Delivery certificates (cert.ts): anchor written after each paid audit, free GET /cert/:id. Omitted = off. */
@@ -316,6 +319,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   }
   registerTry(app, cfg, { probeDeps, catalog, trial: deps.trial, activity: deps.activity, load: deps.tryBoard?.load, boardFile: deps.tryBoard?.file }); // free: /try, /try/preview, /try/run (trial wallet), /try/log
   registerBoard(app); // free: GET /board, /board.json (before the payment middleware)
+  if (deps.fairness) registerFairness(app, deps.fairness); // free: GET /fairness, /fairness.json (before the payment middleware)
   registerFixFirst(app); // free: GET /board/fix-first, /board/fix-first.json (before the payment middleware)
   if (deps.cert) registerCert(app, deps.cert.reader); // free: GET /cert/:id, /cert/:id/badge.svg (before the payment middleware)
   registerSeller(app, cfg); // free: GET /seller/:host, /badge/:host.svg (before the payment middleware)
@@ -484,6 +488,22 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     ...(cfg.base ? { base: baseActivitySource(cfg.base) } : {}),
     ...(trial ? { trialPayer: trial.address } : {}),
   });
+  // MainNet only (the challenge leaderboard is MainNet): payments to other challenge teams, read live. Public addresses only.
+  const fairness =
+    cfg.networkName === "mainnet"
+      ? new FairnessLedger({
+          indexerUrl: cfg.indexerUrl,
+          asaId: cfg.usdcAsaId,
+          payTo,
+          wallets: {
+            payer: env.VET402_PAYER_ADDRESS?.trim() || payer.address,
+            board: env.VET402_BOARD_PAYER_ADDRESS?.trim() || MAINNET_WALLETS.board,
+            trial: trial?.address ?? (env.VET402_TRIAL_ADDRESS?.trim() || MAINNET_WALLETS.trial),
+          },
+          ownMerchantIds: (env.FAIRNESS_OWN_MERCHANT_IDS ?? "f24265ae51cee85e").split(",").map((s) => s.trim()).filter(Boolean),
+          boardRuns: () => boardRunsFrom(defaultBoardFile(env), sharedBoardLoader()),
+        })
+      : undefined;
   // Local TestNet only: the test sellers on localhost are not in the Bazaar, so list them by URL.
   const catalogUrls = (env.AUDIT_CATALOG_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (catalogUrls.length && !cfg.allowPrivateTargets) throw new Error("AUDIT_CATALOG_URLS is for the local TestNet run only (needs ALLOW_PRIVATE_TARGETS=1)");
@@ -495,7 +515,7 @@ export function createAppFromEnv(env: NodeJS.ProcessEnv = process.env) {
     // Below this ALGO balance the payer writes no certificate record (default 1 ALGO).
     issue: env.CERT_MIN_PAYER_ALGO ? { minPayerMicroAlgo: usdcToAtomic(env.CERT_MIN_PAYER_ALGO) } : {},
   };
-  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, catalog, cert, trial }) };
+  return { cfg, payTo, payer: payer.address, app: createApp(cfg, { payTo, probeDeps, guard, activity, fairness, catalog, cert, trial }) };
 }
 
 // Vercel entry (zero-config Hono): build lazily so importing this module has no side effects.

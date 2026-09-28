@@ -22,7 +22,7 @@ code{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(2
 footer{max-width:960px;margin:0 auto;padding:24px 16px 40px;color:var(--mut);font-size:13px}`;
 
 export function topNav(): string {
-  return `<header class="top"><a class="brand" href="/">vet402</a><nav><a href="/try">Try</a><a href="/board">Board</a><a href="/activity">Activity</a><a href="/demo">Demo</a><a href="${REPO_URL}" rel="noopener">GitHub</a></nav></header>`;
+  return `<header class="top"><a class="brand" href="/">vet402</a><nav><a href="/try">Try</a><a href="/board">Board</a><a href="/activity">Activity</a><a href="/fairness">Fairness</a><a href="/demo">Demo</a><a href="${REPO_URL}" rel="noopener">GitHub</a></nav></header>`;
 }
 
 /**
