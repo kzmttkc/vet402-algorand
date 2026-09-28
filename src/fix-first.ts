@@ -170,6 +170,14 @@ export const FIX_MODES: readonly FixMode[] = [
     effort: 3,
   },
   {
+    key: "settled_not_delivered",
+    title: "Paid on chain, answered 402, delivered nothing",
+    what: "vet402's payment settled on chain (tx on the seller page), but the route answered 402 and sent no data. The facilitator's error was \"transaction already in ledger\": the same payment was submitted again after it had settled.",
+    fix: "When settle reports that the payment is already on chain, treat it as settled and return the data, with the PAYMENT-RESPONSE header.",
+    side: "seller",
+    effort: 3,
+  },
+  {
     key: "payment_refused",
     title: "A signed payment got 402 again",
     what: "vet402 sent a signed payment and the server answered 402 again without settling.",
@@ -247,7 +255,10 @@ export function failureMode(r: Pick<BoardRow, "verdict" | "reason" | "detail" | 
       const d = r.detail ?? "";
       const code = statusIn(d, /^status (\d{3})\b/);
       if (code === undefined) return TIMEOUT.test(d) ? "timeout" : "other";
-      if (code === 402) return /subcent_quota_exceeded/.test(d) ? "facilitator_quota" : "payment_refused";
+      if (code === 402) {
+        if (/subcent_quota_exceeded/.test(d)) return "facilitator_quota";
+        return r.paid ? "settled_not_delivered" : "payment_refused";
+      }
       if (code >= 200 && code < 300) return "no_receipt";
       return byStatus(code, true);
     }

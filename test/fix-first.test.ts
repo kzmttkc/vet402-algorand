@@ -49,6 +49,7 @@ test("failure mode: the fixed table (status codes, reasons, vet402's own limits,
   assert.equal(pf("status 402, subcent_quota_exceeded"), "facilitator_quota");
   assert.equal(pf("status 402, no settlement receipt"), "payment_refused");
   assert.equal(pf("status 402, Transaction simulation failed: transaction already in ledger: X"), "payment_refused");
+  assert.equal(m({ reason: "payment_failed", paid: true, detail: "status 402, Transaction simulation failed: transaction already in ledger: X · settled on chain: vet402's transfer Y" }), "settled_not_delivered");
   assert.equal(pf("status 400, no settlement receipt"), "example_rejected");
   assert.equal(pf("status 404, no settlement receipt"), "example_rejected");
   assert.equal(pf("status 422, no settlement receipt"), "example_rejected");
@@ -70,7 +71,7 @@ test("failure mode: the fixed table (status codes, reasons, vet402's own limits,
   assert.equal(m({ reason: "a_new_reason" }), "other");
   // Every key the table returns has a mode.
   const keys = new Set(FIX_MODES.map((x) => x.key));
-  for (const k of ["gone", "down", "wrong_method", "free_200", "auth", "example_rejected", "unreadable_402", "no_accept", "rate_limited", "facilitator_quota", "payment_refused", "server_error_paid", "no_receipt", "timeout", "not_json", "missing_keys", "example_placeholder", "vet402_limit", "other"]) {
+  for (const k of ["gone", "down", "wrong_method", "free_200", "auth", "example_rejected", "unreadable_402", "no_accept", "rate_limited", "facilitator_quota", "payment_refused", "settled_not_delivered", "server_error_paid", "no_receipt", "timeout", "not_json", "missing_keys", "example_placeholder", "vet402_limit", "other"]) {
     assert.ok(keys.has(k), k);
   }
 });
