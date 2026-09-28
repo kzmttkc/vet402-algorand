@@ -810,8 +810,18 @@ export function registerBoard<E extends Env>(
     return c.json((await load(path)) ?? { version: 1, rows: [], note: "not run yet" });
   });
   app.get("/board", async (c) => {
-    const { view, path, date } = pick(c.req.query("view"), c.req.query("date"));
+    const asked = c.req.query("view");
+    let { view, path, date } = pick(asked, c.req.query("date"));
+    let board = await load(path);
+    // Before the first daily sweep, the plain /board shows the latest census instead of an empty page.
+    if (asked === undefined && !board?.rows?.length) {
+      const census = await load(censusFileFor(file));
+      if (census?.rows?.length) {
+        view = "census";
+        board = census;
+      }
+    }
     c.header("cache-control", "public, max-age=300");
-    return c.html(boardHtml(await load(path), view, { date }));
+    return c.html(boardHtml(board, view, { date }));
   });
 }

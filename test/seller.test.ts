@@ -178,6 +178,11 @@ test("routes: /seller/<host> and /badge/<host>.svg are free, read the census, ca
       assert.equal((await app.request(bad)).status, 400, bad);
     }
 
+    // No daily sweep yet (latest.json has no rows): plain /board shows the latest census, not an empty page.
+    const plain = await (await app.request("/board")).text();
+    assert.ok(plain.includes('aria-current="page">Census (every listed resource)<'));
+    assert.ok(!plain.includes("Not run yet"));
+
     // Census day tabs read the dated file.
     const d = await (await app.request("/board?view=census&date=2026-09-27")).text();
     assert.ok(d.includes('aria-current="page">2026-09-27<'));
