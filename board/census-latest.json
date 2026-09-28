@@ -5,17 +5,17 @@
   "networkName": "mainnet",
   "date": "2026-09-28",
   "startedAt": "2026-09-28T01:24:38.359Z",
-  "finishedAt": "2026-09-28T02:11:50.161Z",
+  "finishedAt": "2026-09-28T05:45:29.387Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "60.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2370 items)",
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2373 items)",
     "candidates": 1840,
     "excluded": {
-      "price_over_cap": 222,
+      "price_over_cap": 225,
       "other_network_or_asset": 253,
       "not_https": 46,
       "own_address": 1,
@@ -37617,7 +37617,6 @@
     "GET https://whaletape.xyz/algo/coverage/BTC",
     "POST https://algo.netintel.dev/extract/invoice",
     "GET https://algorandtracker.com/x402/asa/700965019/pool-lp",
-    "POST https://agent402.tools/v1/embeddings",
     "GET https://whaletape.xyz/algo/history/BTC",
     "GET https://algorandtracker.com/x402/gora/stake-wallets",
     "POST https://agent402.tools/v1/ox/chat/completions",
