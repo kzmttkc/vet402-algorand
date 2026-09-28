@@ -31,7 +31,7 @@ import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
 import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
 import { checkTarget } from "./target.js";
 import { settleFirstMiddleware, shareInitialize, type SettleFirstEnv } from "./settle-first.js";
-import { FAVICON_ICO_B64, demoHtml, landingHtml } from "./landing.js";
+import { FAVICON_ICO_B64, ICON_PNG_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
 import { defaultBoardFile, registerBoard, sharedBoardLoader, type BoardLoader } from "./board.js";
 import { FairnessLedger, MAINNET_WALLETS, boardRunsFrom, registerFairness, type FairnessReport } from "./fairness.js";
@@ -271,6 +271,9 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
 
   const app = new Hono<SettleFirstEnv>();
 
+  app.get("/icon-512.png", (c) =>
+    c.body(Buffer.from(ICON_PNG_B64, "base64"), 200, { "content-type": "image/png", "cache-control": "public, max-age=86400" }),
+  );
   app.get("/favicon.ico", (c) =>
     c.body(Buffer.from(FAVICON_ICO_B64, "base64"), 200, { "content-type": "image/x-icon", "cache-control": "public, max-age=86400" }),
   );

@@ -160,7 +160,7 @@ test("landing: the first sentence says what you get in plain words; title and og
     '<meta property="og:site_name" content="vet402">',
     '<meta property="og:title" content="vet402 — pays the x402 endpoint you name and checks the delivery">',
     '<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">',
-    '<meta property="og:image" content="https://vet402.com/icon.png">',
+    '<meta property="og:image" content="https://vet402-algorand.vercel.app/icon-512.png">',
   ])
     assert.ok(html.includes(tag), tag);
   assert.match(html, /Try it in 3 steps/);
