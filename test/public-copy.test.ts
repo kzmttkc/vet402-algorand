@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { CONTENT_NOTES, boardHtml, countBy, displayClass, hostOf, readBoard, type BoardFile } from "../src/board.js";
+import { CONTENT_NOTES, boardHtml, countBy, displayClass, hostOf, paymentsCsv, readBoard, type BoardFile } from "../src/board.js";
 import { CHECKER_FIX_URL, FEATURED_CENSUS, demoHtml, landingHtml } from "../src/landing.js";
 import { PATH_MODES, failureMode, fixFirst, fixFirstHtml } from "../src/fix-first.js";
 import { sellerHtml, sellerView } from "../src/seller.js";
@@ -28,6 +28,10 @@ test("landing: every census number is recounted from the file it links to", () =
   assert.deepEqual([cls.DELIVERED, cls.MISMATCH, cls.UNREACHABLE, cls.UNCLEAR], [c.delivered, c.mismatch, c.unreachable, c.unclear]);
   assert.equal(b.rows.filter((r) => r.paid).length, c.paid);
   assert.equal(Number(b.totals.paidUsdc).toFixed(2), c.paidUsdc);
+  const found = b.rows.filter((r) => r.paid && r.reason === "payment_failed");
+  assert.equal(found.length, c.foundOnChain);
+  assert.equal(String(found.reduce((s, r) => s + Math.round(Number(r.priceUsdc) * 1e6), 0) / 1e6), c.foundOnChainUsdc);
+  for (const r of found) assert.equal(displayClass(r), "UNCLEAR");
   const unclear = b.rows.filter((r) => displayClass(r) === "UNCLEAR");
   const mode = (k: string) => unclear.filter((r) => failureMode(r) === k).length;
   assert.deepEqual([mode("rate_limited"), mode("facilitator_quota"), mode("vet402_limit")], [c.rateLimited, c.facilitatorQuota, c.overCap]);
@@ -43,9 +47,10 @@ test("landing and demo: the correction is stated, with the fix commit and the re
   const html = landingHtml({ network: "algorand:mainnet", priceUsdc: "0.05", perCallUsdc: "0.100000", perDayUsdc: "3.000000", trial: true });
   const text = visible(html);
   assert.match(text, /On 28 September 2026, vet402 tried to buy 1,840 resources/);
-  assert.match(text, /It paid 570 of them from its own wallet, 16\.69 USDC in total\./);
+  assert.match(text, /It paid 580 of them from its own wallet, 16\.79 USDC in total\./);
   assert.match(text, /55 of those 80 delivered/);
-  assert.match(text, /The chain also shows 10 more payments from this run \(0\.095 USDC\)/);
+  assert.match(text, /13 of the paid ones \(0\.12 USDC\) came back without a settlement receipt; vet402 found those payments on chain afterwards/);
+  assert.doesNotMatch(text, /The chain also shows/);
   assert.match(text, /3 USDC per day across all customers/);
   assert.match(text, /It does not look at whether the content itself is right\./);
   assert.ok(html.includes(CHECKER_FIX_URL));
@@ -122,7 +127,68 @@ test("census 09-27: the eth-avm-light-client timeout row is paid with GP46 (on c
   assert.equal(b.rows.filter((x) => x.tx === r.tx).length, 1);
   const sum = b.rows.filter((x) => x.paid).reduce((s, x) => s + Math.round(Number(x.priceUsdc) * 1e6), 0);
   assert.equal((sum / 1e6).toFixed(6), b.totals.paidUsdc);
-  assert.equal(b.totals.paidUsdc, "16.087200");
+  assert.equal(b.totals.paidUsdc, "16.107200");
+});
+
+/** Payments found on chain for rows the run recorded as not paid (README "Corrections", 2026-09-29), 1:1 only. */
+const FOUND_ON_CHAIN: Record<string, [string, string][]> = {
+  "2026-09-27": [
+    ["https://eth-avm-light-client.vercel.app/verify-receipt/25782067/2/0", "GP46GFPSE3JAER7CNWN65GRRJVVNJHEKE4LJ363KZGMA7LR24CFQ"],
+    ["https://x402-echo-service.vercel.app/api/echo/test", "YGM24NWW"],
+    ["https://api.proptech.watch/hot-zones?country=FR&department=69&commune=", "O3733XAV"],
+  ],
+  "2026-09-28": [
+    ["https://algo.netintel.dev/ip-reputation/analyze?ip=185.220.101.45", "7MSW2BIR"],
+    ["https://api.proptech.watch/volume-leaders?country=FR&department=69&commune=", "R3TUXJH5"],
+    ["https://api.algofile.io/api/x402/bazaar/asset-info", "R4J6MKAY"],
+    ["https://canix402-api.compx.io/positions?address=", "USNDYLGG"],
+    ["https://algorand.ottoai.services/base-season", "LS2Q76W6"],
+    ["https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info", "BZ5GO77O"],
+    ["https://x402-echo-service.vercel.app/api/echo/test", "JFDAHT7N"],
+    ["https://api.proptech.watch/hot-zones?country=FR&department=69&commune=", "FJWZEQJH"],
+    ["https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false", "OZIIYHCW"],
+    ["https://api.algofile.io/api/v3/x402/bazaar/asset-info", "EGCGAF3F"],
+  ],
+};
+
+test("census 09-27 and 09-28: the 13 payments found on chain are recorded paid, stay UNCLEAR, and every total follows", () => {
+  const expect = { "2026-09-27": { found: 3, paidRows: 581, paidUsdc: "16.107200" }, "2026-09-28": { found: 10, paidRows: 580, paidUsdc: "16.787200" } } as const;
+  for (const [d, pairs] of Object.entries(FOUND_ON_CHAIN)) {
+    const b = board(d);
+    const e = expect[d as keyof typeof expect];
+    assert.equal(pairs.length, e.found, d);
+    for (const [prefix, txStart] of pairs) {
+      const hits = b.rows.filter((r) => r.url.startsWith(prefix) && r.tx?.startsWith(txStart));
+      assert.equal(hits.length, 1, `${d} ${prefix}`);
+      const r = hits[0];
+      assert.equal(r.paid, true);
+      assert.equal(r.reason, "payment_failed", "reason stays as recorded");
+      assert.equal(displayClass(r), "UNCLEAR", "class unchanged; not counted against the seller");
+      assert.match(r.detail!, new RegExp(`settled on chain: vet402's transfer ${r.tx} \\(to this payTo, round \\d+, \\d\\d:\\d\\d:\\d\\d UTC\\); no delivery$`));
+    }
+    // Every tx appears on one row only, across the whole file.
+    const txs = b.rows.filter((r) => r.tx).map((r) => r.tx);
+    assert.equal(new Set(txs).size, txs.length, d);
+    // totals.paidUsdc = sum of paid rows (board-sweep totalsOf).
+    const paid = b.rows.filter((r) => r.paid);
+    assert.equal(paid.length, e.paidRows, d);
+    assert.equal((paid.reduce((s, r) => s + Math.round(Number(r.priceUsdc) * 1e6), 0) / 1e6).toFixed(6), b.totals.paidUsdc);
+    assert.equal(b.totals.paidUsdc, e.paidUsdc);
+    // /board shows the file's total; payments.csv lists every paid row once.
+    assert.match(boardHtml(b, "census", { date: d }), new RegExp(`paid <b>${e.paidUsdc.replace(".", "\\.")}</b> USDC`));
+    const csv = paymentsCsv([b]);
+    for (const [, txStart] of pairs) assert.equal(csv.split("\n").filter((l) => l.includes(`,${txStart}`)).length, 1, `${d} csv ${txStart}`);
+    assert.equal(csv.trim().split("\n").length - 1, paid.length, `${d} csv rows`);
+  }
+  // census-latest.json is the 09-28 file.
+  assert.deepEqual(readBoard(join(process.cwd(), "board", "census-latest.json")), board("2026-09-28"));
+});
+
+test("census 09-27: the 5 payments that cannot be paired 1:1 stay unpaid (algofile.io x3, ottoai x2)", () => {
+  const b = board("2026-09-27");
+  const unpaid = (prefix: string) => b.rows.filter((r) => r.url.startsWith(prefix) && !r.paid && r.reason === "payment_failed").length;
+  assert.equal(unpaid("https://api.algofile.io/"), 3);
+  for (const u of ["/rh-season", "/twitter-summary", "/token-price?token=ETH"]) assert.equal(unpaid(`https://algorand.ottoai.services${u}`), 1, u);
 });
 
 test("changed pages: no we/us/our, no em dash, and no promise about the content", () => {

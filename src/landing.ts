@@ -32,18 +32,18 @@ export function topNav(): string {
  * checker (947a6e3). The 2026-09-27 run treated every example key as a promise; see README "Corrections".
  * Fixed on purpose: the sentence is dated, so it stays true on the day it is read.
  * Counts are board.ts displayClass over board/census-2026-09-28.json; paid/paidUsdc are the file's paid rows
- * and totals.paidUsdc. chainOnly* = board-wallet transfers in that run that the indexer shows but the file
- * records as not paid (no settlement receipt came back), counted on 2026-09-29.
+ * and totals.paidUsdc. foundOnChain* = paid rows whose answer carried no settlement receipt (reason
+ * payment_failed): the payment was found on chain afterwards and recorded (README "Corrections").
  */
 export const FEATURED_CENSUS = {
   date: "2026-09-28",
   dateLabel: "28 September 2026",
   listed: 1840,
   sellers: 115,
-  paid: 570,
-  paidUsdc: "16.69",
-  chainOnly: 10,
-  chainOnlyUsdc: "0.095",
+  paid: 580,
+  paidUsdc: "16.79",
+  foundOnChain: 13,
+  foundOnChainUsdc: "0.12",
   delivered: 548,
   mismatch: 19,
   unreachable: 423,
@@ -153,7 +153,7 @@ ${
 <div class="stat"><b class="mismatch">${n(c.mismatch)}</b><span>were paid, and the answer failed that check (an error, not JSON, empty, or a declared field missing)</span></div>
 <div class="stat"><b class="unreach">${n(c.unreachable)}</b><span>were listed but did not ask for payment (for example a dead page or host)</span></div>
 </div>
-<p class="note">What the check covers: after payment, a 2xx answer of non-empty JSON that has the fields the listing marks as required. It does not look at whether the content itself is right. Another ${n(c.unclear)} ended without a clear answer, and none of them is held against the seller. At least ${n(c.rateLimited + c.facilitatorQuota + c.overCap)} of those came from vet402 or the payment path: ${n(c.rateLimited)} rate limits (vet402 may have called too fast), ${n(c.facilitatorQuota)} where the facilitator's sub-cent quota ran out, and ${n(c.overCap)} over vet402's own price limit. The chain also shows ${n(c.chainOnly)} more payments from this run (${c.chainOnlyUsdc} USDC) that the file records as not paid, because no settlement receipt came back; they are among the unclear rows. Every row, with its receipt: <a href="/board?view=census&amp;date=${c.date}">census of ${c.date}</a>.</p>
+<p class="note">What the check covers: after payment, a 2xx answer of non-empty JSON that has the fields the listing marks as required. It does not look at whether the content itself is right. Another ${n(c.unclear)} ended without a clear answer, and none of them is held against the seller. At least ${n(c.rateLimited + c.facilitatorQuota + c.overCap)} of those came from vet402 or the payment path: ${n(c.rateLimited)} rate limits (vet402 may have called too fast), ${n(c.facilitatorQuota)} where the facilitator's sub-cent quota ran out, and ${n(c.overCap)} over vet402's own price limit. ${n(c.foundOnChain)} of the paid ones (${c.foundOnChainUsdc} USDC) came back without a settlement receipt; vet402 found those payments on chain afterwards, and they are among the unclear rows. Every row, with its receipt: <a href="/board?view=census&amp;date=${c.date}">census of ${c.date}</a>.</p>
 <p class="note">A correction: the first run, on 27 September, used a checker that was too strict. It treated every example key in a listing as a promise and reported ${n(c.firstRunMismatch)} mismatches. vet402 fixed the rule the same day (<a href="${CHECKER_FIX_URL}" rel="noopener">947a6e3</a>) and bought everything again on 28 September: ${n(c.firstRunMismatchDelivered)} of those ${n(c.firstRunMismatch)} delivered. The numbers above are from the rerun. Every correction is listed in the README: <a href="${CORRECTIONS_URL}" rel="noopener">Corrections</a>.</p>
 </section>
 

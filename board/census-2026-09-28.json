@@ -30,7 +30,7 @@
     "refuse": 1290,
     "skipped": 0,
     "unclear": 2,
-    "paidUsdc": "16.692200"
+    "paidUsdc": "16.787200"
   },
   "rows": [
     {
@@ -282,8 +282,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer EGCGAF3FCM2GCWLSH7ATFR3HRPHWNHRJWBO4WVAR6RFZZJWVYF2Q (to this payTo, round 65460662, 01:24:56 UTC); no delivery",
+      "paid": true,
+      "tx": "EGCGAF3FCM2GCWLSH7ATFR3HRPHWNHRJWBO4WVAR6RFZZJWVYF2Q"
     },
     {
       "at": "2026-09-28T01:24:59.173Z",
@@ -847,8 +848,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer OZIIYHCWJIBPLJP33WB7F4O7KHA3ZMNI3MDGDANZVZT6JAMXCZIA (to this payTo, round 65460686, 01:26:02 UTC); no delivery",
+      "paid": true,
+      "tx": "OZIIYHCWJIBPLJP33WB7F4O7KHA3ZMNI3MDGDANZVZT6JAMXCZIA"
     },
     {
       "at": "2026-09-28T01:26:05.370Z",
@@ -1383,8 +1385,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer FJWZEQJHNFC52F3VH2CV6ZGNEDLS7ARPHIFL74RKDZLQV65VLX6A (to this payTo, round 65460696, 01:26:30 UTC); no delivery",
+      "paid": true,
+      "tx": "FJWZEQJHNFC52F3VH2CV6ZGNEDLS7ARPHIFL74RKDZLQV65VLX6A"
     },
     {
       "at": "2026-09-28T01:26:47.013Z",
@@ -1611,8 +1614,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer JFDAHT7NU4MUAMHOZ2QNNRWMTC7PC7YYK6TNMVMEVKE445A3TGRQ (to this payTo, round 65460709, 01:27:06 UTC); no delivery",
+      "paid": true,
+      "tx": "JFDAHT7NU4MUAMHOZ2QNNRWMTC7PC7YYK6TNMVMEVKE445A3TGRQ"
     },
     {
       "at": "2026-09-28T01:27:09.182Z",
@@ -2391,8 +2395,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer BZ5GO77O6ARSZSIRHQM3JOV3EFHE74XCBUIE5LWD7BTMJN5LRPNQ (to this payTo, round 65460731, 01:28:07 UTC); no delivery",
+      "paid": true,
+      "tx": "BZ5GO77O6ARSZSIRHQM3JOV3EFHE74XCBUIE5LWD7BTMJN5LRPNQ"
     },
     {
       "at": "2026-09-28T01:28:15.546Z",
@@ -2468,8 +2473,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer LS2Q76W6OQ34H4OWKYVYXFEGCW2NDDAQIJZDPNOJXSDC5DVDL7QA (to this payTo, round 65460738, 01:28:26 UTC); no delivery",
+      "paid": true,
+      "tx": "LS2Q76W6OQ34H4OWKYVYXFEGCW2NDDAQIJZDPNOJXSDC5DVDL7QA"
     },
     {
       "at": "2026-09-28T01:28:23.789Z",
@@ -2613,8 +2619,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer USNDYLGGLGITBEPUW2VBTMB2PRFZ4YUHK2YI2GKWYO6KJSE2EOYA (to this payTo, round 65460744, 01:28:43 UTC); no delivery",
+      "paid": true,
+      "tx": "USNDYLGGLGITBEPUW2VBTMB2PRFZ4YUHK2YI2GKWYO6KJSE2EOYA"
     },
     {
       "at": "2026-09-28T01:28:39.109Z",
@@ -3598,8 +3605,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer R4J6MKAY2R572AH6QOD2ILM4KG66S5A5IWHTC33GQC6GEHWFXIVA (to this payTo, round 65460775, 01:30:08 UTC); no delivery",
+      "paid": true,
+      "tx": "R4J6MKAY2R572AH6QOD2ILM4KG66S5A5IWHTC33GQC6GEHWFXIVA"
     },
     {
       "at": "2026-09-28T01:30:12.844Z",
@@ -5011,8 +5019,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer R3TUXJH5GIN4NB6BNHCUY6YJL5YX4QNKRQPUNOGP7HIRZDNC2M4A (to this payTo, round 65460823, 01:32:21 UTC); no delivery",
+      "paid": true,
+      "tx": "R3TUXJH5GIN4NB6BNHCUY6YJL5YX4QNKRQPUNOGP7HIRZDNC2M4A"
     },
     {
       "at": "2026-09-28T01:32:40.328Z",
@@ -25667,8 +25676,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer 7MSW2BIRMJWD5TRWSZ4BIL22EB7HEV5N3FUEG6VV52UJQXGCZLLQ (to this payTo, round 65461268, 01:52:47 UTC); no delivery",
+      "paid": true,
+      "tx": "7MSW2BIRMJWD5TRWSZ4BIL22EB7HEV5N3FUEG6VV52UJQXGCZLLQ"
     },
     {
       "at": "2026-09-28T01:52:46.261Z",
