@@ -39,7 +39,8 @@ import { registerSeller } from "./seller.js";
 import { registerFixFirst } from "./fix-first.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
 import { BazaarCatalog, UrlListCatalog, isOwnHost, LISTING_EXAMPLE_HOST, LISTING_EXAMPLE_PRICE, LISTING_EXAMPLE_URL, type Catalog } from "./bazaar.js";
-import { neverPaidVet402, registerBuy } from "./buy.js";
+import { QuoteLimiter, neverPaidVet402, registerBuy } from "./buy.js";
+import { clientIp } from "./try.js";
 import { BaseCustomerReader, withBase } from "./base.js";
 import { registerTry, type TrialDeps } from "./try.js";
 import { ChainTrialStore, loadTrialConfig, normalizeFrom } from "./trial.js";
@@ -274,6 +275,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
    * seconds, public addresses only, not vet402 itself). Run on the unpaid request, so no 402 is
    * offered for a URL vet402 cannot buy, and again after verify and before settle.
    */
+  const UNPAID_CHECKS_PER_MINUTE = 30;
+  const unpaidChecks = new QuoteLimiter(UNPAID_CHECKS_PER_MINUTE);
   const checkTargetBeforeCharge = async (c: Context<SettleFirstEnv>): Promise<Response | null> => {
     const target = c.req.query("url");
     if (!target) return c.json({ error: "missing url query parameter" }, 400);
@@ -358,6 +361,11 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
       // Free checks: a request we cannot serve is refused before the customer is charged.
       beforeChallenge: async (c) => {
         if (c.req.path === "/v1/check") {
+          // The bare /v1/check (as listed in the Bazaar) still answers 402; a paid request without url stops before settle.
+          if (!c.req.query("url")) return null;
+          // The unpaid check resolves a host: at most UNPAID_CHECKS_PER_MINUTE per client, so it cannot tie up DNS for paid requests.
+          if (!unpaidChecks.take(clientIp(c)))
+            return { stop: c.json({ error: "rate_limited", detail: `at most ${UNPAID_CHECKS_PER_MINUTE} unpaid checks per minute per client; nothing was charged` }, 429) };
           const stop = await checkTargetBeforeCharge(c);
           return stop ? { stop } : null;
         }

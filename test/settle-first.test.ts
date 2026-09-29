@@ -275,3 +275,26 @@ test("unpaid HEAD request is priced like GET: never reaches verify/settle/probe,
   assert.equal(res.status, 402);
   assert.deepEqual(trace, []);
 });
+
+test("bare /v1/check (the URL listed in the Bazaar) still answers 402; the unpaid check does not resolve anything", async () => {
+  const trace: Trace = [];
+  const app = strictApp(trace, PUBLIC_DNS);
+  const res = await app.request("/v1/check");
+  assert.equal(res.status, 402);
+  assert.ok(res.headers.get("PAYMENT-REQUIRED"));
+  assert.ok(!trace.some((t) => t.startsWith("dns ")));
+});
+
+test("unpaid /v1/check resolves at most 30 hosts per minute per client, then 429 without resolving", async () => {
+  const trace: Trace = [];
+  const app = strictApp(trace, PUBLIC_DNS);
+  const url = `/v1/check?url=${encodeURIComponent(LISTING_EXAMPLE_URL)}`;
+  const headers = { "x-real-ip": "203.0.113.9" };
+  for (let i = 0; i < 30; i++) assert.equal((await app.request(url, { headers })).status, 402, `request ${i + 1}`);
+  const before = trace.filter((t) => t.startsWith("dns ")).length;
+  const res = await app.request(url, { headers });
+  assert.equal(res.status, 429);
+  assert.equal(((await res.json()) as { error: string }).error, "rate_limited");
+  assert.equal(trace.filter((t) => t.startsWith("dns ")).length, before);
+  assert.equal((await app.request(url, { headers: { "x-real-ip": "203.0.113.10" } })).status, 402, "another client is not limited");
+});

@@ -44,7 +44,7 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 | `no_supported_accept` / `not_x402` / `probe_error` | REFUSE | no |
 | `invalid_target` | REFUSE (HTTP 400: on the unpaid request instead of a 402, and again before settlement; customer not charged) | no |
 
-`/v1/check` refuses on the unpaid request, without a 402, a URL it cannot buy: not `https`, a host that does not resolve within 3 s, a private address, or a vet402 host (`invalid_target` 400 / `self_dealing` 422, JSON with `detail` and `charged: false`). The same checks run again after the payment is verified and before it settles. After settlement the purchase checks the URL once more (`https`, resolves, public addresses) and refuses a seller whose `payTo` is a vet402 wallet.
+`/v1/check` refuses on the unpaid request, without a 402, a URL it cannot buy: not `https`, a host that does not resolve within 3 s, a private address, or a vet402 host (`invalid_target` 400 / `self_dealing` 422, JSON with `detail` and `charged: false`). The bare `/v1/check` with no `url` (the URL listed in the Bazaar) still answers the 402; a payment without `url` is refused before it settles. The unpaid check resolves at most 30 hosts per minute per client, then answers `429 rate_limited` without resolving. The same checks run again after the payment is verified and before it settles. After settlement the purchase checks the URL once more (`https`, resolves, public addresses) and refuses a seller whose `payTo` is a vet402 wallet.
 
 What counts as a promise:
 
