@@ -53,7 +53,7 @@
  *   row REFUSE placeholder_unfillable, not paid (shown as UNCLEAR).
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { seedFromMnemonic } from "@algorandfoundation/algokit-utils/algo25";
 import { atomicToUsdc, loadConfig, usdcToAtomic, type AppConfig } from "../src/config.js";
@@ -631,6 +631,12 @@ export function dailyComplete(prev: { completedAt?: unknown } | null | undefined
   return typeof prev?.completedAt === "string" && Number.isFinite(Date.parse(prev.completedAt));
 }
 
+/** Test hooks for the indexer reads of a payment check. */
+export interface RecheckDeps {
+  fetchImpl?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+}
+
 /**
  * The payment check on a written file (read-only): rows paired one to one are updated in place and
  * totals.paidUsdc follows. The window runs from 2 minutes before the file's startedAt to `to`.
@@ -640,7 +646,7 @@ export async function reconcileFile(
   dir: string,
   cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">,
   to: Date,
-  fetchImpl?: typeof fetch,
+  deps: RecheckDeps = {},
 ): Promise<ReconcileResult> {
   const started = Date.parse(board.startedAt ?? "");
   if (!board.payer || !Number.isFinite(started)) throw new Error("the file has no payer or startedAt");
@@ -654,7 +660,8 @@ export async function reconcileFile(
     recorded,
     from: new Date(started - WINDOW_LEAD_MS),
     to,
-    fetchImpl,
+    fetchImpl: deps.fetchImpl,
+    sleep: deps.sleep,
   });
   if (res.recorded.length && board.totals) board.totals = { ...board.totals, paidUsdc: totalsOf(board.rows).paidUsdc };
   return res;
@@ -728,30 +735,97 @@ async function reconcileMain(argv: string[], file: string): Promise<number> {
   return r.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
 }
 
+/** The latest.json / census-latest.json next to a day's file. */
+function latestFor(file: string): string {
+  return join(dirname(file), basename(file).startsWith("census-") ? "census-latest.json" : "latest.json");
+}
+
+/** Write a day's file, and the latest copy when it is a copy of that day. */
+function writeDayFile(file: string, board: WrittenBoard): void {
+  writeJsonAtomic(file, board);
+  const latest = latestFor(file);
+  const l = existsSync(latest) ? (JSON.parse(readFileSync(latest, "utf8")) as { date?: string }) : null;
+  if (l?.date === board.date) writeJsonAtomic(latest, board);
+  console.log(`written: ${file}`);
+}
+
+export interface RecheckResult {
+  status: ReconcileResult["status"];
+  /** unavailable, or a payment on no row that the file did not list before. */
+  newProblem: boolean;
+  written: boolean;
+}
+
 /**
- * Today's daily already finished its purchases: buy nothing. Repeat the payment check (read-only): a
- * payment the facilitator settled after the first check (a transaction stays valid for about 1,000
- * rounds) shows up now. The file is rewritten only when the check changed something.
+ * Repeat the payment check on a written file (read-only), for [startedAt - 2 min, to]. Rows paired one
+ * to one are written in. When the chain cannot be read, the earlier result stays as it was (with its
+ * list of payments on no row) and lastAttempt says this check did not run. `nextDay` marks the check
+ * the next UTC day makes. The file is written only when something changed.
  */
-async function recheckCompletedDaily(file: string, latest: string, cfg: AppConfig): Promise<number> {
+export async function recheckFile(file: string, cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">, to: Date, o: RecheckDeps & { nextDay?: boolean } = {}): Promise<RecheckResult> {
+  const board = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
+  const prev = board.reconcile;
+  const r = await reconcileFile(board, dirname(file), cfg, to, o);
+  logReconcile(r);
+  if (r.status === "unavailable") {
+    board.reconcile = prev ? { ...prev, lastAttempt: { checkedAt: r.checkedAt, status: "unavailable", window: r.window, error: r.error } } : r;
+    writeDayFile(file, board);
+    return { status: r.status, newProblem: true, written: true };
+  }
+  const listed = new Set((prev?.unmatched ?? []).map((u) => u.tx));
+  const newProblem = r.unmatched.some((u) => !listed.has(u.tx));
+  const changed =
+    !prev ||
+    !!o.nextDay ||
+    !!prev.lastAttempt ||
+    prev.status !== r.status ||
+    r.recorded.length > 0 ||
+    prev.unmatched.map((u) => u.tx).join() !== r.unmatched.map((u) => u.tx).join();
+  if (!changed) return { status: r.status, newProblem, written: false };
+  board.reconcile = { ...r, ...(o.nextDay ? { nextDayCheckedAt: r.checkedAt } : prev?.nextDayCheckedAt ? { nextDayCheckedAt: prev.nextDayCheckedAt } : {}) };
+  writeDayFile(file, board);
+  return { status: r.status, newProblem, written: true };
+}
+
+/**
+ * Today's daily already finished its purchases: buy nothing. Repeat the payment check (read-only) from
+ * the run's start to now: a payment the facilitator settled after the first check (a transaction stays
+ * valid for about 1,000 rounds) shows up now. Exit code 3 unless every payment is on a row, including
+ * when the chain cannot be read this time.
+ */
+export async function recheckCompletedDaily(file: string, cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">, deps: RecheckDeps & { now?: Date } = {}): Promise<number> {
   const board = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
   console.log(`daily for ${board.date} already completed at ${board.completedAt} (${file}): no purchase in this run.`);
-  const prev = board.reconcile;
-  const r = await reconcileFile(board, dirname(file), cfg, new Date());
-  logReconcile(r);
-  if (r.status === "unavailable" && prev?.status === "ok") {
-    console.log("the earlier payment check of this run found every payment on a row; kept as it is.");
-    return 0;
-  }
-  const changed = !prev || prev.status !== r.status || r.recorded.length > 0 || prev.unmatched.map((u) => u.tx).join() !== r.unmatched.map((u) => u.tx).join();
-  if (changed) {
-    board.reconcile = r;
-    writeJsonAtomic(file, board);
-    const l = existsSync(latest) ? (JSON.parse(readFileSync(latest, "utf8")) as { date?: string }) : null;
-    if (l?.date === board.date) writeJsonAtomic(latest, board);
-    console.log(`written: ${file}`);
-  }
+  const r = await recheckFile(file, cfg, deps.now ?? new Date(), deps);
   return r.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
+}
+
+/** A settlement can land up to about 1,000 rounds (under 1 hour) after signing; the next-day check reads 2 hours past the file's end. */
+export const NEXT_DAY_TAIL_MS = 2 * 3_600_000;
+
+/**
+ * The first daily run of a UTC day checks the previous day's files again (daily and census), for
+ * payments settled after that day's last run: [startedAt - 2 min, min(now, finishedAt + 2 h)]. Only files
+ * written with a payment check, and each file once (nextDayCheckedAt); a check that could not read the
+ * chain is repeated by the next run. Exit code 3 when the chain could not be read or a payment on no row
+ * was not listed in the file before.
+ */
+export async function checkPreviousDay(outDir: string, date: string, cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">, deps: RecheckDeps & { now?: Date } = {}): Promise<number> {
+  const prevDate = new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const now = deps.now ?? new Date();
+  let code = 0;
+  for (const name of [`${prevDate}.json`, `census-${prevDate}.json`]) {
+    const file = join(outDir, name);
+    if (!existsSync(file)) continue;
+    const b = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
+    if (!b.reconcile || b.reconcile.nextDayCheckedAt) continue;
+    const end = Date.parse(b.finishedAt);
+    const to = new Date(Number.isFinite(end) ? Math.min(now.getTime(), end + NEXT_DAY_TAIL_MS) : now.getTime());
+    console.log(`next-day payment check of ${file}`);
+    const r = await recheckFile(file, cfg, to, { ...deps, nextDay: true });
+    if (r.newProblem) code = EXIT_PAYMENT_CHECK;
+  }
+  return code;
 }
 
 export async function main(argv: string[]): Promise<number> {
@@ -775,9 +849,11 @@ export async function main(argv: string[]): Promise<number> {
   const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
   const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
   const latest = join(outDir, census ? "census-latest.json" : "latest.json");
+  // The previous UTC day's files, once: payments settled after that day's last run.
+  const previousDay = !dryRun && !census && !targets ? await checkPreviousDay(outDir, date, cfg) : 0;
   // Several schedules a day: the first one that finishes the daily is the only one that buys.
   if (!dryRun && !census && !targets && existsSync(file) && dailyComplete(JSON.parse(readFileSync(file, "utf8")) as { completedAt?: unknown })) {
-    return recheckCompletedDaily(file, latest, cfg);
+    return (await recheckCompletedDaily(file, cfg)) || previousDay;
   }
   const boardPerDay = env.BOARD_MAX_PER_DAY_USDC ? usdcToAtomic(env.BOARD_MAX_PER_DAY_USDC) : cfg.maxPerDayAtomic;
   if (boardPerDay < cfg.maxPerCallAtomic) throw new Error("BOARD_MAX_PER_DAY_USDC must be >= the per-call cap");
@@ -910,7 +986,7 @@ export async function main(argv: string[]): Promise<number> {
 
   if (!census && !targets && existsSync(otherFile)) {
     console.log(`census already ran on ${date} (${otherFile}); the daily sweep does not run on a census day.`);
-    return 0;
+    return previousDay;
   }
   const readJson = (f: string) => (existsSync(f) ? (JSON.parse(readFileSync(f, "utf8")) as { rows?: BoardRow[]; attempts?: string[] }) : null);
   const prev = readJson(file);
@@ -1025,7 +1101,7 @@ export async function main(argv: string[]): Promise<number> {
   const t = final.totals;
   console.log(`done: ${t.rows} rows · ALLOW ${t.allow} · REFUSE ${t.refuse} · SKIPPED ${t.skipped} · UNCLEAR (not sent) ${t.unclear ?? 0} · paid ${t.paidUsdc} USDC → ${file}, ${latest}`);
   logReconcile(reconcile);
-  return reconcile.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
+  return reconcile.status === "ok" ? previousDay : EXIT_PAYMENT_CHECK;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

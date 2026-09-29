@@ -71,6 +71,13 @@ export interface ReconcileResult {
   recorded: { tx: string; url: string }[];
   unmatched: Unmatched[];
   error?: string;
+  /**
+   * A later check that could not read the chain. The result above (and its list of payments on no
+   * row) is kept as it was; this says the latest attempt did not run.
+   */
+  lastAttempt?: { checkedAt: string; status: "unavailable"; window: { from: string; to: string }; error?: string };
+  /** Set by the next UTC day's first run, which checks the day again for payments settled after its last run. */
+  nextDayCheckedAt?: string;
 }
 
 /** The ms timestamp in an x402 payment note ("x402-payment-v2-1759..."), from the indexer's base64 note. */

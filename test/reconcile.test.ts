@@ -154,21 +154,26 @@ test("reconcileFile: reads every board file in the directory as recorded, and to
   const board = { payer: f.payer, startedAt: f.startedAt, finishedAt: f.finishedAt, totals: { rows: 76, allow: 0, refuse: 0, skipped: 0, paidUsdc: "0.961100" }, rows: clone(f.rowsBefore) };
   writeFileSync(join(dir, "2026-09-29.json"), JSON.stringify(board));
   writeFileSync(join(dir, "spend-mainnet.json"), JSON.stringify({ day: "2026-09-29" }));
-  const r = await reconcileFile(board, dir, { indexerUrl: INDEXER, usdcAsaId: USDC }, new Date(Date.parse(f.finishedAt) + 120_000), fakeIndexer(f.transfers, f.groups));
+  const r = await reconcileFile(board, dir, { indexerUrl: INDEXER, usdcAsaId: USDC }, new Date(Date.parse(f.finishedAt) + 120_000), { fetchImpl: fakeIndexer(f.transfers, f.groups) });
   assert.equal(r.status, "ok");
   assert.equal(r.recorded.length, 2);
   assert.equal(board.totals.paidUsdc, "0.972100");
 });
 
-test("/board shows how many payments are on no row, or that the check could not run; nothing when all are on a row", () => {
+test("/board shows how many payments are on no row for the time the check covered, or that the check could not run; nothing when all are on a row", () => {
   const base = { version: 1, network: "algorand:x", networkName: "mainnet", date: "2026-09-27", startedAt: "", finishedAt: "", totals: {}, rows: FX.census0927SameTime.rows.slice(0, 3) };
-  const unmatched = parseBoard(JSON.stringify({ ...base, reconcile: { status: "unmatched", checkedAt: "2026-09-27T05:03:00Z", transfers: 63, onRows: 58, recorded: [], unmatched: [{ tx: "3QDAONYNX2US3TLE3UUNT5VTEFJVLMMXYKB65LKM7DZZ3D57HYZQ", amountUsdc: "0.001000", payTo: "6L4N", why: "3 open rows" }, {}, {}, {}, {}] } }))!;
+  const window = { from: "2026-09-27T04:30:00.890Z", to: "2026-09-27T05:02:46.511Z" };
+  const unmatched = parseBoard(JSON.stringify({ ...base, reconcile: { status: "unmatched", checkedAt: "2026-09-27T05:03:00Z", window, transfers: 63, onRows: 58, recorded: [], unmatched: [{ tx: "3QDAONYNX2US3TLE3UUNT5VTEFJVLMMXYKB65LKM7DZZ3D57HYZQ", amountUsdc: "0.001000", payTo: "6L4N", why: "3 open rows" }, {}, {}, {}, {}] } }))!;
   assert.equal(unmatched.reconcile?.unmatched, 5);
   assert.equal(unmatched.reconcile?.unmatchedTx?.length, 1);
-  assert.match(boardHtml(unmatched), /Payment check: 5 USDC payments the board wallet made during this run are on chain but on no row/);
-  const down = parseBoard(JSON.stringify({ ...base, reconcile: { status: "unavailable", checkedAt: "x", error: "indexer 502" } }))!;
-  assert.match(boardHtml(down), /Payment check not done: after this run the chain could not be read/);
-  const ok = parseBoard(JSON.stringify({ ...base, reconcile: { status: "ok", checkedAt: "x", transfers: 3, onRows: 3, recorded: [], unmatched: [] } }))!;
+  assert.match(boardHtml(unmatched), /Payment check: 5 USDC payments the board wallet made between 2026-09-27 04:30 UTC and 2026-09-27 05:02 UTC are on chain but on no row/);
+  assert.doesNotMatch(boardHtml(unmatched), /during this run/);
+  const down = parseBoard(JSON.stringify({ ...base, reconcile: { status: "unavailable", checkedAt: "2026-09-27T05:03:00Z", window, error: "indexer 502" } }))!;
+  assert.match(boardHtml(down), /Payment check not done: the chain could not be read at 2026-09-27 05:03 UTC, so it is not confirmed that every payment the board wallet made between 2026-09-27 04:30 UTC and 2026-09-27 05:02 UTC is on a row/);
+  const ok = parseBoard(JSON.stringify({ ...base, reconcile: { status: "ok", checkedAt: "x", window, transfers: 3, onRows: 3, recorded: [], unmatched: [] } }))!;
   assert.doesNotMatch(boardHtml(ok), /Payment check/);
   assert.doesNotMatch(boardHtml(parseBoard(JSON.stringify(base))), /Payment check/);
+  // A later check that could not read the chain: the earlier result stays, and the banner says both.
+  const okThenDown = parseBoard(JSON.stringify({ ...base, reconcile: { status: "ok", checkedAt: "x", window, transfers: 3, onRows: 3, recorded: [], unmatched: [], lastAttempt: { checkedAt: "2026-09-27T18:20:00Z", status: "unavailable", error: "indexer 502" } } }))!;
+  assert.match(boardHtml(okThenDown), /every payment the board wallet made between .* is on a row\. The latest check, at 2026-09-27 18:20 UTC, could not read the chain/);
 });

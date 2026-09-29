@@ -74,6 +74,10 @@ export interface BoardFile {
 export interface BoardReconcile {
   checkedAt: string;
   status: "ok" | "unmatched" | "unavailable";
+  /** The time the check covered (ISO): from the run's start (less 2 minutes) to the time of the check. */
+  window?: { from: string; to: string };
+  /** A later check that could not read the chain (the result above is kept as it was). */
+  lastAttempt?: { checkedAt: string; error?: string };
   transfers: number;
   onRows: number;
   recorded: number;
@@ -90,9 +94,15 @@ function cleanReconcile(v: unknown): BoardReconcile | undefined {
   if (!status) return undefined;
   const n = (x: unknown) => (typeof x === "number" && Number.isInteger(x) && x >= 0 ? x : 0);
   const len = (x: unknown) => (Array.isArray(x) ? x.length : n(x));
+  const w = (o.window ?? {}) as Record<string, unknown>;
+  const from = str(w.from, 40);
+  const to = str(w.to, 40);
+  const la = (o.lastAttempt ?? null) as Record<string, unknown> | null;
   return {
     checkedAt: str(o.checkedAt, 40) ?? "",
     status,
+    window: from && to ? { from, to } : undefined,
+    lastAttempt: la && typeof la === "object" && la.status === "unavailable" ? { checkedAt: str(la.checkedAt, 40) ?? "", error: str(la.error, 300) } : undefined,
     transfers: n(o.transfers),
     onRows: n(o.onRows),
     recorded: len(o.recorded),
@@ -108,13 +118,25 @@ function cleanReconcile(v: unknown): BoardReconcile | undefined {
   };
 }
 
-/** The banner for a run whose payments are not all on a row, or could not be checked ("" when all are). */
+/** "2026-09-30 06:15 UTC" from an ISO time ("" when it does not parse). */
+function utcMinute(iso: string | undefined): string {
+  const t = Date.parse(iso ?? "");
+  return Number.isFinite(t) ? `${new Date(t).toISOString().slice(0, 16).replace("T", " ")} UTC` : "";
+}
+
+/**
+ * The banner for a payment check that did not find every payment on a row, or could not read the chain
+ * ("" when every payment is on a row). It names the time the check covered: the run's start to the check.
+ */
 export function reconcileBanner(r: BoardReconcile | undefined): string {
-  if (!r || r.status === "ok") return "";
+  if (!r) return "";
+  const span = r.window ? `between ${utcMinute(r.window.from)} and ${utcMinute(r.window.to)}` : "in the time this file covers";
+  const late = r.lastAttempt ? ` The latest check, at ${utcMinute(r.lastAttempt.checkedAt)}, could not read the chain, so later payments are not confirmed.` : "";
   if (r.status === "unavailable")
-    return "Payment check not done: after this run the chain could not be read, so it is not confirmed that every payment the board wallet made is on a row.";
-  const s = r.unmatched === 1 ? "" : "s";
-  return `Payment check: ${r.unmatched} USDC payment${s} the board wallet made during this run ${r.unmatched === 1 ? "is" : "are"} on chain but on no row, because ${r.unmatched === 1 ? "it" : "they"} could not be paired one to one with a purchase. Listed in board.json under reconcile.`;
+    return `Payment check not done: the chain could not be read at ${utcMinute(r.checkedAt)}, so it is not confirmed that every payment the board wallet made ${span} is on a row.`;
+  if (r.status === "ok") return late ? `Payment check: every payment the board wallet made ${span} is on a row.${late}` : "";
+  const one = r.unmatched === 1;
+  return `Payment check: ${r.unmatched} USDC payment${one ? "" : "s"} the board wallet made ${span} ${one ? "is" : "are"} on chain but on no row, because ${one ? "it" : "they"} could not be paired one to one with a purchase. Listed in board.json under reconcile.${late}`;
 }
 
 export const BOARD_ISSUES_URL = "https://github.com/kzmttkc/vet402-algorand/issues";
