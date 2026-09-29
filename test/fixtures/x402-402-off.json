@@ -31,7 +31,7 @@
       "input": {
        "type": "http",
        "queryParams": {
-        "url": "https://seller.example/v1/data"
+        "url": "https://algorand.ottoai.services/base-ecosystem-news"
        },
        "method": "GET"
       },
@@ -40,7 +40,7 @@
        "example": {
         "verdict": "ALLOW",
         "reason": "delivered",
-        "target": "https://seller.example/v1/data",
+        "target": "https://algorand.ottoai.services/base-ecosystem-news",
         "customerPayment": {
          "transaction": "TXID_CUSTOMER...",
          "network": "algorand:...",
@@ -48,30 +48,31 @@
          "payTo": "VET402..."
         },
         "declared": {
-         "description": "Weather data",
+         "description": "Base-chain ecosystem news for Base-native agents...",
          "mimeType": "application/json",
          "expectedKeys": [
-          "weather",
-          "temperature"
-         ]
+          "status",
+          "data"
+         ],
+         "exampleKeys": []
         },
         "price": {
-         "amountAtomic": "5000",
-         "usdc": "0.005000",
-         "payTo": "SELLER...",
-         "network": "algorand:...",
+         "amountAtomic": "1000",
+         "usdc": "0.001000",
+         "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+         "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
          "asset": "31566704"
         },
         "downstreamPayment": {
          "success": true,
          "transaction": "TXID_SELLER...",
-         "network": "algorand:..."
+         "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
         },
         "delivery": {
          "status": 200,
-         "contentType": "application/json",
-         "bytes": 64,
-         "summary": "object{weather:string=\"sunny\", temperature:number=70}",
+         "contentType": "application/json; charset=utf-8",
+         "bytes": 4096,
+         "summary": "object{status:string=\"success\", data:object, meta:object}",
          "missingKeys": []
         }
        }
@@ -199,7 +200,7 @@
       "input": {
        "type": "http",
        "queryParams": {
-        "url": "https://seller.example/v1/data"
+        "url": "https://algorand.ottoai.services/base-ecosystem-news"
        },
        "method": "GET"
       },
@@ -208,7 +209,7 @@
        "example": {
         "verdict": "ALLOW",
         "reason": "delivered",
-        "target": "https://seller.example/v1/data",
+        "target": "https://algorand.ottoai.services/base-ecosystem-news",
         "customerPayment": {
          "transaction": "TXID_CUSTOMER...",
          "network": "algorand:...",
@@ -216,30 +217,31 @@
          "payTo": "VET402..."
         },
         "declared": {
-         "description": "Weather data",
+         "description": "Base-chain ecosystem news for Base-native agents...",
          "mimeType": "application/json",
          "expectedKeys": [
-          "weather",
-          "temperature"
-         ]
+          "status",
+          "data"
+         ],
+         "exampleKeys": []
         },
         "price": {
-         "amountAtomic": "5000",
-         "usdc": "0.005000",
-         "payTo": "SELLER...",
-         "network": "algorand:...",
+         "amountAtomic": "1000",
+         "usdc": "0.001000",
+         "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+         "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
          "asset": "31566704"
         },
         "downstreamPayment": {
          "success": true,
          "transaction": "TXID_SELLER...",
-         "network": "algorand:..."
+         "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
         },
         "delivery": {
          "status": 200,
-         "contentType": "application/json",
-         "bytes": 64,
-         "summary": "object{weather:string=\"sunny\", temperature:number=70}",
+         "contentType": "application/json; charset=utf-8",
+         "bytes": 4096,
+         "summary": "object{status:string=\"success\", data:object, meta:object}",
          "missingKeys": []
         }
        }
@@ -368,14 +370,14 @@
       "input": {
        "type": "http",
        "queryParams": {
-        "seller": "seller.example"
+        "seller": "algorand.ottoai.services"
        },
        "method": "GET"
       },
       "output": {
        "type": "json",
        "example": {
-        "seller": "seller.example",
+        "seller": "algorand.ottoai.services",
         "network": "algorand:...",
         "customerPayment": {
          "transaction": "TXID_CUSTOMER...",
@@ -395,7 +397,7 @@
         },
         "results": [
          {
-          "resourceUrl": "https://seller.example/v1/data",
+          "resourceUrl": "https://algorand.ottoai.services/base-ecosystem-news",
           "verdict": "ALLOW",
           "reason": "delivered",
           "class": "delivered",
@@ -566,33 +568,33 @@
       "input": {
        "type": "http",
        "queryParams": {
-        "url": "https://seller.example/v1/data"
+        "url": "https://algorand.ottoai.services/base-ecosystem-news"
        },
        "method": "GET"
       },
       "output": {
        "type": "json",
        "example": {
-        "url": "https://seller.example/v1/data",
+        "url": "https://algorand.ottoai.services/base-ecosystem-news",
         "match": "exact",
         "class": "DELIVERED",
         "countedAgainstSeller": true,
         "reason": "delivered",
-        "date": "2026-09-27",
+        "date": "2026-09-29",
         "sellerTx": "TXID_SELLER...",
         "sellerTxUrl": "https://allo.info/tx/TXID_SELLER...",
         "latest": {
          "class": "DELIVERED",
          "reason": "delivered",
-         "date": "2026-09-27",
+         "date": "2026-09-29",
          "method": "GET",
-         "url": "https://seller.example/v1/data",
+         "url": "https://algorand.ottoai.services/base-ecosystem-news",
          "paid": true,
          "sellerTx": "TXID_SELLER...",
-         "source": "census"
+         "source": "daily"
         },
         "results": [],
-        "sellerPage": "https://vet402-algorand.vercel.app/seller/seller.example",
+        "sellerPage": "https://vet402-algorand.vercel.app/seller/algorand.ottoai.services",
         "customerPayment": {
          "transaction": "TXID_CUSTOMER...",
          "network": "algorand:...",
@@ -753,15 +755,23 @@
       "input": {
        "type": "http",
        "queryParams": {
-        "url": "https://seller.example/v1/data"
+        "url": "https://algorand.ottoai.services/base-ecosystem-news"
        },
        "method": "GET"
       },
       "output": {
        "type": "json",
        "example": {
-        "forecast": "sunny",
-        "temperature": 21
+        "status": "success",
+        "data": {
+         "endpoint": "base-ecosystem-news"
+        },
+        "meta": {
+         "generatedAt": "",
+         "validUntil": "",
+         "stalenessSec": 0,
+         "degraded": false
+        }
        }
       }
      },

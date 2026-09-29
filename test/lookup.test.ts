@@ -18,6 +18,7 @@ import type { SpendGuard } from "../src/spend.js";
 import { PAYMENTS_CSV_HEADER, UNCLEAR_NOTE, boardHtml, paymentsCsv, readBoard, type BoardFile, type BoardRow } from "../src/board.js";
 import { badgeSvg, sellerHtml, sellerView } from "../src/seller.js";
 import { lookupVerdict, normalizeTargetUrl } from "../src/lookup.js";
+import { LISTING_EXAMPLE_URL } from "../src/bazaar.js";
 
 // Tests read only local files (never GitHub raw).
 process.env.BOARD_REMOTE = "off";
@@ -112,7 +113,7 @@ test("unpaid /v1/verdict: 402 at 0.001 USDC with the challenge tag and a Bazaar 
   assert.equal(pr.accepts[0].extra.tag, "x402-global-challenge");
   const bazaar = pr.extensions?.bazaar;
   assert.ok(bazaar, "Bazaar extension declared");
-  assert.deepEqual(bazaar.info.input, { type: "http", queryParams: { url: "https://seller.example/v1/data" }, method: "GET" });
+  assert.deepEqual(bazaar.info.input, { type: "http", queryParams: { url: LISTING_EXAMPLE_URL }, method: "GET" });
   assert.equal(bazaar.info.output.example.class, "DELIVERED");
   assert.deepEqual(((await res.json()) as { lookup: unknown }).lookup, { found: true, match: "exact", results: 1 });
   assert.deepEqual(trace, []);

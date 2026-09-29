@@ -1,7 +1,7 @@
 /**
  * Client part for agents: "check with vet402 before you buy".
  *
- *   const r = await checkBeforeBuy("https://seller.example/v1/data", { mnemonic, network: "mainnet" });
+ *   const r = await checkBeforeBuy("https://algorand.ottoai.services/base-ecosystem-news", { mnemonic, network: "mainnet" });
  *   if (r.verdict === "ALLOW") { ...buy it yourself... }
  *
  * Pays vet402 (default 0.05 USDC on Algorand) for GET /v1/check?url=<target>
@@ -68,7 +68,7 @@ export interface CheckOptions {
 }
 
 export interface CheckResult {
-  /** HTTP status from vet402. 200 = paid and judged; 400/503 = refused before charging. */
+  /** HTTP status from vet402. 200 = paid and judged; 400/422/503 = refused before charging. */
   httpStatus: number;
   verdict?: "ALLOW" | "REFUSE";
   reason?: string;

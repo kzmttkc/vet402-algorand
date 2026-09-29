@@ -39,10 +39,12 @@ vet402 pays a seller **only after the customer's payment has settled**. The stoc
 | `price_changed` | REFUSE (`/v1/buy`: the seller now asks more, or another `payTo`, than the customer paid for) | no |
 | `daily_cap_reached` | REFUSE | no |
 | `cap_check_unavailable` | REFUSE | no |
-| `self_dealing` | REFUSE | no |
+| `self_dealing` | REFUSE (`/v1/check` on a vet402 host: HTTP 422 on the unpaid request, no 402) | no |
 | `requirements_body_only` | REFUSE | no |
 | `no_supported_accept` / `not_x402` / `probe_error` | REFUSE | no |
-| `invalid_target` | REFUSE (HTTP 400 before settlement, customer not charged) | no |
+| `invalid_target` | REFUSE (HTTP 400: on the unpaid request instead of a 402, and again before settlement; customer not charged) | no |
+
+`/v1/check` refuses on the unpaid request, without a 402, a URL it cannot buy: not `https`, a host that does not resolve within 3 s, a private address, or a vet402 host (`invalid_target` 400 / `self_dealing` 422, JSON with `detail` and `charged: false`). The same checks run again after the payment is verified and before it settles. After settlement the purchase checks the URL once more (`https`, resolves, public addresses) and refuses a seller whose `payTo` is a vet402 wallet.
 
 What counts as a promise:
 

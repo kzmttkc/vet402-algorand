@@ -220,7 +220,8 @@ test("GET /activity and /activity.json are free and cached; /v1/check still asks
   let calls = 0;
   const app = createApp(cfg, {
     payTo: PAYTO,
-    probeDeps: { fetchImpl: fetch, paidFetch: async () => assert.fail("must not pay") },
+    // The unpaid /v1/check resolves the target before its 402: answer offline.
+    probeDeps: { fetchImpl: fetch, paidFetch: async () => assert.fail("must not pay"), resolveHost: async () => ["93.184.216.34"] },
     guard: new LocalSpendGuard(new SpendLedger(40_000n, 1_000_000n)),
     facilitator: fakeFacilitator(),
     activity: ledgerFor(scenario().f),

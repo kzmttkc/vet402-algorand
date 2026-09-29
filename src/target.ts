@@ -105,3 +105,54 @@ export async function checkTarget(
   if (addrs.length === 0 || addrs.some(isPrivateAddress)) return { ok: false, detail: "private or unresolvable address" };
   return { ok: true, url };
 }
+
+/** How long the check before a charge waits for DNS (the unpaid request pays for this lookup). */
+export const PRECHARGE_DNS_TIMEOUT_MS = 3000;
+
+export type PrechargeCheck =
+  | { ok: true; url: URL }
+  | { ok: false; status: 400 | 422; reason: "invalid_target" | "self_dealing"; detail: string };
+
+/**
+ * The target checks that need no seller contact, run before vet402 asks the customer to pay
+ * (unpaid request: no 402 for a URL vet402 cannot buy) and again after verify, before settle.
+ * checkTarget (https only, resolves, public addresses only) with DNS bounded by `timeoutMs`,
+ * then vet402's own hosts. The checks after settlement (probe.ts) stay as they are.
+ */
+export async function checkBeforeCharge(
+  raw: string,
+  o: {
+    allowPrivate: boolean;
+    resolve?: (host: string) => Promise<string[]>;
+    /** Host names that are vet402 itself (a match also covers subdomains). */
+    isOwnHost: (hostname: string) => boolean;
+    /** host[:port] serving this request: a target on it is vet402 itself. */
+    requestHost?: string;
+    timeoutMs?: number;
+  },
+): Promise<PrechargeCheck> {
+  const ms = o.timeoutMs ?? PRECHARGE_DNS_TIMEOUT_MS;
+  const base = o.resolve ?? (async (h: string) => (await lookup(h, { all: true })).map((r) => r.address));
+  let timedOut = false;
+  const bounded = (h: string) =>
+    new Promise<string[]>((resolve, reject) => {
+      const t = setTimeout(() => {
+        timedOut = true;
+        reject(new Error("dns timeout"));
+      }, ms);
+      base(h).then(
+        (v) => (clearTimeout(t), resolve(v)),
+        (e) => (clearTimeout(t), reject(e)),
+      );
+    });
+  const t = await checkTarget(raw, o.allowPrivate, bounded);
+  if (!t.ok) {
+    const detail = timedOut ? `host did not resolve within ${ms / 1000} s` : t.detail;
+    return { ok: false, status: 400, reason: "invalid_target", detail };
+  }
+  const host = t.url.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase();
+  if (o.isOwnHost(host) || (o.requestHost !== undefined && t.url.host.toLowerCase() === o.requestHost.toLowerCase())) {
+    return { ok: false, status: 422, reason: "self_dealing", detail: "this URL is vet402 itself; vet402 never buys from itself" };
+  }
+  return { ok: true, url: t.url };
+}

@@ -29,7 +29,7 @@ import { loadKeys, loadPayer } from "./keys.js";
 import { SpendLedger } from "./caps.js";
 import { IndexedSpendGuard, usdcSentToday, type SpendGuard } from "./spend.js";
 import { makePaidFetch, probe, type ProbeDeps } from "./probe.js";
-import { checkTarget } from "./target.js";
+import { checkBeforeCharge } from "./target.js";
 import { settleFirstMiddleware, shareInitialize, type SettleFirstEnv } from "./settle-first.js";
 import { FAVICON_ICO_B64, ICON_PNG_B64, demoHtml, landingHtml } from "./landing.js";
 import { ActivityLedger, activityHtml, type ActivityReport } from "./activity.js";
@@ -38,7 +38,7 @@ import { FairnessLedger, MAINNET_WALLETS, boardRunsFrom, registerFairness, type 
 import { registerSeller } from "./seller.js";
 import { registerFixFirst } from "./fix-first.js";
 import { registerVerdictLookup, VERDICT_PRICE_USDC } from "./lookup.js";
-import { BazaarCatalog, UrlListCatalog, type Catalog } from "./bazaar.js";
+import { BazaarCatalog, UrlListCatalog, isOwnHost, LISTING_EXAMPLE_HOST, LISTING_EXAMPLE_PRICE, LISTING_EXAMPLE_URL, type Catalog } from "./bazaar.js";
 import { neverPaidVet402, registerBuy } from "./buy.js";
 import { BaseCustomerReader, withBase } from "./base.js";
 import { registerTry, type TrialDeps } from "./try.js";
@@ -51,22 +51,22 @@ type FacilitatorLike = ConstructorParameters<typeof x402ResourceServer>[0];
 export const CHECK_OUTPUT_EXAMPLE = {
   verdict: "ALLOW",
   reason: "delivered",
-  target: "https://seller.example/v1/data",
+  target: LISTING_EXAMPLE_URL,
   customerPayment: { transaction: "TXID_CUSTOMER...", network: "algorand:...", amount: "50000", payTo: "VET402..." },
-  declared: { description: "Weather data", mimeType: "application/json", expectedKeys: ["weather", "temperature"] },
-  price: { amountAtomic: "5000", usdc: "0.005000", payTo: "SELLER...", network: "algorand:...", asset: "31566704" },
-  downstreamPayment: { success: true, transaction: "TXID_SELLER...", network: "algorand:..." },
-  delivery: { status: 200, contentType: "application/json", bytes: 64, summary: "object{weather:string=\"sunny\", temperature:number=70}", missingKeys: [] },
+  declared: { description: "Base-chain ecosystem news for Base-native agents...", mimeType: "application/json", expectedKeys: ["status", "data"], exampleKeys: [] },
+  price: LISTING_EXAMPLE_PRICE,
+  downstreamPayment: { success: true, transaction: "TXID_SELLER...", network: LISTING_EXAMPLE_PRICE.network },
+  delivery: { status: 200, contentType: "application/json; charset=utf-8", bytes: 4096, summary: "object{status:string=\"success\", data:object, meta:object}", missingKeys: [] },
 };
 
 export const AUDIT_OUTPUT_EXAMPLE = {
-  seller: "seller.example",
+  seller: LISTING_EXAMPLE_HOST,
   network: "algorand:...",
   customerPayment: { transaction: "TXID_CUSTOMER...", network: "algorand:...", amount: "500000", payTo: "VET402..." },
   summary: { checked: 3, delivered: 1, mismatch: 1, unreachable: 0, unclear: 1, skipped: 0, sellerPayments: 2, spentUsdc: "0.020000" },
   results: [
     {
-      resourceUrl: "https://seller.example/v1/data",
+      resourceUrl: LISTING_EXAMPLE_URL,
       verdict: "ALLOW",
       reason: "delivered",
       class: "delivered",
@@ -123,7 +123,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   shareInitialize(resourceServer)().catch(() => {}); // a failure is retried by the first request
 
   const discovery = declareDiscoveryExtension({
-    input: { url: "https://seller.example/v1/data" },
+    input: { url: LISTING_EXAMPLE_URL },
     inputSchema: {
       type: "object",
       properties: { url: { type: "string", description: "x402 endpoint for vet402 to pay and check" } },
@@ -162,7 +162,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   };
 
   const auditDiscovery = declareDiscoveryExtension({
-    input: { seller: "seller.example" },
+    input: { seller: LISTING_EXAMPLE_HOST },
     inputSchema: {
       type: "object",
       properties: { seller: { type: "string", description: "the seller to audit: its host (api.example.com) or its Algorand payTo address" } },
@@ -269,6 +269,24 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
   /** The paid request's plan and the most it may pay for (kept per request object). */
   const auditRuns = new WeakMap<Request, { plan: AuditPlan; maxPayments: number }>();
 
+  /**
+   * /v1/check: the target checks that need no seller contact (a URL, https, resolves within a few
+   * seconds, public addresses only, not vet402 itself). Run on the unpaid request, so no 402 is
+   * offered for a URL vet402 cannot buy, and again after verify and before settle.
+   */
+  const checkTargetBeforeCharge = async (c: Context<SettleFirstEnv>): Promise<Response | null> => {
+    const target = c.req.query("url");
+    if (!target) return c.json({ error: "missing url query parameter" }, 400);
+    const t = await checkBeforeCharge(target, {
+      allowPrivate: cfg.allowPrivateTargets,
+      resolve: deps.probeDeps.resolveHost,
+      isOwnHost: (h) => isOwnHost(h),
+      requestHost: new URL(c.req.url).host,
+    });
+    if (!t.ok) return c.json({ verdict: "REFUSE", reason: t.reason, target, detail: t.detail, charged: false }, t.status);
+    return null;
+  };
+
   const app = new Hono<SettleFirstEnv>();
 
   app.get("/icon-512.png", (c) =>
@@ -339,6 +357,10 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
     settleFirstMiddleware(httpServer, {
       // Free checks: a request we cannot serve is refused before the customer is charged.
       beforeChallenge: async (c) => {
+        if (c.req.path === "/v1/check") {
+          const stop = await checkTargetBeforeCharge(c);
+          return stop ? { stop } : null;
+        }
         if (c.req.path !== "/v1/audit") return null;
         const seller = c.req.query("seller") ?? "";
         const ref = parseSeller(seller);
@@ -376,10 +398,9 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
           auditRuns.set(c.req.raw, { plan, maxPayments: Math.min(shown, plan.paying) });
           return null;
         }
-        const target = c.req.query("url");
-        if (!target) return c.json({ error: "missing url query parameter" }, 400);
-        const t = await checkTarget(target, cfg.allowPrivateTargets, deps.probeDeps.resolveHost);
-        if (!t.ok) return c.json({ verdict: "REFUSE", reason: "invalid_target", target, detail: t.detail }, 400);
+        const stop = await checkTargetBeforeCharge(c);
+        if (stop) return stop;
+        const target = c.req.query("url") ?? "";
         const h = await deps.guard.headroom();
         if (!h.ok) return c.json({ verdict: "REFUSE", reason: h.reason, target, detail: h.detail }, 503);
         return null;

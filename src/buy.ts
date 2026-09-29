@@ -39,7 +39,7 @@ import type { SpendGuard } from "./spend.js";
 import { MAX_BODY_BYTES, parsePaymentRequired, probeWithBody, readCapped, type ProbeDeps } from "./probe.js";
 import { sameNetwork, selectAccept, type AcceptLike } from "./declaration.js";
 import { checkTarget } from "./target.js";
-import { buildRequest, type Catalog } from "./bazaar.js";
+import { buildRequest, LISTING_EXAMPLE_BODY, LISTING_EXAMPLE_URL, type Catalog } from "./bazaar.js";
 import { settleFirstMiddleware, type CustomerPayment, type SettleFirstEnv } from "./settle-first.js";
 import { withBase } from "./base.js";
 import { decodePaymentSignatureHeader } from "@x402/core/http";
@@ -420,13 +420,13 @@ export function registerBuy(app: Hono<SettleFirstEnv>, cfg: AppConfig, resourceS
   );
   const description = `vet402 buys the x402 resource you name for you: you pay the seller's price + ${atomicToUsdc(cfg.buyFeeAtomic)} USDC; after your payment settles vet402 pays the seller (per-call cap ${atomicToUsdc(cfg.maxPerCallAtomic)} USDC), returns the seller's response body as-is, and adds its verdict (ALLOW/REFUSE) and both tx ids in x-vet402-* headers. The unpaid request is free and shows the price. No refunds.`;
   const discovery = declareDiscoveryExtension({
-    input: { url: "https://seller.example/v1/data" },
+    input: { url: LISTING_EXAMPLE_URL },
     inputSchema: {
       type: "object",
       properties: { url: { type: "string", description: "x402 endpoint for vet402 to buy (and check) for you" } },
       required: ["url"],
     },
-    output: { example: { forecast: "sunny", temperature: 21 } },
+    output: { example: LISTING_EXAMPLE_BODY },
   });
   const httpServer = new x402HTTPResourceServer(resourceServer, {
     [`GET ${BUY_PATH}`]: { accepts, description, mimeType: "application/octet-stream", extensions: discovery },

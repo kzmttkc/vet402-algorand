@@ -3,6 +3,9 @@
  * Used by base-accept.test.ts: with BASE_ACCEPT off the result must equal the golden file taken from
  * the code before Base existed (test/fixtures/x402-402-off.json, from e563b4c).
  * Imports only modules that existed at e563b4c, so the same file produces the golden there.
+ * One later change to the golden (fix/listing-example): only the Bazaar example input and output
+ * (extensions.bazaar.info.input / .output.example) of each route, from the placeholder seller to a
+ * real one. Status, accepts, resource and body are as at e563b4c.
  */
 import { join } from "node:path";
 import { ALGORAND_TESTNET_CAIP2 } from "@x402/avm";

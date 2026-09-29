@@ -29,6 +29,7 @@ import {
 import { settleFirstMiddleware, type SettleFirstEnv } from "./settle-first.js";
 import { SELLER_PAGE_BASE } from "./seller.js";
 import { withBase } from "./base.js";
+import { LISTING_EXAMPLE_HOST, LISTING_EXAMPLE_URL } from "./bazaar.js";
 
 export const VERDICT_PATH = "/v1/verdict";
 export const VERDICT_PRICE_USDC = "0.001";
@@ -128,17 +129,17 @@ export function lookupVerdict(target: URL, files: { daily: BoardFile | null; cen
 }
 
 export const VERDICT_OUTPUT_EXAMPLE = {
-  url: "https://seller.example/v1/data",
+  url: LISTING_EXAMPLE_URL,
   match: "exact",
   class: "DELIVERED",
   countedAgainstSeller: true,
   reason: "delivered",
-  date: "2026-09-27",
+  date: "2026-09-29",
   sellerTx: "TXID_SELLER...",
   sellerTxUrl: "https://allo.info/tx/TXID_SELLER...",
-  latest: { class: "DELIVERED", reason: "delivered", date: "2026-09-27", method: "GET", url: "https://seller.example/v1/data", paid: true, sellerTx: "TXID_SELLER...", source: "census" },
+  latest: { class: "DELIVERED", reason: "delivered", date: "2026-09-29", method: "GET", url: LISTING_EXAMPLE_URL, paid: true, sellerTx: "TXID_SELLER...", source: "daily" },
   results: [],
-  sellerPage: "https://vet402-algorand.vercel.app/seller/seller.example",
+  sellerPage: `https://vet402-algorand.vercel.app/seller/${LISTING_EXAMPLE_HOST}`,
   customerPayment: { transaction: "TXID_CUSTOMER...", network: "algorand:...", amount: "1000", payTo: "VET402..." },
   note: "vet402 made no payment to the seller for this answer; it reports its own earlier purchase.",
 };
@@ -163,7 +164,7 @@ export function registerVerdictLookup(
   const file = o.file ?? defaultBoardFile();
   const load = o.load ?? sharedBoardLoader();
   const discovery = declareDiscoveryExtension({
-    input: { url: "https://seller.example/v1/data" },
+    input: { url: LISTING_EXAMPLE_URL },
     inputSchema: {
       type: "object",
       properties: { url: { type: "string", description: "x402 endpoint to look up in vet402's own purchase records" } },

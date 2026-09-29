@@ -12,6 +12,29 @@ import { fillPlaceholder, fillPlaceholders, placeholderHint, type FieldSchema } 
 export const DEFAULT_BAZAAR = "https://facilitator.goplausible.xyz/discovery/resources";
 /** vet402's own hosts: never bought from (self-dealing by host). */
 export const OWN_HOSTS = ["vet402-algorand.vercel.app", "vet402.com"];
+
+/**
+ * The example input vet402 publishes in its own Bazaar listings (/v1/check, /v1/buy, /v1/verdict, /v1/audit).
+ * A real seller that a crawler or agent can buy as-is: a GET with no input, 0.001 USDC on Algorand MainNet,
+ * ALLOW (delivered) in both the census of 2026-09-28 and the daily board of 2026-09-29.
+ * Replace it (and LISTING_EXAMPLE_BODY) when it stops delivering on the board.
+ */
+export const LISTING_EXAMPLE_URL = "https://algorand.ottoai.services/base-ecosystem-news";
+export const LISTING_EXAMPLE_HOST = new URL(LISTING_EXAMPLE_URL).host;
+/** The seller's payTo and price (from its 402), for the output examples. */
+export const LISTING_EXAMPLE_PRICE = {
+  amountAtomic: "1000",
+  usdc: "0.001000",
+  payTo: "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+  network: "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+  asset: "31566704",
+};
+/** The shape the seller delivers (its own published example; values are placeholders). */
+export const LISTING_EXAMPLE_BODY = {
+  status: "success",
+  data: { endpoint: "base-ecosystem-news" },
+  meta: { generatedAt: "", validUntil: "", stalenessSec: 0, degraded: false },
+};
 const MAX_BODY_CHARS = 8192;
 
 export interface BazaarItem {
