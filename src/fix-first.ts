@@ -173,7 +173,7 @@ export const FIX_MODES: readonly FixMode[] = [
     key: "settled_not_delivered",
     title: "Paid on chain, answered 402, delivered nothing",
     what: "vet402's payment settled on chain (tx on the seller page), but the route answered 402 and sent no data. The facilitator's error was \"transaction already in ledger\": the same payment was submitted again after it had settled.",
-    fix: "When settle reports that the payment is already on chain, treat it as settled and return the data, with the PAYMENT-RESPONSE header.",
+    fix: "Make sure each request settles once. \"already in ledger\" usually means a second settle of the same payment, for example payment middleware mounted twice on one route. Do not treat that error as payment: a settled payment is public on chain and could be replayed.",
     side: "seller",
     effort: 3,
   },
