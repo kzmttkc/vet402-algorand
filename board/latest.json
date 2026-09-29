@@ -1,0 +1,1583 @@
+{
+  "version": 1,
+  "mode": "daily",
+  "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+  "networkName": "mainnet",
+  "date": "2026-09-29",
+  "startedAt": "2026-09-29T05:34:53.077Z",
+  "finishedAt": "2026-09-29T05:42:55.418Z",
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "caps": {
+    "perCallUsdc": "0.100000",
+    "perDayUsdc": "3.000000"
+  },
+  "selection": {
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2432 items)",
+    "candidates": 76,
+    "excluded": {
+      "other_network_or_asset": 253,
+      "price_over_cap": 232,
+      "method_not_probed": 10,
+      "not_https": 11,
+      "own_address": 1,
+      "stale": 1171,
+      "bad_url": 1,
+      "not_cheapest_on_host": 677
+    }
+  },
+  "totals": {
+    "rows": 76,
+    "allow": 48,
+    "refuse": 28,
+    "skipped": 0,
+    "unclear": 0,
+    "paidUsdc": "0.961100"
+  },
+  "rows": [
+    {
+      "at": "2026-09-29T05:35:02.010Z",
+      "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "host": "api.algorand-indexer.xyz",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+      "priceUsdc": "0.000100",
+      "declared": {
+        "description": "Algorand account lookup: balance, status, participation, and auth-addr for a single address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "delivery_missing_keys",
+      "paid": true,
+      "tx": "GVI4PXHLPXUBH3A7ZHXCCTQYFZCGZGZB4DOF5RIAH7YGOZKPQ3YA",
+      "delivery": "200 application/json object{account:object, current-round:number=65497339}"
+    },
+    {
+      "at": "2026-09-29T05:35:02.783Z",
+      "url": "https://algorand-indexer.xyz/api/v1/queries/results/cZjh0_C61ddAVLAR50At_gueIpqvMsTt/unlock",
+      "host": "algorand-indexer.xyz",
+      "method": "POST",
+      "input": "body {\"payment_signature\":\"\"}",
+      "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+      "priceUsdc": "0.000100",
+      "declared": {
+        "description": "Unlock analytics query results (x402 hop-equivalent payment)",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 401, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:03.185Z",
+      "url": "https://a-identity.xyz/api/x402/algorand/tools/verify_agent",
+      "host": "a-identity.xyz",
+      "method": "POST",
+      "input": "body {\"agentId\":\"#0\"}",
+      "payTo": "WHZ74ZGNGZGAVEQZTHESENVP5RTHMEQ4BOUKF7UHWOADQMKXDKAK3FESJE",
+      "priceUsdc": "1.000000",
+      "declared": {
+        "description": "Verify an AI agent before you pay it: whether its ERC-8004 on-chain identity resolves, its KYA (Know Your Agent) status, whether it has been revoked, and a live probe of its endpoint. POST a JSON bod…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "price_over_cap",
+      "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:03.458Z",
+      "url": "https://agent402.tools/api/hash",
+      "host": "agent402.tools",
+      "method": "POST",
+      "input": "body {\"text\":\"hello world\",\"algo\":\"sha256\"}",
+      "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Cryptographic hash of a text string - sha256 (default), sha512, sha1 or md5 - returned as hex and base64. Use it for content fingerprints, integrity checks and deterministic ids; pure computation, in…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "algo",
+          "hex",
+          "base64"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "no_supported_accept",
+      "detail": "no exact/algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=/USDC 31566704 accept",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:10.634Z",
+      "url": "https://algo.netintel.dev/email/verify?email=user%40github.com",
+      "host": "algo.netintel.dev",
+      "method": "GET",
+      "input": "?email=user%40github.com",
+      "payTo": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Validate an email address — email verification before you send: syntax + MX + disposable/role/free-provider detection in one call, boolean-first (deliverable, safe_to_send) with a machine-readable re…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "ZD67F75J6C7REPH2HT3H6HTIHZ6REYH55WSMBRC6QHIN2V4CZHSA",
+      "delivery": "200 application/json; charset=utf-8 object{email:string=\"user@github.com\", deliverable:boolean=true, safe_to_send:boolean=true, result:string=\"deliverable\", reason:string=\"ok\", risk_flags:array(0), domain:string=\"github.com\", format_valid:boolean=true, mx_found:boolean=true,…"
+    },
+    {
+      "at": "2026-09-29T05:35:22.286Z",
+      "url": "https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
+      "host": "algorand-api.pxke.me",
+      "method": "GET",
+      "input": "?q=tinyman+volume&limit=10",
+      "payTo": "KSAVOYTVNB7A6NKCM4W2WBOOGFHWH2SEGR5T6OGB7THCAT5E36LDFEBTII",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Full-text search over every published PXke Algorand newspaper article (Typesense-ranked, typo-tolerant, synonym-aware). Returns up to 50 ranked hits with title, summary, a highlighted snippet, the pu…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "4PYILGGEQI37HIR4BJEWRGOXYZB7QI7LLXFLODDCWW4ALDBTKF3Q",
+      "delivery": "200 application/json object{query:string=\"tinyman volume\", engine:string=\"typesense\", items:array(10), settlement_tx_id:string=\"4PYILGGEQI37HIR4BJEWRGOXYZB7QI7LLXFLODD}"
+    },
+    {
+      "at": "2026-09-29T05:35:27.685Z",
+      "url": "https://algorand.ottoai.services/base-ecosystem-news",
+      "host": "algorand.ottoai.services",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Base-chain ecosystem news for Base-native agents, not the general crypto firehose. Up to 12 Base-scoped headlines from the last 48h, each with its own permalink and publication timestamp, screened ag…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "status",
+          "data"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "NDH267QKXFHVEZYHWYIFV6BNK7URQRNL6WVHSQXC4OQHVTEFCDKA",
+      "delivery": "200 application/json; charset=utf-8 object{status:string=\"success\", data:object, meta:object}"
+    },
+    {
+      "at": "2026-09-29T05:35:35.421Z",
+      "url": "https://api.agentkeep.online/v1/memory",
+      "host": "api.agentkeep.online",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "List wallet-scoped memory keys (no values).",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "D4AHBP56UM4LV2BMCVH2HK267DNMAPPQG52S6L2FWKP4RIK3OLSA",
+      "delivery": "200 application/json object{keys:array(0), receipt:object}"
+    },
+    {
+      "at": "2026-09-29T05:35:41.504Z",
+      "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
+      "host": "api.algofile.io",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "AlgoFile Integrated IPFS Storage Network & x402 Micro-payment Protocol",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 200, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:43.149Z",
+      "url": "https://api.blueprintstech.org/api/verify-counterparty",
+      "host": "api.blueprintstech.org",
+      "method": "POST",
+      "input": "body {\"address\":\"ADDRESS\"}",
+      "payTo": "V7XWYKY3WBKWRONX5NTHFNK77A7O3IS7XEMIUJQM6ZLZRWYVNT763I333Y",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Deterministic Algorand counterparty check for agents before they transfer assets or call a service.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 400, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:43.727Z",
+      "url": "https://api.glianalabs.com/a402/tools/embed",
+      "host": "api.glianalabs.com",
+      "method": "POST",
+      "input": "body {\"texts\":[\"harga tiket kereta ke Bandung\",\"train ticket price to Bandung\"]}",
+      "payTo": "SQ2NZ6TVGSGY7MQNEDYK27WX5TEDTV6WDPVIZO77DGKHJGAYV6ZYJUKT5U",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "GlianaAI - Pay-per-call AI models, live market data, SEC filings and identity APIs (100+ models incl. LLM chat), no signup, USDC on Algorand. This resource: tools/embed. Turn text into 1024-d vectors…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:35:49.912Z",
+      "url": "https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
+      "host": "api.iomarkets.ai",
+      "method": "GET",
+      "input": "?pair=BTC-USDC",
+      "payTo": "DZUL7JAPQUVT2YDXG4KTOCOS2BAY33MMYSUWWKJPGFWDS3SGR5TUIUDYNE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Rolling VWAP over a trailing window",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "PJ4E4LRPHIHTAN5KZINR2MFYSBQ7NBIRRZOIRTISXTXLNU2XT3EQ",
+      "delivery": "200 application/json object{symbol:string=\"BTC-USDC\", vwap:number=83037.2805154681}"
+    },
+    {
+      "at": "2026-09-29T05:36:01.000Z",
+      "url": "https://api.pqattest.com/attest",
+      "host": "api.pqattest.com",
+      "method": "POST",
+      "input": "body {\"txid\":\"OZ24DXUP6W3YIKK2KZ642WG2EAAIYJZE2IDGHCKMWOUERNL4UKWA\",\"chain\":\"algorand\"}",
+      "payTo": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "pq-attest proof bundle for a confirmed transaction, recorded on Algorand MainNet",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "5LUZEO77NEQSFUJ72WTL7AYTQPJF44DG5HX2LVHWVTSI5XOGB6MA",
+      "delivery": "200 application/json object{version:number=1, network:string=\"algorand-mainnet\", source:object, attest:object, attestor:object, signature:object}"
+    },
+    {
+      "at": "2026-09-29T05:36:06.847Z",
+      "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?from=WST&to=USD&amount=100",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Pacific FX rates: WST, FJD, TOP, PGK, SBD, VUV plus AUD, NZD, EUR, GBP, JPY, CNY, ALGO, and USDC, base USD. Optional conversion via ?from=&to=&amount=. Updated daily, 60-minute cache.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "CYH6YU5B5ELCRWNKT2MOMVOR2HMUUQD3XYWSLWI2L4NCEFOGTONQ",
+      "delivery": "200 application/json object{base:string=\"USD\", timestamp:string=\"2026-09-29T05:36:02.478Z\", source:string=\"currency-api\", rates:object, converted:object}"
+    },
+    {
+      "at": "2026-09-29T05:36:12.159Z",
+      "url": "https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
+      "host": "arbsignal-production.up.railway.app",
+      "method": "GET",
+      "input": "?base=386192725&quote=31566704",
+      "payTo": "N2BHBOQEI5TQQKFKHDRDUACAZE6E55X6VO2U67IQAYBRRLB7LSMO6YRQSM",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "ArbSignal — cross-DEX arbitrage spread for ONE Algorand asset pair. Pass ?base=<assetId>&quote=<assetId> (e.g. base=386192725 goBTC, quote=31566704 USDC; 0 = ALGO). Returns the current cheapest-to-bu…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "J5C7T4IQGNYPN7OHGLQMCZBI2T2V2DIII6D2GC5RYC7MFLZFDWVQ",
+      "delivery": "200 application/json object{generatedAt:string=\"2026-09-29T05:36:08.167Z\", pair:string=\"goBTC/USDC\", opportunity:object}"
+    },
+    {
+      "at": "2026-09-29T05:36:32.767Z",
+      "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "host": "canix402-api.compx.io",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "canix402 claimable DeFi rewards endpoint",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "The operation was aborted due to timeout",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:36:37.709Z",
+      "url": "https://coil.trade/api/crypto/gate",
+      "host": "coil.trade",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LYIVIUSN3FAFIC2NUN6UYU2VN764U6YTCPTIX2O6EWYYU5WHAJHYMVTZM4",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "START HERE — the cheapest answer we sell ($0.001) and the first call most agents make. Is crypto risk-on right now? Whether the BTC 200-day master gate is open or closed, the LONG/CASH state of the B…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "CKKB6MUHBQ2VBJ34KXNAYFX4VYWEQHNMCXOC2UZFIIAJIE4ISPNQ",
+      "delivery": "200 application/json; charset=utf-8 object{product:string=\"coil-crypto-gate\", asof_daily:string=\"2026-09-28\", timestamp:string=\"2026-09-28T13:27:40\", signal_close_date:string=\"2026-09-28\", gate_open:boolean=true, mode:string=\"NAMES_ON\", sleeves:array(81), verdict:string=\"CON…"
+    },
+    {
+      "at": "2026-09-29T05:36:45.241Z",
+      "url": "https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
+      "host": "gateway-x402.vercel.app",
+      "method": "GET",
+      "input": "?q=best+yield+on+algorand&limit=5",
+      "payTo": "LXPC4GQPYH2EZQX2QDYMHCP2I7MXIZMVRPIYTQ3D7R7HXJ4SIHCSYLF5YA",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "GATEWAY — the default Algorand x402 discovery router. Agents come here first for ranked alive endpoints (cleaned catalog, challenge tag x402-global-challenge). Dual-accept algorand-testnet + algorand…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, Transaction simulation failed: transaction already in ledger: 5GX3CNZW5Y7QIWQ6ODRRJJLFE7SFWK6YTCQKDYZXTPR6CT6RBKCQ · settled on chain: vet402's transfer PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q (same group, round 65497379); no delivery",
+      "paid": true,
+      "tx": "PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q"
+    },
+    {
+      "at": "2026-09-29T05:36:53.242Z",
+      "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+      "host": "growtrack.pro",
+      "method": "GET",
+      "input": "?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+      "payTo": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Full multichain portfolio report for one or more wallet addresses: per-chain and per-wallet breakdowns, total portfolio value in USD, every holding with its raw amount, USD value and percentage share…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "delivery_missing_keys",
+      "paid": true,
+      "tx": "TOUDDR5T4XZIMRPE5ACZW2DQTCC4UOZPJKKPW5JRRJ7MWC3HPZNA",
+      "delivery": "200 application/json; charset=utf-8 object{data:object}"
+    },
+    {
+      "at": "2026-09-29T05:36:59.043Z",
+      "url": "https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
+      "host": "noahs-mac-mini.tail571e99.ts.net",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "F2ZYO2DDPQXOACUYBYQIHMQRAB3TJFZVCNUD3OU3CR5OOJUKFZOF5EYVJ4",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Henry Hub natural gas spot price ($/MMBtu): latest daily price plus 30-trading-day average, min, max, % change and full history. Source: U.S. EIA.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "2DH7IQKVXXKQJJGBD5OXY2AXQXTPIP7RME73YNYA2GHZ3KWR2QCQ",
+      "delivery": "200 application/json object{hub:string=\"Henry Hub (Louisiana)\", date:string=\"2026-09-22\", spotUsdPerMmbtu:number=2.9, avgLast30TradingDays:number=2.86, minLast30TradingDays:number=2.7, maxLast30TradingDays:number=3, changeOverPeriodPct:number=3.9, history:arra…"
+    },
+    {
+      "at": "2026-09-29T05:37:04.638Z",
+      "url": "https://whaletape.xyz/algo/coverage",
+      "host": "whaletape.xyz",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "ZVZV3J2VQNLTH6MNLOL5IHZECJQVXVSVAK3NNJA6FD7LLNZ5NRHQAIL2J4",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Hyperliquid perps (perpetual futures). What history exists before you pay for it: how many markets we track, which asset classes, and the range covered. The cheap probe that tells an agent whether th…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "AFHU32BANGS7Q6WFNVW3A2VXSXDGQAEPJCQX2SR4DC7YZLKILUAA",
+      "delivery": "200 application/json object{symbols:number=348, asset_classes:array(6), first_ts:number=1787245200, last_ts:number=1790660062, note:string=\"call /coverage/{symbol} for one market'}"
+    },
+    {
+      "at": "2026-09-29T05:37:11.564Z",
+      "url": "https://agent-keep-684642514120.europe-west1.run.app/v1/budget/receipts",
+      "host": "agent-keep-684642514120.europe-west1.run.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "Export recent settled/credited ledger rows for the paying wallet.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "P353GDLUTPKVBOWLDKTAY6Y47VGZ63I4ME624EJGJGALZF75ASNA",
+      "delivery": "200 application/json object{receipts:array(26), receipt:object}"
+    },
+    {
+      "at": "2026-09-29T05:37:15.529Z",
+      "url": "https://api.sitelenz.online/v1/analyze/technology",
+      "host": "api.sitelenz.online",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\"}",
+      "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "SiteLenz technology analysis",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "7LISUXRNOBGHJCIAQNYULEYNBXH5PIVEKYLQTLRC632IXKLYKEUA",
+      "delivery": "200 application/json; charset=utf-8 object{analyzeJobId:string=\"sl_aj_01M3NTNM7TJYPAXAH2FEADZXQP\", status:string=\"queued\", endpoint:string=\"technology\", createdAt:string=\"2026-09-29T05:37:15.516Z\"}"
+    },
+    {
+      "at": "2026-09-29T05:37:21.556Z",
+      "url": "https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
+      "host": "legit.gonna.bond",
+      "method": "GET",
+      "input": "?addresses=ADDRESS_A%2CADDRESS_B",
+      "payTo": "LGT47RVH6STHJF5PWU3BX2S5D4M5UN2TFXOESL34KDFRXMEYDCDVQWCM6M",
+      "priceUsdc": "0.004000",
+      "declared": {
+        "description": "LEGIT: trust scores and organic demand intelligence for the x402 agentic economy. Created by GONNA.",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "generated_at",
+          "entries",
+          "winner",
+          "rationale"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "PVW4RTLBWPLNGWJ34Q5K25M66A6ADXVPMPQFP3C6ZA5P6ZMFLTQQ",
+      "delivery": "200 application/json object{generated_at:string=\"2026-09-29T05:37:21.510774+00:00\", entries:array(2), winner:null, rationale:string=\"No winner: none of the compared address}"
+    },
+    {
+      "at": "2026-09-29T05:37:32.267Z",
+      "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "host": "amarok-api.compx.io",
+      "method": "GET",
+      "input": "?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Amarok portfolio by address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "5NZUIC3AWGJH4RZBLWI3WTHZSTUDNHBWNZB6HDEAA3JB3EFUCH3Q",
+      "delivery": "200 application/json; charset=utf-8 object{balances:object, totals:object, positions:array(4), openOrders:array(3), meta:object}"
+    },
+    {
+      "at": "2026-09-29T05:37:40.556Z",
+      "url": "https://api-algo.stelardigital.com/pricecheck?asset=SOL",
+      "host": "api-algo.stelardigital.com",
+      "method": "GET",
+      "input": "?asset=SOL",
+      "payTo": "HFHI5MF4C55AYUSQ2JD2AFYMUHWBNSE3SGU6N2YZ5ET5FUZD5YHZHXSWXU",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Current price, 24h/7d change, and bull/bear/neutral signal for a crypto asset. ?asset=SOL",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "F5TBTXRYPT6XJDAMBUNTFNR63WYYRT4K2T3OSMGJOHYVMACJZ76A",
+      "delivery": "200 application/json object{as_of:number=1790660253, asset:string=\"SOL\", chg_24h:number=-1.06, chg_7d:number=-1.19, price:number=117.17, signal:string=\"bearish\", symbol:string=\"SOLUSDT\"}"
+    },
+    {
+      "at": "2026-09-29T05:37:57.023Z",
+      "url": "https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
+      "host": "api-production-36692.up.railway.app",
+      "method": "GET",
+      "input": "?fresh=false&basis=all_pools_usd_priced",
+      "payTo": "36AZ3YZGHLUFFVU4STAQGSQMRB2W3TK5VVTKZVN6L2LH7NRCK7X27TMEJM",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "One standardized financial KPI for one Algorand DeFi protocol, in USD or as a decimal ratio, with per-response provenance, cache state and a 0-1 confidence score.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "ASMLYTW5PQ7H552EW5NBNO74LKJN3MIHHW4MOZFCIXWV5WLS4ZYQ",
+      "delivery": "200 application/json object{protocol:string=\"tinyman\", timestamp:string=\"2026-09-29T05:37:51.972Z\", as_of:string=\"2026-09-29T05:37:48.053Z\", source:array(61), methodology_version:string=\"1.2.0\", cache:string=\"miss\", stale:boolean=false, coverage:object, metric…"
+    },
+    {
+      "at": "2026-09-29T05:38:02.685Z",
+      "url": "https://api.agentwork.run/v1/web/changes",
+      "host": "api.agentwork.run",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\",\"previous_text\":\"Example Domain\\nOld text.\"}",
+      "payTo": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Change monitoring for public webpages — text_sha256 or previous_text diff for documentation, pricing-page and policy monitoring. $0.005 USDC Base / $0.01 Algorand. Caller stores baseline; no server w…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "H7XW24HYK5HQQQ7K6USYDUY4DPT2UTCBTIHVRF6OTEFQKHIE2BUQ",
+      "delivery": "200 application/json; charset=utf-8 object{ok:boolean=true, version:string=\"web-evidence-1.0.3\", url:string=\"https://example.com/\", final_url:string=\"https://example.com/\", fetched_at:string=\"2026-09-29T05:37:58.611Z\", source_status:number=200, content_type:string=\"text/html…"
+    },
+    {
+      "at": "2026-09-29T05:38:08.073Z",
+      "url": "https://blocksigner.org/commission/sol?check=asset&address=K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA&asset=31566704",
+      "host": "blocksigner.org",
+      "method": "GET",
+      "input": "?check=asset&address=K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA&asset=31566704",
+      "payTo": "K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "You get: a verified on-chain fact (balance, asset holding or transaction) with a verdict and evidence hash, in about a second. First call free: add ?trial=1. Commission Sol (Agent World) - verify an …",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "agent",
+          "verdict",
+          "facts",
+          "evidence_hash"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "G7ZF2ZDLRTDYSWFKNVM46APS76YCYMS6NUG3ZAT3ZRMZ5KYPWPGA",
+      "delivery": "200 application/json object{_meta:object, agent:string=\"Sol\", checked_at:string=\"2026-09-29T05:38:04Z\", evidence_hash:string=\"d3cbd44b858ec733e66734cc4166c214cc9d12e, facts:object, network_of_facts:string=\"algorand-mainnet\", note:string=\"Verdict computed live …"
+    },
+    {
+      "at": "2026-09-29T05:38:13.526Z",
+      "url": "https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
+      "host": "elara-verify-x402.aivelikivodja.workers.dev",
+      "method": "POST",
+      "input": "body {\"id\":\"019f4e4f-22a8-74b2-82c4-69350e210fe9\",\"version\":5,\"classification\":\"Public\",\"sig_algorithm\":1,\"content_hash\":\"u8[32] — SHA3-256 of t…",
+      "payTo": "2PWGUKE4VWUXXZ3IPPX2W4FUTVXAW3HQLBO2GZJZFX4UXWFNSUMWEGSSXE",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Post-quantum verification of an Elara ValidationRecord (ML-DSA-65 \"Dilithium3\"): signature over canonical record bytes, structural checks, tri-state verdict, plus an Ed25519-countersigned attestation…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "5CSWZGVPR4PHE34TP2WMLISMKIBVR6IJSJ2KG7RX7S7XMJQK2OBA",
+      "delivery": "200 application/json object{verdict:object, input_sha256:string=\"9e9759810598219ae561942e48bf77055f1b63c, verifier:string=\"elara-verify (wasm)\", attestation:object, existed_by:object}"
+    },
+    {
+      "at": "2026-09-29T05:38:19.114Z",
+      "url": "https://fry.farm/x402/rewards",
+      "host": "fry.farm",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "E2F2LT2INE75DBOYHQXTCTOP2PAP5MHAXQRXTTCCXFKHQTVG36DJONBQZE",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "FRY reward emission status, daily budget, and leaderboard",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "PGUXNBRHUXC4F7GVOT743RZI5ZONCWPYHNLMOQBBF6XMMVQIPLUA",
+      "delivery": "200 application/json; charset=utf-8 object{resource:string=\"rewards\", generatedAt:string=\"2026-09-29T05:38:15.509Z\", source:string=\"fry.farm\", token:string=\"FRY\", dailyBudget:object, leaderboard:array(20)}"
+    },
+    {
+      "at": "2026-09-29T05:38:30.397Z",
+      "url": "https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
+      "host": "hashlock.pronodealgo.xyz",
+      "method": "POST",
+      "input": "body {\"hash\":\"4aaeeefacdb1d18117d89e838bb3050d45c2f4b4de0550898ddc6a2b01ee52ab\",\"filename\":\"document.pdf\",\"source\":\"agent\"}",
+      "filled": [
+        "hash"
+      ],
+      "payTo": "4OEOVSKSZGG5QGIQ5UUSBAOF3AKR5PP5YZ2K2FKP2SIGEYK3NG4CO6MN4M",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Proof of existence timestamp — Algorand blockchain",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "M2ZFTPYPKMFQBZP3VQFGG4MFXD3KTLKZ7JHGMV3N2T7RYP2KTBRA",
+      "delivery": "200 application/json; charset=utf-8 object{success:boolean=true, hash:string=\"4aaeeefacdb1d18117d89e838bb3050d45c2f4b, txId:string=\"OGCRZMIEPAIPCQGXFXIZMJPK4MEZHLFXBW3HYIQ, block:number=65497415, network:string=\"algorand-mainnet\", explorerUrl:string=\"https://lora.algokit.io/…"
+    },
+    {
+      "at": "2026-09-29T05:38:30.732Z",
+      "url": "https://402signal.com/route",
+      "host": "402signal.com",
+      "method": "POST",
+      "input": "body {\"need\":\"erc20 token balance\",\"url\":\"https://example.com/x402/balance\"}",
+      "payTo": "N2JSJZCSORMYGYO2NSIYRUEMBFRHEOMYODVXV2MXYYHB5H2JVUGG6NJ4NQ",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "402Signal checks x402 routes across Base, Solana, and Algorand before spending. $0.003 only when a valid live route is found. Normal typed misses are not settled. Seller payment is separate. Your age…"
+      },
+      "verdict": "REFUSE",
+      "reason": "probe_error",
+      "detail": "fetch failed",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:38:31.126Z",
+      "url": "https://algorand-swap-x402.onrender.com/execute",
+      "host": "algorand-swap-x402.onrender.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "DIPQL34NWQTXO6ZNLNYOYILJZ7UBLMY5KMTJSOCISGYDSPV2PR6VS6UP2Q",
+      "priceUsdc": "4.000000",
+      "declared": {
+        "description": "Mejor ruta de swap multi-cadena (LI.FI)",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "price_over_cap",
+      "detail": "price 4000000 > per-call cap 100000 (atomic USDC)",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:38:35.627Z",
+      "url": "https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
+      "host": "algorandtracker.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "List of available monthly-report months for the ASA.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "HTG6SRVIX4XLGRBRDH57VIK4ONVMLAUJ3NOT4VKBLIVKCHSYE2PQ",
+      "delivery": "200 application/json; charset=utf-8 object{asaId:number=393537671, months:array(6)}"
+    },
+    {
+      "at": "2026-09-29T05:38:41.043Z",
+      "url": "https://api.algometrics.org/v1/metrics/microstructure",
+      "host": "api.algometrics.org",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "ALGO-USD market microstructure metrics from Coinbase trade data: VPIN (adverse selection risk) and order-flow imbalance",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "Y5RCSDS5PG3BJUHRVGQYOFNGNCIL2C6LVFFASVJCVPI7HHJTZCIQ",
+      "delivery": "200 application/json object{service:string=\"ALGOMetrics\", version:string=\"0.1.0\", asOf:string=\"2026-09-29T05:38:36.428Z\", network:string=\"mainnet\", data:object, quality:array(5), methodologyRef:object}"
+    },
+    {
+      "at": "2026-09-29T05:38:46.538Z",
+      "url": "https://api.callrack.xyz/v1/academic/search",
+      "host": "api.callrack.xyz",
+      "method": "POST",
+      "input": "body {\"query\":\"large language models healthcare\",\"limit\":5}",
+      "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+      "priceUsdc": "0.080000",
+      "declared": {
+        "description": "Search scholarly literature via OpenAlex (falling back to Crossref) and return normalized works with titles, authors, publication years, DOIs, journals, citation counts, and open-access status.",
+        "mimeType": "",
+        "expectedKeys": [
+          "data",
+          "meta"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "ABLKN4NLFH2GOYKZPGLQSX2XKEBML3CFBEYM5K6J4FFMFGPQQ65Q",
+      "delivery": "200 application/json; charset=utf-8 object{data:object, meta:object}"
+    },
+    {
+      "at": "2026-09-29T05:38:52.041Z",
+      "url": "https://api.celloforigin.com/enter",
+      "host": "api.celloforigin.com",
+      "method": "POST",
+      "input": "body {\"a\":{\"build\":\"flagellum/phago/efflux/7\",\"policy\":\"always do steer=food effort=70 feed throttle=85\\nwhen foedist<12 do steer=foe effort=100…",
+      "payTo": "DSIIJ6SCGMZ2DYATK7I7GROSUT7INIIZJUE4Q7RSOSUR7PCNUYCX3XIKBI",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Enter one cell. An opponent is found by rating -- live if one is waiting, from the archive otherwise. A wallet that has not declared must send \"side\": \"maroon\" or \"blue\" -- free, once, and permanent.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "http_error",
+      "paid": true,
+      "tx": "NYZFCBHELAJQVVUWMSKUCDGS3EOVJWZHH3YHALHWZ5FXLCQXTMCA",
+      "delivery": "400 application/json; charset=utf-8 status 400"
+    },
+    {
+      "at": "2026-09-29T05:39:00.531Z",
+      "url": "https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
+      "host": "api.d0xeddev.com",
+      "method": "GET",
+      "input": "?pair=ETH%2FUSDC&timeframe=1h",
+      "payTo": "F22UWM4HD45QKDLNGT66CR6XJEANNRXUF2WKBF42VV333INY3O3YJMF55U",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Trading signals: real-time ETH price, 24h change, and signal direction from live market data. Honest 503 degradation when data source is unreachable.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "7RTHCFAAPDHA3LMUNQ6HQXZTZJH6HB77S36MUEMVZFHSJ4L75HIQ",
+      "delivery": "200 application/json object{success:boolean=true, data:object, metadata:object}"
+    },
+    {
+      "at": "2026-09-29T05:39:05.835Z",
+      "url": "https://api.depth402.workers.dev/dati/pool-onchain",
+      "host": "api.depth402.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "JEFVXVSK7ZFXBEVQYU54XLGI555Z2VP5NLXWTC4XA2XWHUWHKTFVGVA6ZY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Check an aggregator's ALGO/USDC liquidity against the chain. Returns the reserves of Algorand's two main AMM pools read directly from the pool accounts, the implied price per pool, and the measured g…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "dato_del",
+          "eta_ore",
+          "stantio",
+          "cadenza",
+          "fonte",
+          "dati"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "N6T6AYOIIAEZK4A4SZXBVWVGXAYMPZRDEEXX52JERSWUCWJMXPXQ",
+      "delivery": "200 application/json object{dato_del:string=\"2026-09-28T20:00:01Z\", eta_ore:number=9.65, stantio:boolean=false, cadenza:string=\"3 letture al giorno (09:00 / 15:30 / 22, fonte:string=\"osservatorio proprio, misure on-chain e, dati:object}"
+    },
+    {
+      "at": "2026-09-29T05:39:15.087Z",
+      "url": "https://api.micropay.website/api/v1/chat/completions",
+      "host": "api.micropay.website",
+      "method": "POST",
+      "input": "body {\"model\":\"model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}",
+      "payTo": "3Q3TISRNDGY5KPZKF4DJI6DF3Z6OAJT7OB6UJ6HV7DE4NQONWKIKX4NNHI",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "OpenAI-compatible chat completion from model-id, returning assistant messages with optional SSE token streaming.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "http_error",
+      "paid": true,
+      "tx": "MABDSKPIJM64FQE7W6GGUSI4NHUJKSQGBGR3KMTUQAEHB4LHRW5Q",
+      "delivery": "502 application/json; charset=utf-8 status 502"
+    },
+    {
+      "at": "2026-09-29T05:39:35.673Z",
+      "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
+      "host": "api.proptech.watch",
+      "method": "GET",
+      "input": "?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
+      "payTo": "OCFUOE44KV6OQ43XWLDKNRBPSMIMPB6QETX3JXU5J36VKUK6ON5G4FSEMM",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Hot zones (hot-zones-v3): rank communes/postcodes (and micro-zones when commune is set) by median €/m² vs universe median. Optional sales-centroid lat/lon on rows; micro-zones = ~0.001° DVF lat/lon c…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "UWMXML7FBHUAX47TW3URUSVPZ2CE5EBGY2EZQAJE67YHEYKCJRPA",
+      "delivery": "200 application/json; charset=utf-8 object{methodologyVersion:string=\"hot-zones-v3\", country:string=\"FR\", department:string=\"69\", commune:string=\"Lyon\", propertyType:string=\"Appartement\", nature:string=\"Vente\", from:string=\"2024-08-11\", minN:number=20, topN:number=30, simple…"
+    },
+    {
+      "at": "2026-09-29T05:39:44.173Z",
+      "url": "https://api.ripar.io/api/payee-check",
+      "host": "api.ripar.io",
+      "method": "POST",
+      "input": "body {\"address\":\"3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY\"}",
+      "payTo": "3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Before an agent pays an Algorand address: does it exist, can it receive USDC, how much has it really been paid over x402, is it Bazaar-listed, is it registered. Facts from chain, no invented score.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "4FXFYJKMBXOOS5DLYRVVFP5VWLW7FK3YJJJCSFG27EBKNFHEJWUA",
+      "delivery": "200 application/json object{address:string=\"3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6V, network:string=\"mainnet\", checkedAt:string=\"2026-09-29T05:39:38.897Z\", exists:boolean=true, canReceiveUsdc:boolean=true, usdcBalance:number=1.543433, firstFunded:string=\"2026-…"
+    },
+    {
+      "at": "2026-09-29T05:39:49.648Z",
+      "url": "https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
+      "host": "api.x402node.dev",
+      "method": "GET",
+      "input": "?token=0x4200000000000000000000000000000000000006&chain=base",
+      "payTo": "QSNLPPXO64ONBD76E2DLZW6XER5GUV4YPQYHDFJUO2N3IO4RYBL5HRU6EY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Heuristic honeypot and risk check for an ERC20 token via on-chain eth_call - detects active owner control and transfer restrictions that can trap buyers, on Ethereum and Base. honeypot check, honeypo…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "ZP2LLQLBMYPUBUFL3NO5AZKFGUTJ4TPRX7KGSTE3V6D7TVLXMZMA",
+      "delivery": "200 application/json; charset=utf-8 object{token:string=\"0x4200000000000000000000000000000000000, chain:string=\"base\", symbol:string=\"WETH\", decimals:number=18, totalSupply:string=\"269898378969081778485862\", hasActiveOwner:boolean=false, riskLevel:string=\"low\", flags:array(0…"
+    },
+    {
+      "at": "2026-09-29T05:39:50.107Z",
+      "url": "https://civitas-api.civitasv.workers.dev/v1/public/stats",
+      "host": "civitas-api.civitasv.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "F76TVHATG2LJOMUOEFNSDJME2NRK77D2NXRM4IUE6MN7CMMGBZXUFJ3YWQ",
+      "priceUsdc": "0.300000",
+      "declared": {
+        "description": "Civitas network stats on Algorand: orgs whitelisted, consent requests, identities issued, and a status / document-type breakdown of consent requests.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "price_over_cap",
+      "detail": "price 300000 > per-call cap 100000 (atomic USDC)",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:39:55.342Z",
+      "url": "https://consensa-endpoint-production.up.railway.app/v1/clearance",
+      "host": "consensa-endpoint-production.up.railway.app",
+      "method": "POST",
+      "input": "body {\"manifest\":{\"type\":\"package.json\",\"content\":{\"dependencies\":{\"left-pad\":\"^1.3.0\"}}}}",
+      "payTo": "PJOXFIBKVKGYGMCW3346P5N4OATMODZYM3VQOXDAEUTIGAOGRYGTIO3NME",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Dependency manifest in → on-chain consent + attribution receipt out. Pays atomically: provider 80%, upstream maintainers' escrow 11% (claimable, per-dependency attribution on-chain), commons 7%, prot…",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "3DZ7AY27ORAI3LN2CGIDYVLL6LV7WKXZOWKK3M2VAC7JOMLKVIKQ",
+      "delivery": "200 application/json object{clearance:string=\"granted\", receipt:object}"
+    },
+    {
+      "at": "2026-09-29T05:40:11.467Z",
+      "url": "https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
+      "host": "eth-avm-light-client.vercel.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "6XP7MJKMEPSCZ46RPB42FFRQGF7U5ACXLCXNCXWAVJUSP5J7U3ZFWBRIFQ",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Verify an Ethereum receipt/log's inclusion via a real Algorand transaction against M7 (docs/design/007-receipt-log-proof.md), T1+T2, RPC-trusted receiptsRoot. GET /verify-receipt/{block_number}/{tx_i…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "block_number",
+          "trust_model",
+          "verified_by",
+          "result"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "ALJ6XDKQNVGHSMQQJAYVTSKXQZPDRBOX2Q65DO6UVWEZZ4K7LE6A",
+      "delivery": "200 application/json object{block_number:number=25691209, trust_model:string=\"rpc-trusted-receiptsRoot\", verified_by:string=\"Algorand app 3670577356, round 65497452, result:object}"
+    },
+    {
+      "at": "2026-09-29T05:40:16.964Z",
+      "url": "https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
+      "host": "fluent-x402-algorand-production.up.railway.app",
+      "method": "GET",
+      "input": "?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
+      "payTo": "UDCHQAUAOXG2VF4XDCX7CVBAPFU4IPF7GNKUFCOFODLCWDGIQVEXLT6ZGY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Verified Algorand payment receipt: fetches a confirmed transaction from the indexer, normalises it to the Fluent receipt shape, and returns it with a canonical hash. Built for agents that need proof-…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "TTD6CRABU23R7NOXL44KUDPQCBLYJVMRYDMQRBUPSN7IILYPYSYQ",
+      "delivery": "200 application/json object{receipt:object, hash:string=\"f5cf990f95c186cbcf4203e772afe514aae0636}"
+    },
+    {
+      "at": "2026-09-29T05:40:25.143Z",
+      "url": "https://moltworld.xyz/v1/models/deepseek/chat/completions",
+      "host": "moltworld.xyz",
+      "method": "POST",
+      "input": "body {\"messages\":[{\"role\":\"user\",\"content\":\"Explain Algorand in simple terms.\"}],\"temperature\":0.7,\"max_tokens\":500}",
+      "payTo": "NAPHTASVPDGRYORRYM237OSPA26R2TRRG4XFRRFK7K5H64H6HIIIZZIIXY",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "DeepSeek inference through Moltworld: send chat messages and receive a normalized AI response.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "GG7B5Z3IINKYFCT76QX4AWCXMYGPXCY64OE6LENI5P3WW2G7FMZA",
+      "delivery": "200 application/json object{id:string=\"chatcmpl-moltworld-degraded-17906604200, object:string=\"chat.completion\", created:number=1790660420, model:string=\"deepseek\", choices:array(1), usage:object}"
+    },
+    {
+      "at": "2026-09-29T05:40:27.709Z",
+      "url": "https://ora-gate-mainnet.vercel.app/api/ora-gate/message/ora_agent",
+      "host": "ora-gate-mainnet.vercel.app",
+      "method": "POST",
+      "input": "body {\"message\":\"Deliver one paid plain-text message to the requested ORA Gate recipient.\",\"idempotencyKey\":\"ora-gate-message-idempotency\"}",
+      "payTo": "TVXYBRI6H5M5RIPQEHS5ZZOXR7RS3FUVYKIJ3DTV6C6F5ULLQEZM47OKRM",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Capability: deliver exactly one plain-text message to the requested ORA Gate recipient. Price: 0.01 MainNet USDC (10000 atomic units; ASA 31566704; 6 decimals). Payment: x402 v2 exact on Algorand Mai…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "code",
+          "ok",
+          "receipt"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 400, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:40:39.922Z",
+      "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+      "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Key findings summary for Pacific Tuna Stock Assessment — PDC Demo (Synthetic). Returns stock status by species, coverage statistics, and 3 key findings. SYNTHETIC DEMO DATA.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "TEDODVTZFOC6TCQ3KFJI5D4JNLWTVZDQ57ZMM4PDX2UO3MTCIOIA",
+      "delivery": "200 application/json object{schema_version:string=\"pdp-1.0\", category:string=\"fisheries\", sub_category:string=\"tuna_stock_assessment\", data_warning:string=\"SYNTHETIC DATA: This dataset demonstrat, provider:object, query:object, data:object, methodology_summary…"
+    },
+    {
+      "at": "2026-09-29T05:40:46.850Z",
+      "url": "https://thetrench.fun/api/pulse",
+      "host": "thetrench.fun",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "2LDR3ULZ4IPJUHEPPFF2KMAAX4DB3OEK6QVW7H7EHLGN4X35L3GGMNLYFU",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Live state of The Trench, the first x402-native daily meme tournament on Algorand: open candidates, backing totals, Crown Pot size, graduations and crowns. Built for agents and humans.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "G6L6E427HOC3VV6ED7UX3PIQYDO6VWAMUOS4IGN47IJPZKACALVQ",
+      "delivery": "200 application/json object{service:string=\"The Trench\", endpoint:string=\"pulse\", tagline:string=\"Back a meme. Crown a winner. Welcome to, season:object, pot:object, links:object, ts:string=\"2026-09-29T05:40:41.623Z\"}"
+    },
+    {
+      "at": "2026-09-29T05:40:46.912Z",
+      "url": "https://untarnished-ricky-nonhierarchically.ngrok-free.dev/api/audit",
+      "host": "untarnished-ricky-nonhierarchically.ngrok-free.dev",
+      "method": "POST",
+      "input": "body {\"code\":\"contract Probe { function ok() external pure returns (uint256) { return 1; } }\",\"language\":\"solidity\"}",
+      "payTo": "3XFFLNEAJSRDYAFDJQLXV5NFMBHGVXVHHDHPIQZU7EDOD6FRFWPDLU25PM",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Council Multi-Surface Code Security & Vulnerability Audit"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 404",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:40:52.257Z",
+      "url": "https://x402-echo-service.vercel.app/api/echo/test",
+      "host": "x402-echo-service.vercel.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Instant 0.01 USDC x402 payment verification & auto-refund ping endpoint on Algorand",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 200, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:41:12.716Z",
+      "url": "https://x402.diiisco.com/v1/chat/completions",
+      "host": "x402.diiisco.com",
+      "method": "POST",
+      "input": "body {\"model\":\"gemma4:e2b\",\"messages\":[{\"role\":\"user\",\"content\":\"Explain x402 in one sentence.\"}],\"max_tokens\":256}",
+      "payTo": "DIIISCOGT3OTYBKUBVJNW7YOC36N3UAXOK4QTWW46PGBWE24YXFMAX5YDU",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "DIIISCO. Algorand's decentralized AI compute network, paid per token in USDC via x402.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "The operation was aborted due to timeout",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:41:16.874Z",
+      "url": "https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
+      "host": "agenthub-production-8c75.up.railway.app",
+      "method": "GET",
+      "input": "?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
+      "payTo": "G3YVTPURK6VFSM5CXEH7QFTZXLCXBJL6UMAIUUYJO4P2XF3MHQ4FUHYYB4",
+      "priceUsdc": "0.080000",
+      "declared": {
+        "description": "Algorand transaction explainer and decoder: given a transaction id, returns a plain-language summary of what the transaction actually did, plus structured detail — transaction type, sender, every ALG…",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "7YQBSPK7ZAJEZHI6X5NP4DRMRVHWPWYKMW3PLWLPQ4URP4LJTAKA",
+      "delivery": "200 application/json; charset=utf-8 object{txid:string=\"U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQ, type:string=\"axfer\", typeLabel:string=\"Asset transfer\", summary:string=\"MUVW2R…QVVM sent 0.02 USDC to G3YVTP…YY, sender:string=\"MUVW2RFKNVHWX4CNF6YIYNMX5EHK7TW3ERUDPDA, confirmed…"
+    },
+    {
+      "at": "2026-09-29T05:41:25.054Z",
+      "url": "https://agriintellect.site/weather-risk",
+      "host": "agriintellect.site",
+      "method": "POST",
+      "input": "body {\"lat\":18.35,\"lon\":77.31,\"crop\":\"soybean\"}",
+      "payTo": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Advanced agrometeorological intelligence API. Delivers multi-horizon agronomic data: (1) 16-day forecast with derived biological & operational risk signals (GDD, spray windows); (2) ECMWF sub-seasona…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "PZVEHNCJ7XQGWPK3HC7WEJ3VGNPJLMKGP6TSXXFHAVW7UVG6RZVA",
+      "delivery": "200 application/json object{error:boolean=false, crop:string=\"soybean\", lat:number=18.35, lon:number=77.31, sowing_date:null, harvest_date:null, days_to_harvest:null, season_to_date:object, horizon_1_forecast:object, horizon_2_subseasonal:object, horizon_3_sea…"
+    },
+    {
+      "at": "2026-09-29T05:41:30.531Z",
+      "url": "https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
+      "host": "algo.ochinimus.app",
+      "method": "GET",
+      "input": "?symbol=SOL&hours=24",
+      "payTo": "QWOWU2E6BB76HEQRRMXWZ2MU4HAQIYZWEPP2W7Y377ZRDIW7ZKD4MMMEPM",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Forced liquidation volume for one symbol over a recent window, split by exchange and by whether longs or shorts were liquidated.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "FY466X7O2IA77D3POCGXHQQJPITZYQS43CTVXW6BISFH6RRUBTVQ",
+      "delivery": "200 application/json; charset=utf-8 object{status:string=\"measured\", value:object, asOf:number=1790660486175, basis:string=\"forced liquidations reported by Binance, source:string=\"agentfeed liquidation tape\", control:object, route:string=\"liquidation_window\", network:string=…"
+    },
+    {
+      "at": "2026-09-29T05:41:38.620Z",
+      "url": "https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
+      "host": "algocheckmain.vercel.app",
+      "method": "GET",
+      "input": "?asset_id=31566704",
+      "payTo": "T2I3FKDS5YRUG26ZK3YVHCK45G2OLNCTGWXIYF6J6M75KZB4Q33UWNRMPQ",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "On-chain Algorand ASA risk report: mutable permissions, top-10 holder concentration, and creator history.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "DUKQ4EC3SKXQKF4KSAAO6NJVKI5ENWLB7XISEVRKTJZ7LW7QGOBQ",
+      "delivery": "200 application/json object{asset_id:number=31566704, score:number=65, flags:array(3), permissions:object, holders:object, creator:object, methodology_version:string=\"2026-08-01\", analyzed_at:string=\"2026-09-29T05:41:33.285806+00:00\"}"
+    },
+    {
+      "at": "2026-09-29T05:41:44.108Z",
+      "url": "https://api.bottrunk.com/s/extract-links",
+      "host": "api.bottrunk.com",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\",\"same_host\":false,\"limit\":100}",
+      "payTo": "UTWS33TM7IT7NINJSFWS5KVGL73G4ERJMYDKHF7KE4WDXHYO4L7V2PNMRE",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Every link on a page, absolute, de-duplicated, split internal vs external.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "53M4FP2WACEDFFKLAQWOWOLPTY5OQDD43OGU2HVWC4KSW6OWW25A",
+      "delivery": "200 application/json; charset=utf-8 object{url:string=\"https://example.com\", total:number=1, internal:number=0, external:number=1, links:array(1)}"
+    },
+    {
+      "at": "2026-09-29T05:41:49.626Z",
+      "url": "https://kepaix.com/api/x402-atlas.php",
+      "host": "kepaix.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "2U3QYTQOHP4SMDUGWNFLNFQPRK2DFTZPFV7P76GV6ENXITYVXOMRAGDVEE",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Paid educational synthesis combining verified KepAIx market, liquidity, derivatives, confidence, world-risk, learning, performance, and source-intelligence context.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "detail": "example keys not seen: summary",
+      "paid": true,
+      "tx": "YZFYO7VJBTG4RROS3L5F7C4SZ7P5W44WXWXWMKDCA75WHNXGEHGA",
+      "delivery": "200 application/json; charset=utf-8 object{success:boolean=true, project:string=\"KepAIx\", endpoint:string=\"x402-atlas\", type:string=\"premium_educational_synthesis\", version:string=\"v1\", schema_version:string=\"0.1.0\", access:string=\"x402_premium\", payment_status:string=\"settl…"
+    },
+    {
+      "at": "2026-09-29T05:41:55.063Z",
+      "url": "https://oyapicks.app/api/x402/closing-soon-algo",
+      "host": "oyapicks.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "NMVLONWVRZUTUSHOVJLPQZTKII4RNCHA33R5HRRWHBCHGMU4BLIKIJAVA4",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Prediction markets resolving within 48 hours: question, venue, implied probability, 24h USD volume, and end date.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "NKJIOSY423V72NEBHP3IVTXSNY3WEJOWJGNLWJ4XRKHCAX4S32HA",
+      "delivery": "200 application/json object{product:string=\"oyapicks-closing-soon\", windowHours:number=48, count:number=14, markets:array(14), disclaimer:string=\"Informational only. Not financial advic}"
+    },
+    {
+      "at": "2026-09-29T05:41:56.040Z",
+      "url": "https://roundwatch-api.onrender.com/v1/watch",
+      "host": "roundwatch-api.onrender.com",
+      "method": "POST",
+      "input": "body {\"idempotencyKey\":\"replace-with-unique-idempotency-key\",\"expectedSender\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ\",\"expe…",
+      "payTo": "EQPLN32HPLPGBCNPOZUL6BL34CTNQGT3VAAMNAJWSIZGQ5CUNXOHB634XY",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Monitor one exact future Algorand USDC payment on mainnet when no transaction ID exists yet. RoundWatch persists scan progress across restarts and returns a watch ID for later verified on-chain evide…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "watchId",
+          "workUnitBudget",
+          "eligibilityTtlMs",
+          "eligibility",
+          "expiresAt",
+          "message"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 400, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:41:56.177Z",
+      "url": "https://sikho-ai.onrender.com/api/v1/learners/chapters/unlock?chapterId=6a7efc125aa5b8d6d9f8ff3f",
+      "host": "sikho-ai.onrender.com",
+      "method": "GET",
+      "input": "?chapterId=6a7efc125aa5b8d6d9f8ff3f",
+      "payTo": "2RIRIX5XK6GWK7LOXDAYIDTN4IYDVNRDJFXR4TJCLYIM72A3EF2UQPROQY",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "Unlocks one premium course chapter with AI explanations, personalized study materials, and customized quiz generation for chapter ID: 6a7efc125aa5b8d6d9f8ff3f for $0.02 USDC"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 503",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:00.490Z",
+      "url": "https://prism-99h2.onrender.com/code-review-accurate",
+      "host": "prism-99h2.onrender.com",
+      "method": "POST",
+      "input": "body {\"file_path\":\"src/index.ts\",\"raw_url\":\"https://raw.githubusercontent.com/example/repo/main/src/index.ts\",\"task_description\":\"Security audit…",
+      "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
+      "priceUsdc": "0.012000",
+      "declared": {
+        "description": "Performs comprehensive senior-engineer code review and security auditing on a single code file using high-precision LLM reasoning.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "delivery_missing_keys",
+      "paid": true,
+      "tx": "IIYWJGVTEP6M2YBTAWLZCOSPS7N34KZKXSCIHWXBUUOSVN3UZRPQ",
+      "delivery": "200 application/json object{file_path:string=\"src/index.ts\", issues:array(0), overall_quality_score:number=0.96, confidence:number=0.95, latency_ms:number=43, timestamp:string=\"2026-09-29T05:41:56.670Z\"}"
+    },
+    {
+      "at": "2026-09-29T05:42:15.500Z",
+      "url": "https://midax402.com/midas-ops/basic",
+      "host": "midax402.com",
+      "method": "POST",
+      "input": "body {\"query\":\"Analyze the x402 payment flow, facilitator options, security mitigations, or integration patterns for agent commerce.\"}",
+      "payTo": "XFVBA5GJAXJBRWLERVOTZH57NEGPCOP276U4N2E2LCMYWVVESQQPAPBODQ",
+      "priceUsdc": "0.030000",
+      "declared": {
+        "description": "MIDAX402: x402 ecosystem intelligence -- protocols, facilitators, services, market trends and agent commerce. We do not grade our own answer: the verdict is answered or needs_more_data (grounded in t…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "detail": "example keys not seen: disclaimer",
+      "paid": true,
+      "tx": "B67R2IDIA5HD22EBMEDG2XFNIZCO746V2IAB5WYQVQ4OV3NPSMHA",
+      "delivery": "200 application/json; charset=utf-8 object{endpoint:string=\"midas-ops\", version:string=\"2.0\", tier:string=\"basic\", request_id:string=\"2f84867b-1f07-47a4-97e6-147bfecaa386\", timestamp:string=\"2026-09-29T05:42:10.838549+00:00\", answer_type:string=\"business_intelligence\", verdi…"
+    },
+    {
+      "at": "2026-09-29T05:42:25.991Z",
+      "url": "https://registry.at1c.com/v1/verify",
+      "host": "registry.at1c.com",
+      "method": "POST",
+      "input": "body {\"receiptId\":\"example-receipt-id\"}",
+      "payTo": "IUCQ6VSUINTBEATREWRWSCWV26THLJ44PRGIA7X4V626LQA4BHOE3ZDEQ4",
+      "priceUsdc": "0.030000",
+      "declared": {
+        "description": "AT1C receipt verification — cryptographic proof that a human approved this AI agent action"
+      },
+      "verdict": "REFUSE",
+      "reason": "probe_error",
+      "detail": "fetch failed",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:33.382Z",
+      "url": "https://43.162.105.66.sslip.io/v1/scan/signature",
+      "host": "43.162.105.66.sslip.io",
+      "method": "POST",
+      "input": "body {\"typed_data\":{\"domain\":{},\"primaryType\":\"Permit\",\"message\":{}}}",
+      "payTo": "MAGKDEWY5IZ6MBYLKGLHN4UWFM2BYCJ5R62C5AU6JASOY2HAS6XP5SHRII",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Decode an EIP-712 typed-data / permit / permit2 signature before you sign it: unlimited approvals, zero-price orders, malicious spenders.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "YWF7FBW5QBS66E2ZT3VTN2KFEA75FXDNHME2EMEP5PMX2NQNPIBA",
+      "delivery": "200 application/json object{report_id:string=\"SEN-9c9a2e90\", scanner:string=\"sentinel402-signature-v1\", kind:string=\"permit\", domain:object, summary:string=\"Token approval via signature (gasless a, risks:array(3), risk_score:number=36, risk_grade:string=\"MEDIU…"
+    },
+    {
+      "at": "2026-09-29T05:42:35.071Z",
+      "url": "https://alpha-hunter-x402-production.up.railway.app/v1/token/investigate",
+      "host": "alpha-hunter-x402-production.up.railway.app",
+      "method": "POST",
+      "input": "body {\"chain\":\"solana\",\"mint\":\"So11111111111111111111111111111111111111112\"}",
+      "payTo": "ROO3X2KFNJVXIT2ZA6MFYOV7FRRZNVH2WIPO6TDWFVNEHVMQGFT6O4KFLA",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "AHX on-chain token investigation",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 503, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:41.330Z",
+      "url": "https://api.validex.space/v1/validate/trust",
+      "host": "api.validex.space",
+      "method": "POST",
+      "input": "body {\"target\":\"stripe.com\"}",
+      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "MMPI3FTPEWXRZX24KJJXFNDKYHRRYGY75KSHDMR42I7UXK5CNVBQ",
+      "delivery": "201 application/json; charset=utf-8 object{success:boolean=true, data:object}"
+    },
+    {
+      "at": "2026-09-29T05:42:44.367Z",
+      "url": "https://tendrilhq.com/x402/rent",
+      "host": "tendrilhq.com",
+      "method": "POST",
+      "input": "body {\"nodeId\":\"wbVu3T-ru3\",\"sshPubKey\":\"ssh-ed25519 AAAA…\"}",
+      "payTo": "ZIK7QQE7ZX446TW3PN7PQ5UDZNTY7JI5RYNTIU3LPEYBOSTVWI6PTNSWKI",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Open a metered SSH session. Pass nodeId as ?nodeId= (from GET /nodes) or in the JSON body. Gate fee 0.1 USDC; time then bills from credit.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 404, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:44.840Z",
+      "url": "https://vead.app/v1/transaction/x402/verify/6939bfbb8cc3c5a6c50c6d93",
+      "host": "vead.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LQ36IBU2EDLHN2Z3MQCHN2PETQMCMHTICRWB4WNYHNOGQNLVXRYJXEHDZU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Verificación paga de documento certificado/firmado en Algorand — devuelve estado on-chain, hashes de integridad y firmantes",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "requirements_body_only",
+      "detail": "x402 v2 requirements are in the 402 body only (no PAYMENT-REQUIRED header); the x402 paying client cannot pay this, so vet402 did not pay",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:49.840Z",
+      "url": "https://x402-algo.pkgproof.net/v1/verify",
+      "host": "x402-algo.pkgproof.net",
+      "method": "POST",
+      "input": "body {\"ecosystem\":\"npm\",\"name\":\"left-pad\",\"version\":\"1.3.0\"}",
+      "payTo": "NE3HBSH4MZLCJ3G5UPYBTIHGRCQ5M7K5N2ROWCBK6EQFR62FEROLBVQTTQ",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Verify one npm package before install: eight checks covering advisories, install scripts, typosquat names and repository provenance. Answers safe, caution, block or does_not_exist, each reason source…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "ecosystem",
+          "name",
+          "verdict",
+          "reasons",
+          "sources",
+          "checked_at"
+        ]
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "paid": true,
+      "tx": "SPWKABL73L5WO466234OWA7VRIZI76OTCJV4ISEKHOIRLGKVAANQ",
+      "delivery": "200 application/json; charset=utf-8 object{ecosystem:string=\"npm\", name:string=\"left-pad\", version:string=\"1.3.0\", verdict:string=\"safe\", reasons:array(8), sources:object, checked_at:string=\"2026-09-29T05:42:46Z\"}"
+    },
+    {
+      "at": "2026-09-29T05:42:50.155Z",
+      "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
+      "host": "www.agent-mesh.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "M6JQNJVX32HEN2LS5W2WX2PMSXPDHHKADVUATIQ5KQIVVVHSVILQNOS62A",
+      "priceUsdc": "0.060000",
+      "declared": {
+        "description": "AgentMesh workflow run total — lump-sum settlement of this run's platform-billed work"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 200",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:50.755Z",
+      "url": "https://api.playclock.xyz/v1/trending?lookback_hours=24",
+      "host": "api.playclock.xyz",
+      "method": "GET",
+      "input": "?lookback_hours=24",
+      "payTo": "MDBJMM6RJ4TM7W5FITZ3MWJTGTHMC4SKQJWRWI2JCQUKIR5LA7BPIUTMMM",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Top 25 Sleeper trending adds and drops, each with the usage numbers behind the move and an add/fade/hold verdict. **Use when** an agent needs to know who fantasy managers are picking up right now and…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-09-29T05:42:55.417Z",
+      "url": "https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
+      "host": "finality-x402-backend.onrender.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "UEET5PA753P26B6LVUSXUKUYDVM33YLE6ETZWPLJDHJXQDKNYOUZPFKCSU",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Suggested transaction parameters",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "ALLOW",
+      "reason": "delivered",
+      "detail": "example keys not seen: result",
+      "paid": true,
+      "tx": "G4I322EOUZKOZK7TBB6P4DTSS77J7LHRKK4VTUNALTQTKONXQRXA",
+      "delivery": "200 application/json object{success:boolean=true, operationId:string=\"onchain.algodParams\", requestId:string=\"81418c93-dbcf-4c17-865a-675f036eaecf\", data:object, meta:object, payment:object}"
+    }
+  ],
+  "attempts": [
+    "GET https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "POST https://algorand-indexer.xyz/api/v1/queries/results/cZjh0_C61ddAVLAR50At_gueIpqvMsTt/unlock",
+    "POST https://a-identity.xyz/api/x402/algorand/tools/verify_agent",
+    "POST https://agent402.tools/api/hash",
+    "GET https://algo.netintel.dev/email/verify?email=user%40github.com",
+    "GET https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
+    "GET https://algorand.ottoai.services/base-ecosystem-news",
+    "GET https://api.agentkeep.online/v1/memory",
+    "GET https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
+    "POST https://api.blueprintstech.org/api/verify-counterparty",
+    "POST https://api.glianalabs.com/a402/tools/embed",
+    "GET https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
+    "POST https://api.pqattest.com/attest",
+    "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+    "GET https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
+    "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "GET https://coil.trade/api/crypto/gate",
+    "GET https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
+    "GET https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+    "GET https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
+    "GET https://whaletape.xyz/algo/coverage",
+    "GET https://agent-keep-684642514120.europe-west1.run.app/v1/budget/receipts",
+    "POST https://api.sitelenz.online/v1/analyze/technology",
+    "GET https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
+    "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://api-algo.stelardigital.com/pricecheck?asset=SOL",
+    "GET https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
+    "POST https://api.agentwork.run/v1/web/changes",
+    "GET https://blocksigner.org/commission/sol?check=asset&address=K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA&asset=31566704",
+    "POST https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
+    "GET https://fry.farm/x402/rewards",
+    "POST https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
+    "POST https://402signal.com/route",
+    "GET https://algorand-swap-x402.onrender.com/execute",
+    "GET https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
+    "GET https://api.algometrics.org/v1/metrics/microstructure",
+    "POST https://api.callrack.xyz/v1/academic/search",
+    "POST https://api.celloforigin.com/enter",
+    "GET https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
+    "GET https://api.depth402.workers.dev/dati/pool-onchain",
+    "POST https://api.micropay.website/api/v1/chat/completions",
+    "GET https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
+    "POST https://api.ripar.io/api/payee-check",
+    "GET https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
+    "GET https://civitas-api.civitasv.workers.dev/v1/public/stats",
+    "POST https://consensa-endpoint-production.up.railway.app/v1/clearance",
+    "GET https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
+    "GET https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
+    "POST https://moltworld.xyz/v1/models/deepseek/chat/completions",
+    "POST https://ora-gate-mainnet.vercel.app/api/ora-gate/message/ora_agent",
+    "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "GET https://thetrench.fun/api/pulse",
+    "POST https://untarnished-ricky-nonhierarchically.ngrok-free.dev/api/audit",
+    "GET https://x402-echo-service.vercel.app/api/echo/test",
+    "POST https://x402.diiisco.com/v1/chat/completions",
+    "GET https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
+    "POST https://agriintellect.site/weather-risk",
+    "GET https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
+    "GET https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
+    "POST https://api.bottrunk.com/s/extract-links",
+    "GET https://kepaix.com/api/x402-atlas.php",
+    "GET https://oyapicks.app/api/x402/closing-soon-algo",
+    "POST https://roundwatch-api.onrender.com/v1/watch",
+    "GET https://sikho-ai.onrender.com/api/v1/learners/chapters/unlock?chapterId=6a7efc125aa5b8d6d9f8ff3f",
+    "POST https://prism-99h2.onrender.com/code-review-accurate",
+    "POST https://midax402.com/midas-ops/basic",
+    "POST https://registry.at1c.com/v1/verify",
+    "POST https://43.162.105.66.sslip.io/v1/scan/signature",
+    "POST https://alpha-hunter-x402-production.up.railway.app/v1/token/investigate",
+    "POST https://api.validex.space/v1/validate/trust",
+    "POST https://tendrilhq.com/x402/rent",
+    "GET https://vead.app/v1/transaction/x402/verify/6939bfbb8cc3c5a6c50c6d93",
+    "POST https://x402-algo.pkgproof.net/v1/verify",
+    "GET https://www.agent-mesh.app/api/x402/relay/run-total",
+    "GET https://api.playclock.xyz/v1/trending?lookback_hours=24",
+    "GET https://finality-x402-backend.onrender.com/v1/onchain/algod/params"
+  ]
+}
