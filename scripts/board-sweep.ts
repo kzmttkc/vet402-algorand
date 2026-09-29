@@ -774,6 +774,15 @@ export async function recheckFile(file: string, cfg: Pick<AppConfig, "indexerUrl
   }
   const listed = new Set((prev?.unmatched ?? []).map((u) => u.tx));
   const newProblem = r.unmatched.some((u) => !listed.has(u.tx));
+  // A payment listed as on no row stays listed until a check writes it to a row, even when this check's
+  // window does not reach it (the next-day window ends 2 hours after the file's end).
+  const onRow = new Set(board.rows.filter((x) => x.tx).map((x) => x.tx!));
+  const found = new Set(r.unmatched.map((u) => u.tx));
+  const kept = (prev?.unmatched ?? []).filter((u) => !found.has(u.tx) && !onRow.has(u.tx));
+  if (kept.length) {
+    r.unmatched = [...r.unmatched, ...kept];
+    r.status = "unmatched";
+  }
   const changed =
     !prev ||
     !!o.nextDay ||
@@ -789,8 +798,8 @@ export async function recheckFile(file: string, cfg: Pick<AppConfig, "indexerUrl
 
 /**
  * Today's daily already finished its purchases: buy nothing. Repeat the payment check (read-only) from
- * the run's start to now: a payment the facilitator settled after the first check (a transaction stays
- * valid for about 1,000 rounds) shows up now. Exit code 3 unless every payment is on a row, including
+ * the run's start to now: a payment that reached the chain after the first check shows up now (vet402's
+ * transfer is valid for 10 rounds, under 30 s on MainNet, so this is a second look, not a long wait). Exit code 3 unless every payment is on a row, including
  * when the chain cannot be read this time.
  */
 export async function recheckCompletedDaily(file: string, cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">, deps: RecheckDeps & { now?: Date } = {}): Promise<number> {
@@ -800,7 +809,12 @@ export async function recheckCompletedDaily(file: string, cfg: Pick<AppConfig, "
   return r.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
 }
 
-/** A settlement can land up to about 1,000 rounds (under 1 hour) after signing; the next-day check reads 2 hours past the file's end. */
+/**
+ * How far past the file's end the next-day check reads. vet402's transfer is valid for 10 rounds after it
+ * is signed (algokit's default validity window on MainNet; 1,000 only on LocalNet), under 30 s, so a
+ * settlement cannot land much later than the run's end. 2 hours is a margin on the safe side, not a
+ * measured limit.
+ */
 export const NEXT_DAY_TAIL_MS = 2 * 3_600_000;
 
 /**
@@ -817,13 +831,20 @@ export async function checkPreviousDay(outDir: string, date: string, cfg: Pick<A
   for (const name of [`${prevDate}.json`, `census-${prevDate}.json`]) {
     const file = join(outDir, name);
     if (!existsSync(file)) continue;
-    const b = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
-    if (!b.reconcile || b.reconcile.nextDayCheckedAt) continue;
-    const end = Date.parse(b.finishedAt);
-    const to = new Date(Number.isFinite(end) ? Math.min(now.getTime(), end + NEXT_DAY_TAIL_MS) : now.getTime());
-    console.log(`next-day payment check of ${file}`);
-    const r = await recheckFile(file, cfg, to, { ...deps, nextDay: true });
-    if (r.newProblem) code = EXIT_PAYMENT_CHECK;
+    // Whatever goes wrong here (a file that does not parse, a write that fails) does not stop today's
+    // run: it is logged, and the run ends with exit code 3.
+    try {
+      const b = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
+      if (!b.reconcile || b.reconcile.nextDayCheckedAt) continue;
+      const end = Date.parse(b.finishedAt);
+      const to = new Date(Number.isFinite(end) ? Math.min(now.getTime(), end + NEXT_DAY_TAIL_MS) : now.getTime());
+      console.log(`next-day payment check of ${file}`);
+      const r = await recheckFile(file, cfg, to, { ...deps, nextDay: true });
+      if (r.newProblem) code = EXIT_PAYMENT_CHECK;
+    } catch (e) {
+      console.log(`next-day payment check of ${file} failed: ${String((e as Error).message ?? e).slice(0, 200)}`);
+      code = EXIT_PAYMENT_CHECK;
+    }
   }
   return code;
 }

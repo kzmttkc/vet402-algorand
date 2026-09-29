@@ -149,3 +149,66 @@ test("next day: files written before the payment check existed are left alone", 
   assert.equal(calls.length, 0);
   assert.equal(readFileSync(file, "utf8"), text);
 });
+
+test("next day: a previous-day file that does not parse does not stop the run; the other file is still checked, and the run ends with exit 3", async () => {
+  const f = FX.daily0929;
+  const dir = mkdtempSync(join(tmpdir(), "nextday-"));
+  writeFileSync(join(dir, "2026-09-29.json"), '{"rows": [ broken');
+  const first = await checkNow(f.rowsAfter, f);
+  const census = dayFile(dir, "census-2026-09-29.json", f, f.rowsAfter, first, "2026-09-29");
+  const code = await checkPreviousDay(dir, "2026-09-30", CFG, { fetchImpl: fakeIndexer(f.transfers, f.groups), sleep: noSleep, now: new Date("2026-09-30T06:17:00Z") });
+  assert.equal(code, EXIT_PAYMENT_CHECK);
+  assert.ok((JSON.parse(readFileSync(census, "utf8")) as { reconcile: ReconcileResult }).reconcile.nextDayCheckedAt);
+});
+
+test("main: a broken previous-day file does not throw out of the run; the run goes on and exits 3", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "nextday-main-"));
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  writeFileSync(join(dir, `${yesterday}.json`), "not json");
+  const ok: ReconcileResult = { checkedAt: `${today}T06:20:00.000Z`, status: "ok", window: { from: "", to: "" }, transfers: 0, onRows: 0, recorded: [], unmatched: [] };
+  writeFileSync(join(dir, `${today}.json`), JSON.stringify({ version: 1, date: today, startedAt: `${today}T06:17:00.000Z`, finishedAt: `${today}T06:20:00.000Z`, completedAt: `${today}T06:20:00.000Z`, payer: "BOARDPAYER", totals: { paidUsdc: "0.000000" }, reconcile: ok, rows: [] }));
+  const realFetch = globalThis.fetch;
+  const env = { ...process.env };
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const u = new URL(String(input));
+    if (u.pathname.includes("/v2/accounts/")) return Response.json({ transactions: [] });
+    throw new Error(`unexpected request ${u.href}`);
+  }) as typeof fetch;
+  try {
+    process.env.X402_NETWORK = "testnet";
+    const { main } = await import("../scripts/board-sweep.js");
+    assert.equal(await main(["--out", dir]), EXIT_PAYMENT_CHECK);
+  } finally {
+    globalThis.fetch = realFetch;
+    process.env = env;
+  }
+});
+
+test("a narrower window keeps the earlier list: payments listed as on no row stay listed unless a check wrote them to a row", async () => {
+  const f = FX.census0927SameTime;
+  const dir = mkdtempSync(join(tmpdir(), "nextday-"));
+  const listed = await checkNow(f.rows, f);
+  assert.equal(listed.unmatched.length, 5);
+  // The next-day window starts after the 5 transfers (as if the check read a later part of the day).
+  const later = { ...f, startedAt: "2026-09-27T05:00:00.000Z" };
+  const file = dayFile(dir, "census-2026-09-26.json", later, f.rows, listed, "2026-09-26");
+  const code = await checkPreviousDay(dir, "2026-09-27", CFG, { fetchImpl: fakeIndexer(f.transfers, f.groups), sleep: noSleep, now: new Date("2026-09-27T06:17:00Z") });
+  assert.equal(code, 0);
+  const after = JSON.parse(readFileSync(file, "utf8")) as { reconcile: ReconcileResult };
+  assert.equal(after.reconcile.status, "unmatched");
+  assert.deepEqual(after.reconcile.unmatched.map((u) => u.tx).sort(), listed.unmatched.map((u) => u.tx).sort());
+  assert.ok(after.reconcile.nextDayCheckedAt);
+
+  // One of them is on a row by the time of the next check: only that one leaves the list.
+  const dir2 = mkdtempSync(join(tmpdir(), "nextday-"));
+  const gone = listed.unmatched[0].tx;
+  const rows = clone(f.rows);
+  const i = rows.findIndex((r) => !r.paid && r.payTo === listed.unmatched[0].payTo);
+  rows[i] = { ...rows[i], paid: true, tx: gone };
+  const file2 = dayFile(dir2, "census-2026-09-26.json", later, rows, listed, "2026-09-26");
+  await checkPreviousDay(dir2, "2026-09-27", CFG, { fetchImpl: fakeIndexer(f.transfers, f.groups), sleep: noSleep, now: new Date("2026-09-27T06:17:00Z") });
+  const after2 = JSON.parse(readFileSync(file2, "utf8")) as { reconcile: ReconcileResult };
+  assert.equal(after2.reconcile.unmatched.length, 4);
+  assert.ok(!after2.reconcile.unmatched.some((u) => u.tx === gone));
+});
