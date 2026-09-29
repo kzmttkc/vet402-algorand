@@ -31,7 +31,7 @@
     "refuse": 28,
     "skipped": 0,
     "unclear": 0,
-    "paidUsdc": "0.961100"
+    "paidUsdc": "0.972100"
   },
   "rows": [
     {
@@ -205,8 +205,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA (to this payTo, round 65497356, 05:35:38 UTC); no delivery",
+      "paid": true,
+      "tx": "MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA"
     },
     {
       "at": "2026-09-29T05:35:43.149Z",
@@ -1079,8 +1080,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt",
-      "paid": false
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer 522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA (to this payTo, round 65497469, 05:40:49 UTC); no delivery",
+      "paid": true,
+      "tx": "522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA"
     },
     {
       "at": "2026-09-29T05:41:12.716Z",

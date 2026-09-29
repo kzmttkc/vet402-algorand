@@ -6,7 +6,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { CONTENT_NOTES, boardHtml, countBy, displayClass, hostOf, paymentsCsv, readBoard, type BoardFile } from "../src/board.js";
+import { CONTENT_NOTES, boardHtml, countBy, displayClass, hostOf, paymentsCsv, readBoard, verdictsFeed, type BoardFile } from "../src/board.js";
+import { boardReason, runInfoOf } from "../src/fairness.js";
+import { recordedPayTo } from "../src/try.js";
 import { CHECKER_FIX_URL, FEATURED_CENSUS, demoHtml, landingHtml } from "../src/landing.js";
 import { PATH_MODES, failureMode, fixFirst, fixFirstHtml } from "../src/fix-first.js";
 import { sellerHtml, sellerView } from "../src/seller.js";
@@ -182,6 +184,47 @@ test("census 09-27 and 09-28: the 13 payments found on chain are recorded paid, 
   }
   // census-latest.json is the 09-28 file.
   assert.deepEqual(readBoard(join(process.cwd(), "board", "census-latest.json")), board("2026-09-28"));
+});
+
+test("daily 2026-09-29: the 2 payments found on chain are recorded paid, stay UNCLEAR, and what reads the daily file follows", () => {
+  // The daily run writes the same content to latest.json; it is left for that run, so this reads the dated file as the daily file.
+  const d = readBoard(join(process.cwd(), "board", "2026-09-29.json"))!;
+  const census = board("2026-09-28");
+  const pairs: [string, string][] = [
+    ["https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info", "MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA"],
+    ["https://x402-echo-service.vercel.app/api/echo/test", "522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA"],
+  ];
+  const paid = d.rows.filter((r) => r.paid);
+  assert.equal(paid.length, 56);
+  assert.equal((paid.reduce((s, r) => s + Math.round(Number(r.priceUsdc) * 1e6), 0) / 1e6).toFixed(6), d.totals.paidUsdc);
+  assert.equal(d.totals.paidUsdc, "0.972100");
+  const txs = d.rows.filter((r) => r.tx).map((r) => r.tx);
+  assert.equal(new Set(txs).size, txs.length);
+  const csv = paymentsCsv([d, census]);
+  const feed = verdictsFeed([{ kind: "daily", board: d }, { kind: "census", board: census }]);
+  const run = runInfoOf("daily", d)!;
+  const allow = recordedPayTo([d, census]);
+  for (const [url, tx] of pairs) {
+    const hits = d.rows.filter((r) => r.url === url);
+    assert.equal(hits.length, 1, url);
+    const r = hits[0];
+    assert.deepEqual([r.paid, r.tx, r.reason, displayClass(r)], [true, tx, "payment_failed", "UNCLEAR"]);
+    assert.match(r.detail!, new RegExp(`^status 200, no settlement receipt · settled on chain: vet402's transfer ${tx} \\(to this payTo, round \\d+, \\d\\d:\\d\\d:\\d\\d UTC\\); no delivery$`));
+    // payments.csv and verdicts.json: listed once, from the daily file, as UNCLEAR.
+    assert.equal(csv.split("\r\n").filter((l) => l.includes(`,${tx},`)).length, 1, `csv ${tx}`);
+    const items = feed.verdicts.filter((v) => v.purchaseTx === tx);
+    assert.deepEqual(items.map((v) => [v.sourceFile, v.class]), [["2026-09-29.json", "UNCLEAR"]]);
+    // /fairness: the transfer is the daily sweep's, by its recorded tx.
+    assert.ok(run.txs.includes(tx));
+    assert.equal(boardReason({ tx, time: 0 }, [run]), "daily");
+    // /seller: the card links the tx.
+    assert.ok(sellerHtml(sellerView(r.host!, { daily: d, census })).includes(tx), `seller ${r.host}`);
+    // The free try still leaves out a URL whose newest record is UNCLEAR.
+    assert.ok(!allow.has(url), `try ${url}`);
+  }
+  assert.equal(csv.trim().split("\r\n").length - 1, new Set([...paid, ...census.rows.filter((r) => r.paid)].map((r) => r.tx)).size);
+  // /board (daily view) shows the file's total.
+  assert.match(boardHtml(d, "daily"), /paid <b>0\.972100<\/b> USDC/);
 });
 
 test("census 09-27: the 5 payments that cannot be paired 1:1 stay unpaid (algofile.io x3, ottoai x2)", () => {
