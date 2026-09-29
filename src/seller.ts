@@ -24,9 +24,20 @@ import {
   type BoardRow,
   type DisplayClass,
   UNCLEAR_NOTE,
+  contentNote,
   filledNote,
 } from "./board.js";
 import { certificateCtaHtml } from "./cert.js";
+import { FIX_MODES, failureMode } from "./fix-first.js";
+
+const FIX_BY_MODE = new Map(FIX_MODES.map((m) => [m.key, m]));
+
+/** The /board/fix-first fix for a row the seller can act on (MISMATCH or UNREACHABLE); null for any other row. */
+export function sellerFix(r: SellerRow): string | null {
+  if (r.cls !== "MISMATCH" && r.cls !== "UNREACHABLE") return null;
+  const m = FIX_BY_MODE.get(failureMode(r) ?? "");
+  return m && m.side === "seller" ? m.fix : null;
+}
 
 /** Public base URL used in the badge Markdown. */
 export const SELLER_PAGE_BASE = "https://vet402-algorand.vercel.app";
@@ -179,16 +190,33 @@ export function sellerHtml(v: SellerView, o: SellerPageOptions = AUDIT_OFF): str
       `<span class="delivered">${v.counts.DELIVERED} delivered</span> · <span class="mismatch">${v.counts.MISMATCH} mismatch</span> · ` +
       `<span class="unreach">${v.counts.UNREACHABLE} unreachable</span> · <span class="unclear">${v.counts.UNCLEAR} unclear</span></p>`
     : `<p class="kpi">Not checked yet: vet402 has no purchase from this seller on the board.</p>`;
+  // What the seller can change, first screen: the distinct fixes for its MISMATCH and UNREACHABLE rows, most rows first.
+  const fixes = new Map<string, number>();
+  for (const r of v.rows) {
+    const f = sellerFix(r);
+    if (f) fixes.set(f, (fixes.get(f) ?? 0) + 1);
+  }
+  const toChange = fixes.size
+    ? `<div class="box todo"><p><b>What to change</b></p><ul>${[...fixes.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([f, k]) => `<li>${esc(f)} <small>(${k} ${k === 1 ? "resource" : "resources"})</small></li>`)
+        .join("")}</ul><p><small>Each card below shows the result it comes from. UNCLEAR results are never held against you. Every seller's fixes, grouped: <a href="/board/fix-first">what to fix first</a>.</small></p></div>`
+    : v.cls
+      ? `<p class="kpi">Nothing to change from these results.${v.counts.UNCLEAR ? " UNCLEAR results are never held against you." : ""}</p>`
+      : "";
   const cards = v.rows
     .map((r) => {
       const link = txLink(r.tx, v.networkName);
       const decl = [r.declared?.description, r.declared?.expectedKeys?.length ? `keys: ${r.declared.expectedKeys.join(", ")}` : ""].filter(Boolean).join(" · ");
+      const fix = sellerFix(r);
       return (
         `<li class="card"><div class="top"><b class="${CSS_CLASS[r.cls]}">${r.cls}</b><span>${esc(r.day)} · ${r.source}${r.priceUsdc ? ` · ${esc(r.priceUsdc)} USDC` : ""}</span></div>` +
         `<div class="u">${esc(r.method)} ${esc(pathOf(r.url))}</div>` +
         (decl ? `<small>${esc(decl)}</small>` : "") +
         (filledNote(r) ? `<div><small>${esc(filledNote(r))}</small></div>` : "") +
         `<div>reason <code>${esc(r.reason)}</code>${r.detail ? ` <small>${esc(r.detail)}</small>` : ""}</div>` +
+        (fix ? `<div>Fix: ${esc(fix)}</div>` : "") +
+        (contentNote(r) ? `<div><small class="cn">${esc(contentNote(r))}</small></div>` : "") +
         (r.cls === "UNCLEAR" ? `<div><small class="nc">${esc(UNCLEAR_NOTE)}</small></div>` : "") +
         `<div>vet402 → seller tx: ${link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx)}</a>` : "no payment was made"}</div>` +
         `</li>`
@@ -211,6 +239,8 @@ h1{font-size:20px;margin:0 0 4px;overflow-wrap:anywhere}
 .delivered{color:var(--delivered)} .mismatch{color:var(--mismatch)} .unreach{color:var(--unreach)} .unclear{color:var(--unclear)}
 .box{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:10px 12px;margin:0 0 12px}
 .box p{margin:4px 0}
+.todo ul{list-style:disc;padding-left:20px;margin:4px 0}
+.todo li{margin:2px 0}
 pre{margin:6px 0 0;padding:8px;background:#0b1220;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-all;font-size:12px}
 code{font-size:12px;overflow-wrap:anywhere}
 small{color:var(--mut);overflow-wrap:anywhere}
@@ -226,6 +256,13 @@ ul{list-style:none;padding:0;margin:0}
 <h1>${h}</h1>
 <p><img src="/badge/${esc(enc)}.svg" alt="vet402: ${esc(badgeText(v))}" height="20"></p>
 ${summary}
+${toChange}
+<p class="method">Each result below is one purchase: vet402 bought the resource once with its own money, sent the example input the seller published, and checked that the paid answer was non-empty JSON with the keys the seller declared. It does not check whether the content itself is right. One purchase can go wrong for reasons on either side, so this is not a rating. UNCLEAR results are not counted against the seller. If something here is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
+<ul>${cards}</ul>
+<div class="box">
+<p>Badge for your README (Markdown). It shows the latest result above and changes when that result changes:</p>
+<pre><code>${esc(badgeMarkdown(v.host))}</code></pre>
+</div>
 ${
   o.auditLinkEnabled
     ? `${certificateCtaHtml(v.host, o.auditPriceUsdc).replace(/<\/div>$/, "")}
@@ -233,12 +270,7 @@ ${
 </div>
 `
     : ""
-}<div class="box">
-<p>Badge for your README (Markdown):</p>
-<pre><code>${esc(badgeMarkdown(v.host))}</code></pre>
-</div>
-<p class="method">Each result below is one purchase: vet402 bought the resource once with its own money, sent the example input the seller published, and compared the response with the seller's declaration. One purchase can go wrong for reasons on either side, so this is not a rating. UNCLEAR results are not counted against the seller. If something here is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
-<ul>${cards}</ul>
+}
 <p><small><a href="/board?view=census">census</a> · <a href="/board">daily board</a> · <a href="/">vet402</a></small></p>
 </main></body></html>`;
 }

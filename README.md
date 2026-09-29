@@ -1,8 +1,16 @@
 # vet402 (Algorand)
 
-**An x402 orchestrator that checks whether a paid API delivers what it promised.** Built for the Algorand x402 Global Challenge (Orchestrator track). The payment requirements carry `accepts[].extra.tag = "x402-global-challenge"`.
+**Before your AI agent pays for an API, vet402 buys it once with its own money and shows you what came back.** The x402 payment is the product: vet402 can only see what a seller sends by paying it, on Algorand MainNet, with the receipt on chain.
 
-You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint itself, compares what came back with what the seller declared (Bazaar `description`, output schema/example, `402 accepts`), and returns:
+- Try it free, no wallet: https://vet402-algorand.vercel.app/try
+- What vet402 got from every Algorand seller: https://vet402-algorand.vercel.app/board
+- Every payment it received: [/activity](https://vet402-algorand.vercel.app/activity). Every payment it made to other teams in the challenge: [/fairness](https://vet402-algorand.vercel.app/fairness)
+
+What the check covers: after payment, a 2xx answer of non-empty JSON with the keys the listing declares (see [Reasons](#reasons-stable-contract)). It does not check whether the content itself is right.
+
+Built for the Algorand Foundation Global x402 Challenge (Orchestrator track). The payment requirements carry `accepts[].extra.tag = "x402-global-challenge"`.
+
+You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint itself, checks what came back against what the seller declared (the output schema's `required` keys, or the example's keys when there is no `required` list, and the `402 accepts`), and returns:
 
 - `ALLOW` or `REFUSE`, with a machine-readable reason,
 - the tx id of **your payment to vet402** and the tx id of **vet402's payment to the seller**, and
@@ -19,7 +27,7 @@ customer ──(1) pay 0.05 USDC──▶ vet402  GET /v1/check?url=<seller>
                                   │            (if not → 400/503, customer NOT charged)
                                   │ (2) SETTLE customer payment on-chain ◀── must succeed
                                   │     (fails → 402/502, seller is never contacted)
-                                  │ (3) read seller's 402 → price ≤ caps? payTo not ours?
+                                  │ (3) read seller's 402 → price ≤ caps? payTo not vet402's?
                                   │ (4) pay seller (x402 exact, USDC) ──▶ seller
                                   │ (5) compare delivery with the declaration
 customer ◀── { verdict, reason, customerPayment.transaction, downstreamPayment.transaction, delivery.summary }
@@ -60,7 +68,7 @@ What counts as a promise:
   - The day's total is read **from the chain** (Algorand indexer: USDC transfers sent by the payer wallet since 00:00 UTC), so the cap holds on serverless instances that share no files. A local ledger is kept as a backup, and the larger of the two is used.
   - If the indexer cannot be read, vet402 **does not pay** (`cap_check_unavailable`). When this is detected before settlement, the customer is not charged.
 - Caps are checked before any signature exists. They are enforced again inside the paying client (policy + `onBeforePaymentCreation`), which is also locked to the approved `payTo`/asset/amount and to one payment per check.
-- **No self-dealing.** vet402 never pays a seller whose `payTo` is one of its own wallets (the customer-facing `payTo` or the payer wallet); those checks return `self_dealing`. vet402 does not buy its own checks to inflate volume. Every downstream payment follows a real customer payment that has already settled.
+- **No self-dealing.** vet402 never pays a seller whose `payTo` is one of its own wallets (the customer-facing `payTo` or the payer wallet); those checks return `self_dealing`. vet402 does not buy its own checks to inflate volume; the 3 test checks the operator paid from vet402's own payer wallet on 2026-09-27 to try the live deployment are self-payments and are listed as operator tests on `/activity` and `/fairness`. Every payment the payer wallet makes to a seller for `/v1/check`, `/v1/audit` or `/v1/buy` follows a customer payment that has already settled; the one exception, a bug on 2026-09-27, is recorded in the MainNet run record below. The board wallet (census and daily sweep) and the trial wallet (`/try`) pay sellers without a customer, from vet402's own money: the board wallet's purchases are on `/board` (18 census payments that the files still record as not paid are listed under [Corrections](#corrections)), the trial wallet's on `/try/log`, and every payment to another team in the challenge, read from the chain, on `/fairness`.
 - MainNet is locked unless `I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS=yes`. `ALLOW_PRIVATE_TARGETS=1` is refused on MainNet. Targets must be `https` and resolve to public IPs, redirects are not followed, and bodies are capped at 1 MB.
 - There is a residual risk. Two instances running at the same instant can each read the same on-chain total before either payment lands. The worst-case overshoot is about (concurrent checks) × per-call cap.
 
@@ -286,7 +294,7 @@ With `BASE_ACCEPT=on` and `BASE_PAY_TO=<0x address>`, every paid route (`/v1/che
 
 ## Daily delivery board
 
-`GET /board` (HTML) and `GET /board.json` (free) show whether Algorand x402 sellers delivered what they declared, when vet402 bought from them with its own money. `?view=census` shows the census run.
+`GET /board` (HTML) and `GET /board.json` (free) show whether the paid answers of Algorand x402 sellers had the keys they declared, when vet402 bought from them with its own money (the content itself is not checked). `?view=census` shows the census run.
 
 - **Daily** (`npx tsx scripts/board-sweep.ts`): from the Bazaar feed, MainNet USDC resources priced at or under the per-call cap, seen in the last 7 days, **one per host (the cheapest)**. vet402's own hosts and any resource paying one of vet402's addresses are excluded. Results go to `board/YYYY-MM-DD.json` and `board/latest.json`.
 - **Census** (`--census`): every listed resource under the per-call cap, once each. Results go to `board/census-YYYY-MM-DD.json` and `board/census-latest.json`. Concurrency is 1–4 (default 3). The order takes turns between hosts (round-robin), a host never has two purchases in flight, and purchases from one host are at least 60 s apart (`--host-gap-ms` can only raise it). A census buys at most 5 resources per seller host per UTC day (purchases already made that day count); the rest are written as `SKIPPED not_measured_this_run`, not contacted, not paid and not counted against the seller. Which 5 rotates by day. Until 2026-09-28 there was no per-host limit, and one host received 581 purchases in a single census; that burst is why this limit exists. `/board?view=census&date=YYYY-MM-DD` shows one day's census.
@@ -308,6 +316,12 @@ With `BASE_ACCEPT=on` and `BASE_PAY_TO=<0x address>`, every paid route (`/v1/che
 Published board files are corrected only toward what the chain shows, and every correction is listed here. The previous values stay in git history.
 
 - **2026-09-28**: `board/census-2026-09-27.json`, `board/census-2026-09-28.json` (and `census-latest.json`): 3 rows in each file (host `gateway-x402.vercel.app`, 0.005–0.01 USDC each) were recorded as not paid. The facilitator had answered "transaction already in ledger", which vet402 read as a refused payment. The indexer shows vet402's USDC transfer in the same group, settled about 3 s before the row's time. The rows now read `paid: true` with vet402's transfer tx, and `totals.paidUsdc` rose by 0.025 USDC in each file (09-27: 16.052200 → 16.077200). They are shown as "Paid on chain, answered 402, delivered nothing". Found by comparing the files with the chain; checked with `npx tsx scripts/board-sweep.ts --repair-settled <file>` (reads the indexer, pays nothing). Commit 127addc.
+
+- **2026-09-27**: the checker was too strict in the first census (`board/census-2026-09-27.json`, run 04:32 to 05:00 UTC). It read the output schema from only one place, so `required` was almost never seen and every example key was treated as a promise; a key present with a null or blank value also counted as missing. Fixed at 05:17 UTC in 947a6e3 (promised keys = `schema.required`; example keys are hints). The 09-27 file is kept as it was recorded. The 09-28 census reran every listing with the fixed checker: of the 80 rows shown as MISMATCH on 09-27, 55 were DELIVERED, 18 MISMATCH and 7 UNCLEAR on 09-28 (same method and URL). On 2026-09-29 the landing page's census numbers were switched from the 09-27 run to the 09-28 run, and `/demo` got a note under the video, which was recorded on 09-27 and shows the 80.
+
+- **2026-09-29**: content notes on 3 purchases whose result stays DELIVERED. `moltworld.xyz` `POST /v1/models/tts-1/audio/speech` (0.10 USDC; census 09-27 tx `AMVUEQ3SOQQLWOJSCNQPZO4ZEB3LFSHKRGT7TNAAVDOFWBHF7CZQ`, census 09-28 tx `XXF5QZMWBATOATXZCUSZYYABIXYYIZ6A7GRY7RZ6YVFZ4YIPWXPA`) and `POST /v1/models/gpt-audio-mini/audio/speech` (0.02 USDC; census 09-28 tx `5NZLANQCS3GFGVF7KJEXVG3DDVXKE54BU62YB3ZHVVAQYORPCZAA`). The declared keys were present, which is all the checker looks at. The listings describe speech synthesis ("OpenAI TTS-1 text-to-speech synthesis", "OpenAI GPT Audio Mini lightweight expressive voice synthesis"). vet402 sent the seller's Bazaar example (`"input":"Welcome to Moltworld, powered by Algorand x402 payments."`, 56 characters, `"response_format":"mp3"`). Each answer's `id` began with `audio-free-` and its `audio_url` was `data:audio/wav;base64,…`; the recorded first bytes decode to a RIFF/WAVE header with RIFF size 29,876 (the two `tts-1` rows also show PCM, mono, 8,000 Hz). In the seller's public source at commit `c2b4344` (`UncleTom29/moltworld-x402`, `src/providers/openrouter.ts`), this answer comes from `generateWavBase64()`: a sine tone of 8,000 8-bit samples a second whose pitch follows the input characters, lasting input length / 15 = 3.73 s, so 36 + 29,840 = 29,876, returned with an `audio-free-` id. The verdict words are unchanged; the note is shown on those rows on `/board` and `/seller/moltworld.xyz`.
+
+- **Known, not corrected yet (found 2026-09-29)**: 18 census payments are on chain but recorded in the files as not paid (`paid: false`, reason `payment_failed` after a timeout or a 200 without a settlement receipt): 8 in `census-2026-09-27.json` (0.035 USDC) and 10 in `census-2026-09-28.json` (0.095 USDC). Each is a USDC transfer from the board wallet to the row's `payTo` in an x402 settlement group (the facilitator's fee payer signs the other transaction), within 20 s of the row's time. Example: `eth-avm-light-client.vercel.app/verify-receipt/25782067/2/0` on 09-27, recorded as a timeout, settled in `GP46GFPSE3JAER7CNWN65GRRJVVNJHEKE4LJ363KZGMA7LR24CFQ` (round 65433626, 0.01 USDC). `--repair-settled` cannot record these: it finds a payment only through the tx id in a facilitator's "already in ledger" error, and these rows have none. They stay UNCLEAR either way; only `paid`, `tx` and `totals.paidUsdc` would change. `/fairness` already counts them, because it reads the chain.
 
 - **2026-09-29**: the commit history was rewritten once to change the author name on every commit. File contents are unchanged apart from the author name in `LICENSE`, `README.md` and the `package.json` files; commit ids changed (for example, the correction above was 3db3e6e before).
 

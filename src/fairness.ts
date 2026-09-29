@@ -15,7 +15,10 @@
  *     (opt-ins) and transfers to vet402's own addresses are left out.
  * Why vet402 paid (per payment): board wallet = the per-listing census when the payment falls in a census
  * run (by tx id or by the run's time window), the daily sweep when it falls in a daily run; trial wallet =
- * a free try; payer wallet = a check someone asked vet402 for (/v1/check, /v1/audit or /v1/buy).
+ * a free try; payer wallet = paired with the latest earlier USDC payment into vet402's payTo within
+ * PAIR_WINDOW_SEC that still has room (one seller payment each; an audit-sized payment up to AUDIT_ROOM):
+ * from an outside address = a customer's check (/v1/check, /v1/audit or /v1/buy), from one of vet402's own
+ * wallets = an operator test, none = no customer payment before it (/activity lists it as unmatched).
  * If the indexer or the leaderboard cannot be read, there is no report: the page says so and shows no numbers.
  */
 import type { Env, Hono } from "hono";
@@ -50,15 +53,23 @@ export const MAINNET_WALLETS = {
 
 export type WalletRole = "board" | "payer" | "trial";
 export const WALLET_ROLES: readonly WalletRole[] = ["board", "payer", "trial"];
-export type PaymentReason = "census" | "daily" | "board_run" | "check" | "try";
-export const REASONS: readonly PaymentReason[] = ["census", "daily", "board_run", "check", "try"];
+export type PaymentReason = "census" | "daily" | "board_run" | "check" | "operator_test" | "no_customer" | "try";
+export const REASONS: readonly PaymentReason[] = ["census", "daily", "board_run", "check", "operator_test", "no_customer", "try"];
 export const REASON_TEXT: Record<PaymentReason, string> = {
   census: "per-listing census (every listed resource, once per run)",
   daily: "daily sweep (one resource per seller)",
   board_run: "board run (census or daily sweep)",
-  check: "a check someone asked vet402 for",
+  check: "a check a customer paid vet402 for",
+  operator_test: "a test check the operator paid for from vet402's own wallet",
+  no_customer: "paid with no customer payment before it (listed on /activity as unmatched)",
   try: "a free try",
 };
+
+/** A payer-wallet payment pairs with a payment into payTo at most this long before it (as /activity). */
+export const PAIR_WINDOW_SEC = 300;
+/** A payment into payTo of at least this many atomic USDC is audit-sized: it may pair with up to AUDIT_ROOM seller payments. */
+export const AUDIT_MIN_ATOMIC = 500_000n;
+export const AUDIT_ROOM = 10;
 
 const ALGO_ADDR = /^[A-Z2-7]{58}$/;
 
@@ -144,8 +155,19 @@ export interface FairnessReport {
   otherSellers: Sum & { addresses: number };
   /** Transfers left out: to vet402's own addresses, or of zero USDC. */
   excluded: { selfTransfers: number; zeroAmount: number };
-  /** USDC sent from a participant address to one of vet402's addresses. */
-  fromParticipants: Sum & { txs: string[] };
+  /** USDC sent from a participant address to one of vet402's addresses, each with its on-chain note. */
+  fromParticipants: Sum & {
+    txs: string[];
+    items: { tx: string; from: string; usdc: string; note?: string; refund: boolean }[];
+  };
+  /**
+   * USDC paid into vet402's payTo, split by sender: vet402's own wallets (self-payments) or any other address.
+   * fromOthers includes plain deposits (for example funding from an exchange): customers are told apart only on /activity.
+   */
+  toPayTo: {
+    fromOwnWallets: Sum & { first?: string; last?: string };
+    fromOthers: Sum;
+  };
   /** Most payments first. */
   rows: ParticipantRow[];
   method: string[];
@@ -158,6 +180,7 @@ interface IndexerTxn {
   "confirmed-round": number;
   "round-time": number;
   "intra-round-offset"?: number;
+  note?: string;
   "asset-transfer-transaction"?: { "asset-id": number; amount: number; receiver: string; "close-amount"?: number };
   "inner-txns"?: IndexerTxn[];
 }
@@ -170,6 +193,19 @@ export interface UsdcTransfer {
   round: number;
   offset: number;
   time: number;
+  /** The transfer's note as UTF-8 text (sender-controlled: escape before showing). */
+  note?: string;
+}
+
+/** An indexer note (base64) as printable text, at most 120 characters; undefined when empty or unreadable. */
+export function noteText(b64: string | undefined): string | undefined {
+  if (!b64) return undefined;
+  try {
+    const s = Buffer.from(b64, "base64").toString("utf8").replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩�]/g, " ").replace(/\s+/g, " ").trim();
+    return s ? s.slice(0, 120) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const iso = (sec: number) => new Date(sec * 1000).toISOString().replace(".000Z", "Z");
@@ -208,6 +244,7 @@ export async function usdcTransfersOf(
             round: root["confirmed-round"],
             offset: root["intra-round-offset"] ?? 0,
             time: root["round-time"],
+            ...(noteText(t.note) ? { note: noteText(t.note) } : {}),
           });
         }
         for (const i of t["inner-txns"] ?? []) walk(i);
@@ -351,6 +388,54 @@ export function buildFairnessReport(input: {
   const otherAddrs = new Set<string>();
   const excluded = { selfTransfers: 0, zeroAmount: 0 };
   const seen = new Set<string>();
+  const tkey = (t: UsdcTransfer) => `${t.tx}:${t.sender}:${t.receiver}:${t.amount}`;
+  const earlier = (a: UsdcTransfer, b: UsdcTransfer) => a.round < b.round || (a.round === b.round && a.offset < b.offset);
+
+  // Payments into payTo (never payTo to itself), oldest first, once each.
+  const intoPayTo: UsdcTransfer[] = [];
+  {
+    const s = new Set<string>();
+    for (const t of input.payToTransfers) {
+      if (t.receiver !== o.payTo || t.sender === o.payTo || t.amount <= 0n || s.has(tkey(t))) continue;
+      s.add(tkey(t));
+      intoPayTo.push(t);
+    }
+    intoPayTo.sort((a, b) => (earlier(a, b) ? -1 : earlier(b, a) ? 1 : 0));
+  }
+  // Why the payer wallet paid: pair each of its seller payments (oldest first) with the latest earlier payment into
+  // payTo within PAIR_WINDOW_SEC that still has room.
+  const payerReason = new Map<string, PaymentReason>();
+  if (o.wallets.payer) {
+    const payer = o.wallets.payer;
+    const used = new Map<string, number>();
+    const outs = (input.transfers.payer ?? [])
+      .filter((t) => t.sender === payer && !own.has(t.receiver) && t.amount > 0n)
+      .sort((a, b) => (earlier(a, b) ? -1 : earlier(b, a) ? 1 : 0));
+    for (const p of outs) {
+      if (payerReason.has(tkey(p))) continue;
+      let pick: UsdcTransfer | undefined;
+      for (const c of intoPayTo) {
+        if (!earlier(c, p) || p.time - c.time > PAIR_WINDOW_SEC) continue;
+        if ((used.get(tkey(c)) ?? 0) >= (c.amount >= AUDIT_MIN_ATOMIC ? AUDIT_ROOM : 1)) continue;
+        pick = c; // the latest one
+      }
+      if (pick) used.set(tkey(pick), (used.get(tkey(pick)) ?? 0) + 1);
+      payerReason.set(tkey(p), !pick ? "no_customer" : own.has(pick.sender) ? "operator_test" : "check");
+    }
+  }
+  const ownIn = zeroSum();
+  const othersIn = zeroSum();
+  const ownInTimes: number[] = [];
+  for (const t of intoPayTo) {
+    if (own.has(t.sender)) {
+      ownIn.payments++;
+      ownIn.atomic += t.amount;
+      ownInTimes.push(t.time);
+    } else {
+      othersIn.payments++;
+      othersIn.atomic += t.amount;
+    }
+  }
 
   for (const w of wallets) {
     for (const t of input.transfers[w.role] ?? []) {
@@ -373,7 +458,7 @@ export function buildFairnessReport(input: {
         otherAddrs.add(t.receiver);
         continue;
       }
-      const reason: PaymentReason = w.role === "trial" ? "try" : w.role === "payer" ? "check" : boardReason(t, input.runs);
+      const reason: PaymentReason = w.role === "trial" ? "try" : w.role === "payer" ? (payerReason.get(key) ?? "no_customer") : boardReason(t, input.runs);
       const e = per.get(p.id) ?? { ts: [], atomic: 0n };
       e.ts.push({ ...t, reason });
       e.atomic += t.amount;
@@ -388,6 +473,7 @@ export function buildFairnessReport(input: {
   // Money in the other direction: participant address -> any of vet402's addresses.
   const inbound = zeroSum();
   const inboundTxs: string[] = [];
+  const inboundItems: FairnessReport["fromParticipants"]["items"] = [];
   const inSeen = new Set<string>();
   for (const t of [...input.payToTransfers, ...WALLET_ROLES.flatMap((r) => input.transfers[r] ?? [])]) {
     if (!own.has(t.receiver) || !byAddr.has(t.sender) || t.amount <= 0n) continue;
@@ -397,6 +483,7 @@ export function buildFairnessReport(input: {
     inbound.payments++;
     inbound.atomic += t.amount;
     inboundTxs.push(t.tx);
+    inboundItems.push({ tx: t.tx, from: byAddr.get(t.sender)!.label, usdc: atomicToUsdc(t.amount), ...(t.note ? { note: t.note } : {}), refund: /\brefund/i.test(t.note ?? "") });
   }
 
   const rows: ParticipantRow[] = participants
@@ -436,12 +523,20 @@ export function buildFairnessReport(input: {
     },
     otherSellers: { ...toSum(other), addresses: otherAddrs.size },
     excluded,
-    fromParticipants: { ...toSum(inbound), txs: inboundTxs },
+    fromParticipants: { ...toSum(inbound), txs: inboundTxs, items: inboundItems },
+    toPayTo: {
+      fromOwnWallets: {
+        ...toSum(ownIn),
+        ...(ownInTimes.length ? { first: iso(Math.min(...ownInTimes)), last: iso(Math.max(...ownInTimes)) } : {}),
+      },
+      fromOthers: toSum(othersIn),
+    },
     rows,
     method: [
       "Participants: every challenge-tagged merchant on GoPlausible's leaderboard (all pages), except vet402's own. A participant's addresses are its `address` and every Algorand MainNet address listed in its `accounts`.",
       `Payments: USDC (ASA ${o.asaId}) asset transfers sent by vet402's wallets (${wallets.map((w) => w.role).join(", ")}) to a participant address, read from the Algorand indexer. ALGO payments, zero-amount transfers and transfers to vet402's own addresses are not counted.`,
-      "Reason: board wallet = census or daily sweep (matched by the run's recorded tx id, or by the run's time window); trial wallet = a free try; payer wallet = a check someone asked vet402 for.",
+      `Reason: board wallet = census or daily sweep (matched by the run's recorded tx id, or by the run's time window); trial wallet = a free try; payer wallet = paired with the latest earlier USDC payment into vet402's payTo within ${PAIR_WINDOW_SEC} s that still has room: from an outside address it is a customer's check, from one of vet402's own wallets it is an operator test, and with none it had no customer payment before it.`,
+      "Payments into vet402's payTo are split by sender: vet402's own wallets (the operator's tests, which are self-payments) or any other address (plain deposits included; /activity tells customers apart).",
       "A payment the census recorded as not settled but that reached the chain is counted: the chain is the record.",
       `Cached for ${FAIRNESS_TTL_MS / 60_000} minutes. If the indexer or the leaderboard cannot be read, there are no numbers.`,
     ],
@@ -490,12 +585,30 @@ export class FairnessLedger {
 /** The one plain line at the top. Every number comes from the report. */
 export function headline(r: FairnessReport): string {
   const t = r.totals;
-  const own = r.vet402 ? `, while vet402's own volume is ${trimUsdc(r.vet402.volumeUsdc)} USDC` : "";
   return (
     "vet402 bought from every listing the same way, including other teams in this challenge. " +
-    `Those payments can raise their leaderboard volume, not ours: ${t.payments.toLocaleString("en-US")} payments, ` +
-    `${trimUsdc(t.usdc)} USDC to ${t.participants} participants${own}.`
+    `Those payments can raise their leaderboard volume, not vet402's: ${t.payments.toLocaleString("en-US")} payments, ` +
+    `${trimUsdc(t.usdc)} USDC to ${t.participants} participants.` +
+    (r.vet402 ? ` ${ownVolumeLine(r)}` : "")
   );
+}
+
+/** What vet402's own leaderboard volume is made of: self-payments are named as such. Every number comes from the report. */
+export function ownVolumeLine(r: FairnessReport): string {
+  if (!r.vet402) return "";
+  const self = r.toPayTo.fromOwnWallets;
+  let s = `vet402's own leaderboard volume is ${trimUsdc(r.vet402.volumeUsdc)} USDC.`;
+  if (self.payments > 0) {
+    const day = (x?: string) => (x ?? "").slice(0, 10);
+    const when = !self.first ? "" : day(self.first) === day(self.last) ? ` on ${day(self.first)}` : ` between ${day(self.first)} and ${day(self.last)}`;
+    // The leaderboard counts only settled x402 payments; a plain deposit to payTo is not in it, so only the sums are compared.
+    const all = self.usdc === r.vet402.volumeUsdc;
+    s +=
+      ` ${all ? "All of it is" : "It includes"} ${self.payments} test ${self.payments === 1 ? "payment" : "payments"} (${trimUsdc(self.usdc)} USDC) ` +
+      `the operator made from vet402's own wallet to vet402${when}, to check the live deployment. ` +
+      "Those are self-payments, and the challenge rules exclude repeated self-payments when the final ranking is reviewed.";
+  }
+  return `${s} Every customer payment, and how many customers there are, is on /activity.`;
 }
 
 function walletLine(r: FairnessReport): string {
@@ -531,27 +644,32 @@ export function fairnessHtml(r: FairnessReport): string {
     .map(
       (row) =>
         `<tr><td><b>${esc(row.label)}</b>${row.sub && row.sub !== row.label ? `<br><small>${esc(row.sub)}</small>` : ""}</td>` +
-        `<td class="n">${esc(row.rank)}</td><td class="n">${esc(row.listings ?? "—")}</td><td class="n">${row.payments.toLocaleString("en-US")}</td><td class="n">${esc(trimUsdc(row.usdc))}</td>` +
+        `<td class="n">${esc(row.rank)}</td><td class="n">${esc(row.listings ?? "n/a")}</td><td class="n">${row.payments.toLocaleString("en-US")}</td><td class="n">${esc(trimUsdc(row.usdc))}</td>` +
         `<td class="d">${when(row.first)}<br>${when(row.last)}</td><td>${row.examples.map(tx).join("")}</td><td>${reasons(row)}</td></tr>`,
     )
     .join("\n");
+  const fp = r.fromParticipants;
   const inbound =
-    r.fromParticipants.payments === 0
+    fp.payments === 0
       ? "On chain now: no USDC from any participant address to vet402's addresses."
-      : `On chain now: ${r.fromParticipants.payments} USDC transfer(s), ${esc(trimUsdc(r.fromParticipants.usdc))} USDC in total, from participant addresses to vet402's addresses. Listed so anyone can check them: ${r.fromParticipants.txs.slice(0, 10).map(tx).join(" ")}`;
+      : `On chain now: ${fp.payments} USDC ${fp.payments === 1 ? "transfer" : "transfers"} from participant addresses to vet402's addresses, ${esc(trimUsdc(fp.usdc))} USDC in total. Each one with the note it carries on chain: ` +
+        fp.items
+          .slice(0, 10)
+          .map((i) => `${esc(i.from)}, ${esc(trimUsdc(i.usdc))} USDC${i.refund ? " (a refund, per its note)" : ""}${i.note ? `, note "${esc(i.note)}"` : ""} ${tx(i.tx)}`)
+          .join("; ");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>vet402 fairness</title>
-<meta name="description" content="Every payment vet402 made to other teams in the Algorand x402 challenge, read live from the chain.">
+<meta name="description" content="Every payment vet402 made to other teams in the Algorand Foundation Global x402 Challenge, read live from the chain.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <style>${BASE_CSS}
 ${FAIRNESS_CSS}</style></head><body>
 ${topNav()}
 <main>
-<h1>We paid the other teams too</h1>
+<h1>vet402 paid the other teams too</h1>
 <p class="lead" id="headline">${esc(headline(r))}</p>
 <ul class="rules">
-<li>vet402 takes no money from any participant for buying from them.</li>
+<li>vet402 takes no money from any team in exchange for buying from them. A seller can pay vet402 for a checkup of its own API (<code>/v1/audit</code>): the result comes only from vet402's own purchases, the certificate says "self-purchased", and any payment from a team shows on the last line of this list.</li>
 <li>There is no arrangement to buy from each other.</li>
 <li>What vet402 buys is set by public rules: <a href="${esc(METHOD_URL)}" rel="noopener">the method in the README</a>. The census buys every listed resource once per run; the daily sweep buys one per seller.</li>
 <li>${inbound}</li>
@@ -577,7 +695,7 @@ export function fairnessUnavailableHtml(): string {
 ${FAIRNESS_CSS}</style></head><body>
 ${topNav()}
 <main>
-<h1>We paid the other teams too</h1>
+<h1>vet402 paid the other teams too</h1>
 <p class="lead">vet402 bought from every listing the same way, including other teams in this challenge. The numbers are read live from the Algorand chain and the leaderboard, and they cannot be read now. Please try again in a few minutes.</p>
 <p><a href="${esc(FAIRNESS_README_URL)}" rel="noopener">How this is counted</a> · <a href="/board">Board</a></p>
 </main>

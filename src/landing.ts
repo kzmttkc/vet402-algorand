@@ -28,10 +28,36 @@ export function topNav(): string {
 }
 
 /**
- * The first census (2026-09-27, kept as it was recorded): the numbers in the "what vet402 found" block.
+ * The census shown in the "what vet402 found" block: 2026-09-28, the first full run with the corrected
+ * checker (947a6e3). The 2026-09-27 run treated every example key as a promise; see README "Corrections".
  * Fixed on purpose: the sentence is dated, so it stays true on the day it is read.
+ * Counts are board.ts displayClass over board/census-2026-09-28.json; paid/paidUsdc are the file's paid rows
+ * and totals.paidUsdc. chainOnly* = board-wallet transfers in that run that the indexer shows but the file
+ * records as not paid (no settlement receipt came back), counted on 2026-09-29.
  */
-export const FIRST_CENSUS = { date: "2026-09-27", dateLabel: "27 September 2026", listed: 1819, sellers: 112, paid: 575, paidUsdc: "16.05", delivered: 495, mismatch: 80, unreachable: 422, unclear: 822 };
+export const FEATURED_CENSUS = {
+  date: "2026-09-28",
+  dateLabel: "28 September 2026",
+  listed: 1840,
+  sellers: 115,
+  paid: 570,
+  paidUsdc: "16.69",
+  chainOnly: 10,
+  chainOnlyUsdc: "0.095",
+  delivered: 548,
+  mismatch: 19,
+  unreachable: 423,
+  unclear: 850,
+  /** UNCLEAR rows from vet402 or the payment path: 429 rate limits, the facilitator's sub-cent quota, vet402's per-call cap. */
+  rateLimited: 325,
+  facilitatorQuota: 175,
+  overCap: 24,
+  /** MISMATCH rows of the 2026-09-27 run, and how many of them delivered on the 2026-09-28 rerun. */
+  firstRunMismatch: 80,
+  firstRunMismatchDelivered: 55,
+};
+export const CHECKER_FIX_URL = `${REPO_URL}/commit/947a6e3`;
+export const CORRECTIONS_URL = `${REPO_URL}#corrections`;
 
 export interface LandingOptions {
   network: string;
@@ -53,18 +79,18 @@ const n = (x: number) => x.toLocaleString("en-US");
 
 export function landingHtml(o: LandingOptions): string {
   const fee = short(o.buyFeeUsdc ?? "0.005");
-  const c = FIRST_CENSUS;
+  const c = FEATURED_CENSUS;
   const tryHref = o.from ? `/try?from=${encodeURIComponent(o.from)}` : "/try";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>vet402</title>
-<meta name="description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
+<meta name="description" content="vet402 pays the x402 endpoint you name on Algorand, checks that the answer has the fields the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/icon-512.png">
 <meta property="og:site_name" content="vet402">
-<meta property="og:title" content="vet402 — pays the x402 endpoint you name and checks the delivery">
-<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
+<meta property="og:title" content="vet402: pays the x402 endpoint you name and checks the delivery">
+<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks that the answer has the fields the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">
 <meta property="og:image" content="https://vet402-algorand.vercel.app/icon-512.png">
 <style>
 ${BASE_CSS}
@@ -99,8 +125,8 @@ td:first-child{white-space:nowrap}
 ${topNav()}
 <main>
 <section class="hero">
-<h1>Before your AI agent pays for an API, vet402 buys it with its own wallet and tells you if it actually delivered.</h1>
-<p class="lead">Paid APIs for agents take the money first and answer second. The listing says what you will get, and nobody checks. vet402 pays, compares what came back with what was promised, and leaves the payment receipt on the blockchain where anyone can look it up.</p>
+<h1>Before your AI agent pays for an API, vet402 buys it once with its own wallet and shows you what came back.</h1>
+<p class="lead">Paid APIs for agents take the money first and answer second. The x402 Bazaar checks that a listing is well formed, not what the API actually sends back. vet402 pays, checks that the answer has the fields the listing declared, and leaves the payment receipt on the blockchain where anyone can look it up. It does not judge whether the content itself is right.</p>
 <div class="ctas"><a class="btn" href="${tryHref}">Try it free</a><a class="btn ghost" href="/board?view=census">See every result</a></div>
 </section>
 
@@ -109,7 +135,7 @@ ${topNav()}
 <p class="kicker">${o.trial ? "No account and no wallet. All three steps are free (step 3 once per person)." : "No account. The first two steps cost nothing."}</p>
 <ol class="steps">
 <li><span class="num">1</span><b>Pick a seller</b><p>Choose one from <a href="/board?view=census">the board</a>, or paste the URL of any paid API on Algorand.</p></li>
-<li><span class="num">2</span><b>See what vet402 got last time</b><p>Free. What it paid, whether the answer matched the listing, and the receipt.</p></li>
+<li><span class="num">2</span><b>See what vet402 got last time</b><p>Free. What it paid, whether the answer had the fields the listing declared, and the receipt.</p></li>
 ${
   o.trial
     ? `<li><span class="num">3</span><b>Watch vet402 buy it now</b><p>Free, once per person: vet402 pays the seller from its own wallet and shows you what came back.</p></li>`
@@ -121,13 +147,14 @@ ${
 
 <section id="found">
 <h2>What happened when vet402 bought everything</h2>
-<p class="kicker">On ${c.dateLabel}, vet402 went through all ${n(c.listed)} resources listed for Algorand in the x402 Bazaar, from ${n(c.sellers)} sellers. It paid ${n(c.paid)} of them from its own wallet, ${c.paidUsdc} USDC in total.</p>
+<p class="kicker">On ${c.dateLabel}, vet402 tried to buy ${n(c.listed)} resources listed for Algorand in the x402 Bazaar, from ${n(c.sellers)} sellers: every Algorand USDC listing within its per-call price limit that it could call as listed. It paid ${n(c.paid)} of them from its own wallet, ${c.paidUsdc} USDC in total.</p>
 <div class="stats">
-<div class="stat"><b class="delivered">${n(c.delivered)}</b><span>delivered what the listing promised</span></div>
-<div class="stat"><b class="mismatch">${n(c.mismatch)}</b><span>took the payment and sent back something else</span></div>
-<div class="stat"><b class="unreach">${n(c.unreachable)}</b><span>were listed but did not even ask for payment (dead page or host)</span></div>
+<div class="stat"><b class="delivered">${n(c.delivered)}</b><span>were paid and answered with the fields the listing declared</span></div>
+<div class="stat"><b class="mismatch">${n(c.mismatch)}</b><span>were paid, and the answer failed that check (an error, not JSON, empty, or a declared field missing)</span></div>
+<div class="stat"><b class="unreach">${n(c.unreachable)}</b><span>were listed but did not ask for payment (for example a dead page or host)</span></div>
 </div>
-<p class="note">Another ${n(c.unclear)} ended without a clear answer (rate limits, payments that did not go through, vet402's own price limit). Those are not held against the seller. Every row, with its receipt: <a href="/board?view=census&amp;date=${c.date}">census of ${c.date}</a>.</p>
+<p class="note">What the check covers: after payment, a 2xx answer of non-empty JSON that has the fields the listing marks as required. It does not look at whether the content itself is right. Another ${n(c.unclear)} ended without a clear answer, and none of them is held against the seller. At least ${n(c.rateLimited + c.facilitatorQuota + c.overCap)} of those came from vet402 or the payment path: ${n(c.rateLimited)} rate limits (vet402 may have called too fast), ${n(c.facilitatorQuota)} where the facilitator's sub-cent quota ran out, and ${n(c.overCap)} over vet402's own price limit. The chain also shows ${n(c.chainOnly)} more payments from this run (${c.chainOnlyUsdc} USDC) that the file records as not paid, because no settlement receipt came back; they are among the unclear rows. Every row, with its receipt: <a href="/board?view=census&amp;date=${c.date}">census of ${c.date}</a>.</p>
+<p class="note">A correction: the first run, on 27 September, used a checker that was too strict. It treated every example key in a listing as a promise and reported ${n(c.firstRunMismatch)} mismatches. vet402 fixed the rule the same day (<a href="${CHECKER_FIX_URL}" rel="noopener">947a6e3</a>) and bought everything again on 28 September: ${n(c.firstRunMismatchDelivered)} of those ${n(c.firstRunMismatch)} delivered. The numbers above are from the rerun. Every correction is listed in the README: <a href="${CORRECTIONS_URL}" rel="noopener">Corrections</a>.</p>
 </section>
 
 <section id="developers">
@@ -142,7 +169,7 @@ ${
 <tr><td><code>GET /v1/audit?seller=</code></td><td>${short(o.auditPriceUsdc ?? "0.50")}</td><td>The same check for each resource the seller lists in the Bazaar. The unpaid request shows the plan.</td></tr>
 <tr><td>MCP server</td><td>free to install</td><td><code>vet402_check</code> for Claude and other agents. See <a href="${REPO_URL}/tree/main/mcp" rel="noopener">mcp/</a>.</td></tr>
 </tbody></table></div>
-<p class="note">Your payment settles first; the seller is paid only after that. vet402 pays at most ${short(o.perCallUsdc)} USDC per seller call and ${short(o.perDayUsdc)} USDC per day.</p>
+<p class="note">Your payment settles first; the seller is paid only after that. The wallet that pays sellers for customers' requests pays at most ${short(o.perCallUsdc)} USDC per seller call and ${short(o.perDayUsdc)} USDC per day across all customers. The board runs and the free tries are paid from separate wallets with their own limits.</p>
 <div class="links"><a href="/board">Board</a><a href="/activity">Activity ledger</a><a href="/demo">Demo video</a><a href="${REPO_URL}" rel="noopener">Source on GitHub (MIT)</a></div>
 </section>
 </main>
@@ -159,10 +186,11 @@ export function demoHtml(): string {
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/icon-512.png">
-<style>body{margin:0;background:#0a0e17;color:#e8ecf3;font:16px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:24px auto;padding:0 16px}video{width:100%;border-radius:8px;background:#000}a{color:#93c5fd}</style>
+<style>body{margin:0;background:#0a0e17;color:#e8ecf3;font:16px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:24px auto;padding:0 16px}video{width:100%;border-radius:8px;background:#000}a{color:#93c5fd}.fix{max-width:46em;color:#cbd5e1;font-size:15px;border-left:3px solid #f59e0b;padding:2px 0 2px 12px}</style>
 </head><body><main>
 <h1>vet402 on Algorand: demo</h1>
 <video controls preload="metadata" playsinline src="${DEMO_VIDEO_URL}"></video>
+<p class="fix">A correction to the video: it was recorded on 27 September 2026, and the ${FEATURED_CENSUS.firstRunMismatch} MISMATCH it shows come from a checker rule that later turned out to be too strict (it treated every example key in a listing as a promise). vet402 fixed the rule that day and bought everything again on 28 September: ${FEATURED_CENSUS.firstRunMismatchDelivered} of those ${FEATURED_CENSUS.firstRunMismatch} delivered. The corrected numbers: <a href="/board?view=census&amp;date=${FEATURED_CENSUS.date}">census of ${FEATURED_CENSUS.date}</a>.</p>
 <p><a href="${DEMO_VIDEO_URL}">Download the video (MP4)</a> &middot; <a href="/board?view=census">Census board</a> &middot; <a href="/activity">Activity ledger</a> &middot; <a href="https://github.com/kzmttkc/vet402-algorand">Source</a></p>
 </main></body></html>`;
 }

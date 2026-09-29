@@ -85,7 +85,7 @@ export const FIX_MODES: readonly FixMode[] = [
     key: "not_json",
     title: "The paid response was not JSON",
     what: "vet402 paid and got a 200 that was not JSON (or was empty).",
-    fix: "Return JSON, or declare the real mimeType (for example image/png) in the listing. A very large JSON answer may have been cut by vet402's read limit; if so, that is ours.",
+    fix: "Return JSON, or declare the real mimeType (for example image/png) in the listing. vet402 cuts very large JSON answers at its read limit; if that is what happened here, the fault is vet402's.",
     side: "seller",
     effort: 1,
   },
@@ -149,7 +149,7 @@ export const FIX_MODES: readonly FixMode[] = [
     key: "rate_limited",
     title: "Rate-limited the paid request",
     what: "The request got 429 Too Many Requests.",
-    fix: "vet402 may have called too fast; that part is ours, and later runs space calls per host. If paid requests still get 429, let them through the rate limiter.",
+    fix: "vet402 may have called too fast. That is vet402's fault, and later runs space out calls per host. If paid requests still get 429, let them through your rate limiter.",
     side: "seller",
     effort: 2,
   },
@@ -302,9 +302,16 @@ export interface FixFirst {
   rows: number;
   delivered: number;
   notDelivered: number;
+  /** MISMATCH + UNREACHABLE: the rows counted as the seller's to fix (the same rule as /board: UNCLEAR is never the seller's). */
+  forSeller: number;
+  /** UNCLEAR rows from vet402 or the payment path: rate limits, the facilitator's sub-cent quota, vet402's own limits. */
+  unclearFromPath: number;
   byClass: Record<DisplayClass, number>;
   groups: FixGroup[];
 }
+
+/** Failure modes whose UNCLEAR rows come from vet402 or the payment path, not from the seller. */
+export const PATH_MODES: ReadonlySet<string> = new Set(["rate_limited", "facilitator_quota", "vet402_limit"]);
 
 function zero(): Record<DisplayClass, number> {
   return Object.fromEntries(DISPLAY_CLASSES.map((c) => [c, 0])) as Record<DisplayClass, number>;
@@ -317,6 +324,7 @@ export function fixFirst(board: BoardFile): FixFirst {
   const acc = new Map<string, { rows: BoardRow[]; hosts: Map<string, number>; details: Map<string, number> }>();
   const byClass = zero();
   let delivered = 0;
+  let unclearFromPath = 0;
   for (const r of board.rows) {
     const cls = displayClass(r);
     byClass[cls]++;
@@ -325,6 +333,7 @@ export function fixFirst(board: BoardFile): FixFirst {
       delivered++;
       continue;
     }
+    if (cls === "UNCLEAR" && PATH_MODES.has(key)) unclearFromPath++;
     let a = acc.get(key);
     if (!a) acc.set(key, (a = { rows: [], hosts: new Map(), details: new Map() }));
     a.rows.push(r);
@@ -364,6 +373,8 @@ export function fixFirst(board: BoardFile): FixFirst {
     rows: board.rows.length,
     delivered,
     notDelivered: board.rows.length - delivered,
+    forSeller: byClass.MISMATCH + byClass.UNREACHABLE,
+    unclearFromPath,
     byClass,
     groups,
   };
@@ -429,7 +440,8 @@ export function fixFirstHtml(board: BoardFile | null, o: { date?: string; census
     `</nav>`;
   const jsonHref = `/board/fix-first.json${o.date ? `?date=${o.date}` : ""}`;
   const head = ff
-    ? `<p class="lead">vet402 tried to buy every x402 resource listed on Algorand (census ${esc(ff.date)}). <b>${fmt(ff.notDelivered)}</b> of ${fmt(ff.rows)} did not deliver. Here they are by what went wrong, the fix that reaches the most sellers first.</p>` +
+    ? `<p class="kpi">Counted as the seller's to fix: MISMATCH and UNREACHABLE. Left out: every UNCLEAR row, including rate limits (429), the facilitator's sub-cent quota and vet402's own price limit.</p>` +
+      `<p class="lead">vet402 tried to buy ${fmt(ff.rows)} x402 resources listed on Algorand, each once (census ${esc(ff.date)}). ${fmt(ff.delivered)} delivered. <b>${fmt(ff.forSeller)}</b> are for the seller to fix: ${fmt(ff.byClass.MISMATCH)} answers that did not match the listing and ${fmt(ff.byClass.UNREACHABLE)} URLs that did not ask for payment. ${fmt(ff.byClass.UNCLEAR)} had no clear result and are not counted against the seller; at least ${fmt(ff.unclearFromPath)} of those came from vet402 or the payment path. The groups below cover every row that did not deliver, the fix that reaches the most sellers first.</p>` +
       `<p class="kpi">${esc(classLine({ ...ff.byClass, DELIVERED: 0 }))}</p>`
     : `<p class="lead">Not run yet${o.date ? ` for ${esc(o.date)}` : ""}. There is no census to group.</p>`;
   const list = (gs: FixGroup[], start: number) => `<ol class="groups">${gs.map((g, i) => groupCard(g, start + i, ff!.date)).join("")}</ol>`;

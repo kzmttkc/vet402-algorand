@@ -145,7 +145,7 @@ test("self-transfers, zero amounts, ALGO notes and received transfers are not co
   assert.deepEqual(r.totals.byWallet.trial, { payments: 1, usdc: "0.001000" });
   assert.ok(!r.rows.some((x) => x.examples.includes(txid("A", 4)) || x.examples.includes(txid("C", 1))));
   // Bob -> board is money in the other direction: listed, not a payment by vet402.
-  assert.deepEqual(r.fromParticipants, { payments: 1, usdc: "0.007000", txs: [txid("A", 8)] });
+  assert.deepEqual(r.fromParticipants, { payments: 1, usdc: "0.007000", txs: [txid("A", 8)], items: [{ tx: txid("A", 8), from: "Bob", usdc: "0.007000", refund: false }] });
 });
 
 test("a zero-USDC transfer to someone else is not a payment", async () => {
@@ -168,7 +168,8 @@ test("join: every MainNet account of a participant, not TestNet ones; vet402's o
   assert.equal(alice.volumeUsdc, "100.500000");
   const bob = r.rows.find((x) => x.id === "bob")!;
   assert.equal(bob.payments, 2);
-  assert.deepEqual(bob.reasons.map((x) => x.reason).sort(), ["board_run", "check"]);
+  // The payer paid Bob 5 s after vet402's own payer wallet paid payTo: an operator test, not a customer's check.
+  assert.deepEqual(bob.reasons.map((x) => x.reason).sort(), ["board_run", "operator_test"]);
   assert.ok(!r.rows.some((x) => x.id === "own-merchant"));
   assert.deepEqual(r.vet402, { id: "own-merchant", label: "vet402", rank: 3, volumeUsdc: "0.150000" });
   assert.equal(r.totals.participants, 2);
@@ -248,13 +249,16 @@ test("numbers are not hard-coded: the headline follows the data", async () => {
   const a = await new FairnessLedger(opts(fakeFetch())).get();
   assert.equal(
     headline(a),
-    "vet402 bought from every listing the same way, including other teams in this challenge. Those payments can raise their leaderboard volume, not ours: 5 payments, 0.046 USDC to 2 participants, while vet402's own volume is 0.15 USDC.",
+    "vet402 bought from every listing the same way, including other teams in this challenge. Those payments can raise their leaderboard volume, not vet402's: 5 payments, 0.046 USDC to 2 participants. " +
+      "vet402's own leaderboard volume is 0.15 USDC. It includes 1 test payment (0.05 USDC) the operator made from vet402's own wallet to vet402 on 2026-09-27, to check the live deployment. " +
+      "Those are self-payments, and the challenge rules exclude repeated self-payments when the final ranking is reviewed. Every customer payment, and how many customers there are, is on /activity.",
   );
   const txs = chain();
   for (let i = 0; i < 1200; i++) txs[BOARD].push(axfer(txid("H", i), BOARD, BOB, 10_000, T0 + 100 + i));
   const items = leaderboard().map((x) => (x.id === "own-merchant" ? { ...x, volume: 2.5 } : x));
   const b = await new FairnessLedger(opts(fakeFetch({ items, txs }))).get();
-  assert.match(headline(b), /: 1,205 payments, 12\.046 USDC to 2 participants, while vet402's own volume is 2\.5 USDC\.$/);
+  assert.match(headline(b), /: 1,205 payments, 12\.046 USDC to 2 participants\. vet402's own leaderboard volume is 2\.5 USDC\. /);
+  assert.doesNotMatch(headline(a) + headline(b), /\b(we|us|our|ours)\b/i);
   // No total from the real chain is written into the source.
   const src = readFileSync(join(process.cwd(), "src", "fairness.ts"), "utf8");
   for (const n of ["1,105", "1105", "1,069", "32.02", "31.72", "31.98", "0.15 USDC"]) assert.ok(!src.includes(n), `src/fairness.ts contains ${n}`);
@@ -295,6 +299,45 @@ test("routes: numbers when the chain is readable; 503 and no numbers when it is 
 
   const lbDown = new FairnessLedger(opts(fakeFetch({ lbDown: true })));
   await assert.rejects(lbDown.get(), /leaderboard 502/);
+});
+
+test("payer wallet: a customer's check, an operator test, or no customer payment before it; self-payments named; a refund note shown", async () => {
+  const CUSTOMER = addr("K");
+  const note = (s: string) => Buffer.from(s).toString("base64");
+  const txs: Record<string, Tx[]> = {
+    [BOARD]: [{ ...axfer(txid("R", 1), BOB, BOARD, 20_000, T0 + 5), note: note("Bob refund - failed watch 1") }],
+    [PAYER]: [
+      axfer(txid("P", 1), PAYER, PAYTO, 50_000, T0 + 10), // operator's own test payment
+      axfer(txid("P", 2), PAYER, ALICE, 10_000, T0 + 12), // -> operator_test
+      axfer(txid("P", 3), PAYER, BOB, 10_000, T0 + 112), // customer paid at T0+100 -> check
+      axfer(txid("P", 4), PAYER, BOB, 10_000, T0 + 115), // that customer payment already used -> no_customer
+      axfer(txid("P", 5), PAYER, ALICE, 10_000, T0 + 2000), // nothing within the window -> no_customer
+    ],
+    [TRIAL]: [],
+    [PAYTO]: [axfer(txid("P", 1), PAYER, PAYTO, 50_000, T0 + 10), axfer(txid("K", 1), CUSTOMER, PAYTO, 50_000, T0 + 100)],
+  };
+  const r = await new FairnessLedger(opts(fakeFetch({ txs }))).get();
+  assert.deepEqual(
+    { check: r.totals.byReason.check.payments, operator_test: r.totals.byReason.operator_test.payments, no_customer: r.totals.byReason.no_customer.payments },
+    { check: 1, operator_test: 1, no_customer: 2 },
+  );
+  assert.deepEqual(r.toPayTo, { fromOwnWallets: { payments: 1, usdc: "0.050000", first: "2026-09-27T04:30:10Z", last: "2026-09-27T04:30:10Z" }, fromOthers: { payments: 1, usdc: "0.050000" } });
+  assert.deepEqual(r.fromParticipants.items, [{ tx: txid("R", 1), from: "Bob", usdc: "0.020000", note: "Bob refund - failed watch 1", refund: true }]);
+  const html = fairnessHtml(r);
+  assert.match(html, /Bob, 0\.02 USDC \(a refund, per its note\), note "Bob refund - failed watch 1"/);
+  assert.match(html, /<h1>vet402 paid the other teams too<\/h1>/);
+  assert.match(headline(r), /It includes 1 test payment \(0\.05 USDC\) the operator made from vet402's own wallet to vet402 on 2026-09-27/);
+  // A payment into payTo from another address may be a plain deposit: the headline never calls it a customer payment.
+  assert.doesNotMatch(headline(r), /customer has paid|has received/);
+  assert.match(headline(r), /Every customer payment, and how many customers there are, is on \/activity\.$/);
+  // When the volume is exactly the operator's own payments: "All of it is" (a deposit is not leaderboard volume).
+  const items = leaderboard().map((x) => (x.id === "own-merchant" ? { ...x, volume: 0.05 } : x));
+  const r2 = await new FairnessLedger(opts(fakeFetch({ items, txs }))).get();
+  assert.match(headline(r2), /vet402's own leaderboard volume is 0\.05 USDC\. All of it is 1 test payment \(0\.05 USDC\)/);
+  for (const h of [fairnessHtml(r), fairnessHtml(r2)]) {
+    assert.doesNotMatch(h.replace(/<[^>]+>/g, " "), /\b(we|us|our|ours)\b/i);
+    assert.ok(!h.includes("—"), "no em dash");
+  }
 });
 
 test("the landing nav and the board link to /fairness", () => {

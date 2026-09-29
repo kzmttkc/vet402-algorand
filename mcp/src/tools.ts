@@ -28,8 +28,8 @@ export const CHECK_TOOL = {
     title: "Check an x402 endpoint with vet402 before buying (paid: 0.05 USDC)",
     description:
       "PAID TOOL: each call pays 0.05 USDC on Algorand (MainNet by default) from the wallet in the ALGORAND_MNEMONIC environment variable to vet402. " +
-      "After your payment settles, vet402 buys the given x402 endpoint once with its own funds, compares what it delivered with what it declared " +
-      "(Bazaar schema / 402 accepts), and returns ALLOW or REFUSE with a reason, the tx id of your payment to vet402, the tx id of vet402's payment " +
+      "After your payment settles, vet402 buys the given x402 endpoint once with its own funds, checks that the paid answer is non-empty JSON with the keys it declared " +
+      "(Bazaar schema; the content itself is not checked), and returns ALLOW or REFUSE with a reason, the tx id of your payment to vet402, the tx id of vet402's payment " +
       "to the seller, and a summary of the delivery. Use it before paying an unfamiliar x402 endpoint yourself. " +
       "Requests vet402 refuses up front (invalid URL, its daily cap reached) return REFUSE without charging you. " +
       "Env: ALGORAND_MNEMONIC (required), VET402_NETWORK=mainnet|testnet (default mainnet), VET402_URL (default " +
@@ -48,7 +48,7 @@ export const BUY_TOOL = {
       "environment variable to vet402. First it reads the price for free (vet402's unpaid 402) and pays only if the total is at most " +
       `VET402_MAX_BUY_USDC (default ${VET402_DEFAULT_MAX_BUY_USDC}); otherwise nothing is paid and the price is returned. After your payment settles, ` +
       "vet402 pays the seller with its own wallet and returns the seller's response body as delivered, with vet402's verdict (ALLOW, or REFUSE when " +
-      "the delivery does not match what the seller declared), the reason, the tx id of your payment to vet402 and of vet402's payment to the seller. " +
+      "the paid answer lacks the keys the seller declared, is not JSON, is empty or is an error), the reason, the tx id of your payment to vet402 and of vet402's payment to the seller. " +
       "It signs only a payment to the address named in vet402's free 402 (with the default VET402_URL on MainNet: vet402's own address), never to the seller directly. " +
       "There are no refunds: if the seller cannot be paid after your payment settled, you get the reason and your tx id. Sellers vet402 will not buy " +
       "(above its per-call cap, not USDC on Algorand, private addresses) are refused before any payment. " +

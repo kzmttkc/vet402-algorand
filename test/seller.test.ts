@@ -202,9 +202,15 @@ test("routes: /seller/<host> and /badge/<host>.svg are free, read the census, ca
     assert.equal(cfg.auditLinkEnabled, false);
     const appOn = createApp(cfgOn, { payTo: "VET402PAYTO", probeDeps, guard, facilitator: fakeFacilitator(calls) });
     const onHtml = await (await appOn.request("/seller/agent402.tools")).text();
-    assert.ok(onHtml.includes("Get a delivery certificate for this seller (0.50 USDC)"));
+    assert.ok(onHtml.includes("Want vet402 to check your listings again now? (0.50 USDC)"));
     assert.ok(onHtml.includes("GET /v1/audit?seller=agent402.tools</code>"));
     assert.ok(onHtml.includes("npx -y github:kzmttkc/vet402-algorand agent402.tools --yes"));
+    // The paid box comes after the seller's own results, never asks the seller to show it to buyers,
+    // and the free ways and the key warning come with the 25-word step.
+    assert.ok(onHtml.indexOf("cert-cta") > onHtml.indexOf('<li class="card">'), "results first, the paid box below them");
+    assert.ok(!/show it to buyers/i.test(onHtml));
+    assert.ok(onHtml.indexOf('href="/try"') < onHtml.indexOf("your 25 words"), "the free try is offered before the 25-word step");
+    assert.match(onHtml, /never paste them into a web page or share them/);
 
     assert.deepEqual(calls, [], "facilitator never called");
   } finally {

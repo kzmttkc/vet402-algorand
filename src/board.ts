@@ -300,6 +300,29 @@ export const DISPLAY_CLASSES: DisplayClass[] = ["DELIVERED", "MISMATCH", "UNREAC
 export const UNCLEAR_NOTE =
   "Not counted against this seller: vet402 or the payment path could not reach a result (for example rate limits or a facilitator quota).";
 
+/**
+ * Notes on single purchases whose result stays as recorded (the declared keys were there) but whose content
+ * was later found to differ from the listing's description. Keyed by vet402's payment tx id, so a later
+ * purchase of the same URL never inherits the note. Facts only; the evidence is in README "Corrections".
+ */
+const SPEECH_TONE_NOTE =
+  "Note added 2026-09-29: the declared keys were present, so the result stays DELIVERED. The content differed from the listing's description (speech synthesis): " +
+  "the answer's id began with audio-free- and its audio_url held a WAV file with RIFF size 29,876. In the seller's public source at commit c2b4344, " +
+  "generateWavBase64() (src/providers/openrouter.ts) builds that answer for this 56-character input: 3.73 s of an 8,000 Hz, 8-bit tone whose pitch " +
+  "follows the input characters. Details: README, Corrections.";
+export const CONTENT_NOTES: Readonly<Record<string, string>> = {
+  // moltworld.xyz POST /v1/models/tts-1/audio/speech, census 2026-09-27 and 2026-09-28
+  AMVUEQ3SOQQLWOJSCNQPZO4ZEB3LFSHKRGT7TNAAVDOFWBHF7CZQ: SPEECH_TONE_NOTE,
+  XXF5QZMWBATOATXZCUSZYYABIXYYIZ6A7GRY7RZ6YVFZ4YIPWXPA: SPEECH_TONE_NOTE,
+  // moltworld.xyz POST /v1/models/gpt-audio-mini/audio/speech, census 2026-09-28
+  "5NZLANQCS3GFGVF7KJEXVG3DDVXKE54BU62YB3ZHVVAQYORPCZAA": SPEECH_TONE_NOTE,
+};
+
+/** The content note for this purchase ("" when there is none). */
+export function contentNote(r: Pick<BoardRow, "tx">): string {
+  return r.tx ? (CONTENT_NOTES[r.tx] ?? "") : "";
+}
+
 /** Unpaid-look status codes that say more about vet402's request than about the seller. */
 const UNCLEAR_LOOK_STATUS = new Set([400, 403, 408, 429]);
 
@@ -464,6 +487,7 @@ function rowsJson(board: BoardFile | null): string {
     tx: r.tx && TXID.test(r.tx) ? r.tx : "",
     link: txLink(r.tx, board?.networkName ?? "") ?? "",
     at: r.at,
+    note: contentNote(r),
   }));
   return scriptJson(rows);
 }
@@ -522,7 +546,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
     sellers =
       `<div class="sellers"><p><b>${fmt(hosts.length)}</b> sellers: ` +
       `<b class="delivered">${fmt(hc.DELIVERED)}</b> delivered at least once · ` +
-      `<b class="mismatch">${fmt(hc.MISMATCH)}</b> were paid, and no delivery matched the declaration · ` +
+      `<b class="mismatch">${fmt(hc.MISMATCH)}</b> were paid, and no answer passed the check · ` +
       `<b class="unreach">${fmt(hc.UNREACHABLE)}</b> did not answer with a 402 on any URL · ` +
       `<b class="unclear">${fmt(hc.UNCLEAR)}</b> on hold (some results were UNCLEAR)</p>` +
       `<p class="note">The Bazaar lists ${fmt(rows.length)} resources from ${fmt(hosts.length)} sellers: one seller can list many URLs (for example one verification URL per transaction; the largest lists ${fmt(top)}). So the picture below has one dot per seller.</p></div>`;
@@ -531,7 +555,8 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
   const tableRows = rows
     .map((r, i) => {
       const link = txLink(r.tx, board!.networkName);
-      const tx = link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx!.slice(0, 8))}…</a>` : "—";
+      const tx = link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx!.slice(0, 8))}…</a>` : "no payment";
+      const note = contentNote(r);
       const decl = [r.declared?.description, r.declared?.expectedKeys?.length ? `keys: ${r.declared.expectedKeys.join(", ")}` : ""].filter(Boolean).join(" · ");
       const cls = displayClass(r);
       return (
@@ -539,7 +564,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
         `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}${filledNote(r) ? `<br><small>${esc(filledNote(r))}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
         `<td class="v ${CSS_CLASS[cls]}">${cls}${cls === "UNCLEAR" ? `<br><small class="nc">${esc(UNCLEAR_NOTE)}</small>` : ""}</td>` +
-        `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}</td>` +
+        `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}${note ? `<br><small class="cn">${esc(note)}</small>` : ""}</td>` +
         `<td>${tx}</td></tr>`
       );
     })
@@ -553,7 +578,7 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>vet402 delivery board</title>
-<meta name="description" content="vet402 buys from x402 sellers on Algorand with its own money and records whether the delivery matched the declaration.">
+<meta name="description" content="vet402 buys from x402 sellers on Algorand with its own money and records whether the paid answer had the fields the seller declared.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <style>
 :root{--bg:#0a0e17;--fg:#e8ecf3;--mut:#8a93a6;--line:rgba(255,255,255,.09);--delivered:#34d399;--mismatch:#f87171;--unreach:#6b7280;--unclear:#f59e0b;--card:#111827}
@@ -617,7 +642,7 @@ ${svg}
 <div id="detail" aria-live="polite">${has ? (view === "census" ? "Tap a dot to see that seller." : "Tap a dot to see that purchase.") : "Not run yet."}</div>
 </section>
 <main>
-<p class="method">What this is: vet402 bought from each listed resource with its own money, sent the example input the seller published, and compared what came back with what the seller declared (Bazaar description, output schema or example). vet402 does not rate a seller on the result of one purchase: a single purchase can go wrong for reasons on either side. DELIVERED: the response matched the declaration. MISMATCH: vet402 paid and the response differed from the declaration it compared against (most declarations are an example response, not a strict schema). UNREACHABLE: the URL did not answer with a 402 (for example 404, 410 or 503) or its host did not resolve. UNCLEAR: vet402 or the payment path could not reach a result (rate limits, facilitator quota, a payment that did not settle, timeouts, vet402's own price cap, or a 402 vet402's client could not read); these are not counted against the seller. Reason codes are shown as recorded. If something here is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
+<p class="method">What this is: vet402 bought from each listed resource with its own money, sent the example input the seller published, and checked what came back: after payment, a 2xx answer of non-empty JSON with the keys the listing marks as required (with no required list, at least one key of its example). It does not check whether the content itself is right. vet402 does not rate a seller on the result of one purchase: a single purchase can go wrong for reasons on either side. DELIVERED: the answer passed that check. MISMATCH: vet402 paid and the answer failed that check (an error status, not JSON, empty, or a required key missing). UNREACHABLE: the URL did not ask for payment: it answered with another status (for example 401, 404, 405, 410 or 5xx), its host did not resolve, or it gave the content away with a 200. UNCLEAR: vet402 or the payment path could not reach a result (rate limits, facilitator quota, a payment that did not settle, timeouts, vet402's own price cap, or a 402 vet402's client could not read); these are not counted against the seller. Reason codes are shown as recorded. If something here is wrong, please open a <a href="${BOARD_ISSUES_URL}" rel="noopener">GitHub issue</a>.</p>
 ${table}
 <p><small><a href="/board.json${view === "census" ? "?view=census" : ""}">board.json</a> · <a href="/">vet402</a> · per call cap ${esc(board?.caps?.perCallUsdc ?? "")} USDC, per day cap ${esc(board?.caps?.perDayUsdc ?? "")} USDC${board?.payer ? ` · payer <code>${esc(board.payer)}</code>` : ""}</small></p>
 </main>
@@ -641,6 +666,7 @@ ${table}
     line(r.url+(r.price?' · '+r.price+' USDC':''));
     if(r.detail)line(r.detail);
     if(r.cls==='UNCLEAR')line(${scriptJson(UNCLEAR_NOTE)});
+    if(r.note)line(r.note);
     det.appendChild(document.createElement('br'));
     if(r.link){var a=document.createElement('a');a.href=r.link;a.rel='noopener';a.textContent='tx '+r.tx;det.appendChild(a)}
     else det.appendChild(document.createTextNode('no payment was made'));

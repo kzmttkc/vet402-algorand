@@ -155,7 +155,7 @@ export function personKey(ip: string): string {
 }
 
 /** The next step shown with every "already tried" refusal (the /try page makes it open the wallet card). */
-export const TRY_WALLET_NEXT = "You can still buy this one with your own wallet — no vet402 fee on your first purchase.";
+export const TRY_WALLET_NEXT = "You can still buy this one with your own wallet, with no vet402 fee on your first purchase.";
 
 /** An "already tried" refusal in plain words: which one ran out (the address, or the network's tries), then what to do. */
 export function alreadyTried(reason: "address_used" | "network_used") {
@@ -743,7 +743,7 @@ const TRY_JS =
     sync();
   }
   function pick(s){select(s);outPrev.textContent='';if(outRun)outRun.textContent='';if(outOne)outOne.textContent='';wReset();sync()}
-  function select(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=(s.n?s.n+' — ':'')+s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'')+(cfg.trial&&s.w?' · '+s.w:'')}
+  function select(s){picked=s;q.value=s.u;list.textContent='';hint.textContent=(s.n?s.n+': ':'')+s.h+' · last result '+s.c+(s.p?' · '+s.p+' USDC':'')+(cfg.trial&&s.w?' · '+s.w:'')}
   function sync(){var c=current();bPrev.disabled=running||!c;if(bRun)bRun.disabled=running||!c;if(bOne)bOne.disabled=running}
   q.addEventListener('input',function(){filter();wReset()});
   q.addEventListener('focus',function(){if(!q.value)filter()});
@@ -770,7 +770,7 @@ const TRY_JS =
     if(!l)return 'vet402 has no record for this URL yet.';
     var when='On '+l.date+', ';var price=l.priceUsdc?(l.priceUsdc+' USDC'):'the listed price';
     var how=l.match==='path'?' (same address, with the example input the seller published)':'';
-    if(l.class==='DELIVERED')return when+'vet402 paid '+price+how+' and got what the listing promised.';
+    if(l.class==='DELIVERED')return when+'vet402 paid '+price+how+' and the answer had the fields the listing declared.';
     if(l.class==='MISMATCH')return when+'vet402 paid '+price+how+', and what came back did not match the listing.';
     if(l.class==='UNREACHABLE')return when+'this URL did not ask for payment at all'+how+', so vet402 paid nothing.';
     return when+'vet402 could not get a clear answer'+how+'. This is not held against the seller.';
@@ -920,7 +920,7 @@ const TRY_JS =
       wOut.textContent='';
       if(r.status!==200){p(wOut,'err big',[(r.error&&(r.error.detail||r.error.error))||('HTTP '+r.status)]);if(r.customerTx)p(wOut,'sub',['Your payment: ',link(cfg.txBase+r.customerTx,r.customerTx.slice(0,10)+'…')]);return}
       var ok=r.verdict==='ALLOW';
-      p(wOut,'big '+(ok?'delivered':'mismatch'),[ok?'Here is what the seller returned. vet402 checked it: it matches the listing.':'Here is what the seller returned. vet402 checked it: it does not match the listing ('+(r.reason||'')+').']);
+      p(wOut,'big '+(ok?'delivered':'mismatch'),[ok?'Here is what the seller returned. vet402 checked it: it has the fields the listing declared (the content itself is not checked).':'Here is what the seller returned. vet402 checked it: it does not match the listing ('+(r.reason||'')+').']);
       wOut.appendChild(el('pre',null,r.bodyText.slice(0,8000)+(r.bodyText.length>8000?'\n…':'')));
       p(wOut,'sub',[r.contentType+' · '+r.bytes+' bytes']);
       if(r.customerTx)p(wOut,null,['Your payment to vet402: ',link(cfg.txBase+r.customerTx,r.customerTx.slice(0,10)+'…')]);
@@ -943,7 +943,7 @@ export function tryHtml(o: { networkName: string; buyFeeUsdc: string; trial: { a
   }).replace(/</g, "\\u003c");
   const net = o.networkName === "mainnet" ? "Algorand" : `Algorand ${esc(o.networkName)}`;
   const step2 = o.trial
-    ? `<div class="card" id="trial"><h2><span class="num">2</span>Watch vet402 buy it — free, once per person</h2>
+    ? `<div class="card" id="trial"><h2><span class="num">2</span>Watch vet402 buy it: free, once per person</h2>
 <p class="intro">vet402 pays the seller (up to ${esc(short(o.trial.maxUsdc))} USDC) from its own trial wallet on ${net}, checks what came back against the listing, and shows you the result and the receipt.</p>
 <label for="addr">Your Algorand address (optional; it also counts as your one try)</label>
 <input id="addr" type="text" autocomplete="off" spellcheck="false" placeholder="ABCD…">
@@ -973,7 +973,7 @@ ${topNav()}
 <h1>${o.trial ? "Watch vet402 buy from a real seller. Free, once per person." : "See what a paid API delivered before you pay it."}</h1>
 ${
   o.trial
-    ? `<div class="one"><button class="btn big" id="one">Try one now — free</button>
+    ? `<div class="one"><button class="btn big" id="one">Try one now, free</button>
 <p class="onehint" id="oneHint">vet402 picks a seller that delivered last time, buys it with its own wallet, and shows you what came back. Or pick another one below.</p>
 <div class="out" id="outOne" aria-live="polite"></div></div>`
     : ""
@@ -1005,7 +1005,7 @@ export function tryLogHtml(log: ShownLog | null, wallet: string, networkName: st
   const rows = (log?.entries ?? [])
     .map((e) => {
       const tx = e.sellerTx ? txLink(e.sellerTx, networkName) : undefined;
-      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small>${e.operatorTest ? '<br><small class="op">operator test (not counted)</small>' : ""}</td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "—"}</td><td>${e.handle ? `<a href="https://x.com/${esc(e.handle.slice(1))}" rel="noopener nofollow">${esc(e.handle)}</a>` : ""}</td></tr>`;
+      return `<tr><td>${esc(e.at.replace("T", " ").replace("Z", ""))}</td><td><a href="${esc(sellerPath(e.host))}">${esc(e.host)}</a><br><small>${esc(e.url)}</small></td><td class="${cls[e.class] ?? ""}">${esc(e.class)}<br><small>${esc(e.reason)}</small>${e.operatorTest ? '<br><small class="op">operator test (not counted)</small>' : ""}</td><td>${esc(e.priceUsdc ?? "")}</td><td>${tx ? `<a href="${esc(tx)}" rel="noopener"><code>${esc(e.sellerTx!.slice(0, 10))}…</code></a>` : "not paid"}</td><td>${e.handle ? `<a href="https://x.com/${esc(e.handle.slice(1))}" rel="noopener nofollow">${esc(e.handle)}</a>` : ""}</td></tr>`;
     })
     .join("");
   const acct = networkName === "mainnet" ? `https://allo.info/account/${wallet}` : `https://lora.algokit.io/testnet/account/${wallet}`;

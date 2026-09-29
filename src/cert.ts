@@ -506,18 +506,19 @@ export function certificateCtaHtml(seller: string, priceUsdc: string): string {
   const s = esc(seller);
   return (
     `<div class="box cert-cta">` +
-    `<p><b>Get a delivery certificate for this seller (${esc(priceUsdc)} USDC)</b></p>` +
-    `<p>vet402 buys each listed resource from its own wallet and gives you a public page with every payment on Algorand. Show it to buyers or put its badge in your README.</p>` +
-    `<p><small>See what it would buy (free, pays nothing):</small></p><pre><code>${esc(CERT_CLI)} ${s}</code></pre>` +
-    `<p><small>Pay and get the certificate (uses the wallet whose 25 words you pass):</small></p>` +
+    `<p><b>Want vet402 to check your listings again now? (${esc(priceUsdc)} USDC)</b></p>` +
+    `<p>vet402 buys your listed resources with its own money (within a spending limit), checks each answer against your listing, and gives you a public page with every payment on Algorand. The results above already come from vet402's own purchases, and paying does not change them. If you pay for your own API, the certificate says "self-purchased".</p>` +
+    `<p><small>Free first: watch vet402 buy one listing on <a href="/try">/try</a> (no wallet), or see what a check would buy (pays nothing):</small></p><pre><code>${esc(CERT_CLI)} ${s}</code></pre>` +
+    `<p><small>To pay, any x402 client works: <code>GET /v1/audit?seller=${s}</code>. Your payment settles first; only then does vet402 pay the seller. The answer has <code>certificateUrl</code>.</small></p>` +
+    `<p><small>The same tool can also pay from a wallet given by its 25-word recovery phrase:</small></p>` +
     `<pre><code>ALGORAND_MNEMONIC="your 25 words" ${esc(CERT_CLI)} ${s} --yes</code></pre>` +
-    `<p><small>Any x402 client works too: <code>GET /v1/audit?seller=${s}</code>. Your payment settles first; only then does vet402 pay the seller. The answer has <code>certificateUrl</code>.</small></p>` +
+    `<p><small>The 25 words give full control of that wallet. Use a separate wallet that holds only what this costs, set the words only in your own terminal, and never paste them into a web page or share them.</small></p>` +
     `</div>`
   );
 }
 
 export const CERT_NOTE =
-  "This certificate is what happened when vet402 bought from this seller with its own wallet. A seller who pays for it gets the same verdict as anyone else: the rules are the same as vet402's free delivery board.";
+  "This certificate is what happened when vet402 bought from this seller with its own wallet. A seller who pays for it gets the same verdict as anyone else: the rules are the same as vet402's free delivery board. The check covers the shape of each paid answer (non-empty JSON with the declared fields), not whether its content is right.";
 
 type BadgeInfo = { text: string; color: string };
 
@@ -571,8 +572,8 @@ export function certHtml(c: CertView, base: string): string {
   const judged = c.rows.filter((r) => r.t).length;
   const headline =
     c.counts.delivered > 0 && c.counts.delivered === judged && c.allPaymentsVerified
-      ? `vet402's wallet bought from ${esc(c.seller)} and got what the listing promised${judged > 1 ? `, ${judged} of ${judged} times` : ""}.`
-      : `vet402 bought from ${esc(c.seller)} with its own wallet: ${c.counts.delivered} of ${judged} ${judged === 1 ? "delivery" : "deliveries"} matched the listing.`;
+      ? `vet402's wallet bought from ${esc(c.seller)} and every paid answer had the fields the listing declared${judged > 1 ? ` (${judged} of ${judged})` : ""}.`
+      : `vet402 bought from ${esc(c.seller)} with its own wallet: ${c.counts.delivered} of ${judged} paid ${judged === 1 ? "answer" : "answers"} had the fields the listing declared.`;
   const self =
     c.selfPurchased === null
       ? ""

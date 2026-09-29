@@ -153,13 +153,13 @@ const run = (app: ReturnType<typeof createApp>, body: unknown, ip = "203.0.113.1
 test("landing: the first sentence says what you get in plain words; title and og tags are unchanged", async () => {
   const html = landingHtml({ network: NET, priceUsdc: "0.05", perCallUsdc: "0.100000", perDayUsdc: "3.000000", trial: true });
   const h1 = /<h1>([^<]*)<\/h1>/.exec(html)?.[1] ?? "";
-  assert.equal(h1, "Before your AI agent pays for an API, vet402 buys it with its own wallet and tells you if it actually delivered.");
+  assert.equal(h1, "Before your AI agent pays for an API, vet402 buys it once with its own wallet and shows you what came back.");
   assert.doesNotMatch(h1, /x402|Algorand|USDC|ALLOW|REFUSE|endpoint/);
   assert.match(html, /<title>vet402<\/title>/);
   for (const tag of [
     '<meta property="og:site_name" content="vet402">',
-    '<meta property="og:title" content="vet402 — pays the x402 endpoint you name and checks the delivery">',
-    '<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks the delivery against what the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">',
+    '<meta property="og:title" content="vet402: pays the x402 endpoint you name and checks the delivery">',
+    '<meta property="og:description" content="vet402 pays the x402 endpoint you name on Algorand, checks that the answer has the fields the seller declared, and returns ALLOW or REFUSE with both payment tx ids.">',
     '<meta property="og:image" content="https://vet402-algorand.vercel.app/icon-512.png">',
   ])
     assert.ok(html.includes(tag), tag);
@@ -264,9 +264,9 @@ test("trial: an address already used counts as used from another IP too", async 
   assert.equal(r.status, 403);
   const j = (await r.json()) as { error: string; reason: string; detail: string; headline: string; next: string };
   assert.deepEqual([j.error, j.reason], ["already_tried", "address_used"]);
-  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
+  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet, with no vet402 fee on your first purchase.");
   assert.equal(j.headline, "This address has already had its free try.");
-  assert.equal(j.next, "You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
+  assert.equal(j.next, "You can still buy this one with your own wallet, with no vet402 fee on your first purchase.");
   assert.equal(seen.trialPaid.length, 1);
   assert.equal((await run(app, { url: `${HOST}/honest`, address: "not-an-address" }, "203.0.113.7")).status, 400);
 });
@@ -987,7 +987,7 @@ import { alreadyTried, TRY_WALLET_NEXT } from "../src/try.js";
 const newAddr = () => algosdk.generateAccount().addr.toString();
 /** A different seller host per try (the per-seller cap of 3 a day is not what these tests are about). */
 const sellerUrl = (i: number) => `http://localhost:${4031 + i}/honest`;
-const NETWORK_MSG = "This network has used its free tries (3 per network). You can still buy this one with your own wallet — no vet402 fee on your first purchase.";
+const NETWORK_MSG = "This network has used its free tries (3 per network). You can still buy this one with your own wallet, with no vet402 fee on your first purchase.";
 
 test("#1 shared network: one IP gets 3 free tries with 3 different addresses (3 x 200); the 4th is 403 with the network message and is not paid", async () => {
   const { app, seen } = setup();
@@ -1016,7 +1016,7 @@ test("#2 an address used from one IP is 403 from another IP, with the address me
   assert.equal(r.status, 403);
   const j = (await r.json()) as { reason: string; detail: string };
   assert.equal(j.reason, "address_used");
-  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet — no vet402 fee on your first purchase.");
+  assert.equal(j.detail, "This address has already had its free try. You can still buy this one with your own wallet, with no vet402 fee on your first purchase.");
   assert.equal(seen.trialPaid.length, 1);
 });
 
@@ -1186,7 +1186,7 @@ test("/try: the one-tap button comes right under the headline (before step 1); s
   const html = await (await app.request("/try")).text();
   const one = html.indexOf('id="one"');
   assert.ok(one > html.indexOf("<h1>") && one < html.indexOf('<span class="num">1</span>'), "button between the headline and step 1");
-  assert.match(html, /<button class="btn big" id="one">Try one now — free<\/button>/);
+  assert.match(html, /<button class="btn big" id="one">Try one now, free<\/button>/);
   assert.doesNotMatch(html, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|\.html\(/);
   // The list row: the name first, the URL small underneath, both as text nodes.
   assert.match(html, /l\.appendChild\(el\('span','nm',s\.n\|\|s\.h\)\)/);
