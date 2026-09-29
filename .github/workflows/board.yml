@@ -8,7 +8,13 @@ name: board
 
 on:
   schedule:
-    - cron: "0 21 * * *" # 21:00 UTC = 06:00 JST (well before 00:00 UTC, the cap's day boundary)
+    # Three chances a day, early in the UTC day (the cap's day). A scheduled run can start hours late
+    # (2026-09-27: 21:00 UTC ran at 23:29) or not at all (2026-09-28 21:00 UTC never ran). The first
+    # run that finishes the daily writes completedAt in board/<UTC date>.json; the later ones that day
+    # find it and buy nothing (scripts/board-sweep.ts). 18:17 + 5 h is still the same UTC day.
+    - cron: "17 6 * * *"
+    - cron: "17 12 * * *"
+    - cron: "17 18 * * *"
     # One-off census rerun with the corrected verdict code: 2026-09-28 00:30 UTC = 09:30 JST.
     # cron has no year, so the Sweep step runs it only in 2026 (every other year it does nothing).
     - cron: "30 0 28 9 *"
@@ -46,7 +52,11 @@ jobs:
       BOARD_MAX_PER_DAY_USDC: ${{ (inputs.mode == 'census' || github.event.schedule == '30 0 28 9 *') && '60' || '3' }}
       CENSUS_ONE_OFF: ${{ github.event.schedule == '30 0 28 9 *' && 'true' || 'false' }}
     steps:
+      # The branch tip when this job starts, not the commit the schedule fired on: a run that waited
+      # behind another one (concurrency: board) must see the board file that run pushed.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -64,7 +74,12 @@ jobs:
           args=()
           if [ "$MODE" = "census" ]; then args+=(--census); fi
           if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-          npx tsx scripts/board-sweep.ts "${args[@]}"
+          # Exit code 3: the payment check found a payment on no row, or could not read the chain.
+          # The files are written; they are committed below, and the last step fails the job.
+          rc=0
+          npx tsx scripts/board-sweep.ts "${args[@]}" || rc=$?
+          if [ "$rc" -eq 3 ]; then echo "PAYMENT_CHECK_FAILED=true" >> "$GITHUB_ENV"; exit 0; fi
+          exit "$rc"
       # Runs even when the sweep failed: the script writes each row as it goes,
       # so a partial day is kept and the next run resumes (never buys a URL twice a day).
       # board/*.json includes spend-mainnet.json (the board's ledger for the day), read by the next run.
@@ -81,3 +96,8 @@ jobs:
           git commit -m "board: ${BOARD_DATE} ${MODE}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Fail when a payment is on no row, or the payment check could not run
+        if: always() && env.PAYMENT_CHECK_FAILED == 'true'
+        run: |
+          echo "::error::payment check: see the Sweep log and reconcile in board/*.json"
+          exit 1

@@ -9,6 +9,7 @@
  *   npx tsx scripts/board-sweep.ts --targets <url,url,...>   # explicit list (TestNet sellers)
  *
  *   npx tsx scripts/board-sweep.ts --repair-settled <file> [--write]   # re-check "already in ledger" rows on chain (no payment)
+ *   npx tsx scripts/board-sweep.ts --reconcile <file> [--write]        # payment check of a written file on chain (no payment)
  *
  * Options: --out <dir> --limit <n> --concurrency <1-4> --host-gap-ms <n, min 60000> --max-age-days <n> --bazaar <url> --share-payer-wallet
  *
@@ -25,6 +26,17 @@
  * settle. The run reads the group of that tx from the indexer and, when vet402's own transfer to the
  * seller is there, records the row as paid with that tx (src/settled.ts). Read-only; the caps are not touched.
  *
+ * Payment check (src/reconcile.ts): at the end of every run, every USDC transfer the board wallet sent
+ * during the run must be on a row. A transfer on no row is written to its row only when the pairing is
+ * one to one; the rest are kept in the file under reconcile.unmatched and the run exits with code 3
+ * (after the files are written, so the workflow commits them and then fails). When the indexer cannot
+ * be read, the check says so and the run also exits with code 3.
+ *
+ * Once a day: a daily run writes completedAt when its purchases are done. A later scheduled run on the
+ * same UTC day finds it in today's file and buys nothing; it only repeats the payment check (read-only).
+ * A file without completedAt (a run that stopped early) is resumed as before: nothing already attempted
+ * today is bought again.
+ *
  * Money rules:
  * - vet402 pays sellers directly. It never pays its own hosts or its own addresses
  *   (filtered here, and refused again inside probe() as self_dealing).
@@ -40,7 +52,7 @@
  *   gets a fresh random value each time; one vet402 cannot fill (an address, an email…) makes the
  *   row REFUSE placeholder_unfillable, not paid (shown as UNCLEAR).
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { seedFromMnemonic } from "@algorandfoundation/algokit-utils/algo25";
@@ -52,6 +64,7 @@ import { selectAccept } from "../src/declaration.js";
 import { addressFromSeed, loadKeys, secretKeyB64FromMnemonic, loadPayer, type Payer } from "../src/keys.js";
 import { notSent, type BoardFile, type BoardRow } from "../src/board.js";
 import { alreadyInLedgerTx, findSettledPaymentWithRetry, type SettledPayment } from "../src/settled.js";
+import { WINDOW_LEAD_MS, reconcileLine, reconcileRows, type ReconcileResult } from "../src/reconcile.js";
 import { DEFAULT_BAZAAR, OWN_HOSTS, buildPaidRequest, buildRequest, fetchBazaar, isOwnHost, withInput, type BazaarItem } from "../src/bazaar.js";
 
 // Moved to src/bazaar.ts (shared with the paid seller audit); re-exported for existing callers.
@@ -587,6 +600,72 @@ export function indexerSettledCheck(cfg: Pick<AppConfig, "indexerUrl" | "usdcAsa
       : Promise.resolve(null);
 }
 
+/** A board file as the sweep writes it: the payment check is kept in full (the page reads a summary of it). */
+export type WrittenBoard = Omit<BoardFile, "reconcile"> & { reconcile?: ReconcileResult };
+
+/** Exit code of a run whose payment check found a payment on no row, or could not read the chain. */
+export const EXIT_PAYMENT_CHECK = 3;
+
+/** tx ids on any row of any board file in `dir` (daily and census, every day). */
+export function recordedTxIn(dir: string): Set<string> {
+  const out = new Set<string>();
+  let names: string[] = [];
+  try {
+    names = readdirSync(dir).filter((n) => n.endsWith(".json"));
+  } catch {
+    return out;
+  }
+  for (const n of names) {
+    try {
+      const d = JSON.parse(readFileSync(join(dir, n), "utf8")) as { rows?: unknown };
+      if (Array.isArray(d.rows)) for (const r of d.rows as BoardRow[]) if (r && typeof r.tx === "string" && r.tx) out.add(r.tx);
+    } catch {
+      /* not a board file */
+    }
+  }
+  return out;
+}
+
+/** The daily for this UTC day already finished its purchases (a later run that day buys nothing). */
+export function dailyComplete(prev: { completedAt?: unknown } | null | undefined): boolean {
+  return typeof prev?.completedAt === "string" && Number.isFinite(Date.parse(prev.completedAt));
+}
+
+/**
+ * The payment check on a written file (read-only): rows paired one to one are updated in place and
+ * totals.paidUsdc follows. The window runs from 2 minutes before the file's startedAt to `to`.
+ */
+export async function reconcileFile(
+  board: { rows: BoardRow[]; startedAt?: string; payer?: string; totals?: BoardFile["totals"] },
+  dir: string,
+  cfg: Pick<AppConfig, "indexerUrl" | "usdcAsaId">,
+  to: Date,
+  fetchImpl?: typeof fetch,
+): Promise<ReconcileResult> {
+  const started = Date.parse(board.startedAt ?? "");
+  if (!board.payer || !Number.isFinite(started)) throw new Error("the file has no payer or startedAt");
+  const recorded = recordedTxIn(dir);
+  for (const r of board.rows) if (r.tx) recorded.add(r.tx);
+  const res = await reconcileRows({
+    indexerUrl: cfg.indexerUrl,
+    payer: board.payer,
+    asaId: cfg.usdcAsaId,
+    rows: board.rows,
+    recorded,
+    from: new Date(started - WINDOW_LEAD_MS),
+    to,
+    fetchImpl,
+  });
+  if (res.recorded.length && board.totals) board.totals = { ...board.totals, paidUsdc: totalsOf(board.rows).paidUsdc };
+  return res;
+}
+
+function logReconcile(r: ReconcileResult): void {
+  console.log(reconcileLine(r));
+  for (const x of r.recorded) console.log(`  recorded paid (settled on chain): tx ${x.tx}  ${x.url}`);
+  for (const u of r.unmatched) console.log(`  ON NO ROW: tx ${u.tx} · ${u.amountUsdc} USDC to ${u.payTo} · round ${u.round} · ${u.why}`);
+}
+
 function writeJsonAtomic(file: string, data: unknown): void {
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
@@ -628,14 +707,78 @@ async function repairMain(argv: string[], file: string): Promise<void> {
   } else if (changed.length) console.log("not written (add --write)");
 }
 
-async function main(argv: string[]): Promise<void> {
+/**
+ * --reconcile <file> [--write]: the payment check on a written file, for the time the file covers
+ * (startedAt - 2 min to finishedAt + 2 min). No key, no payment. Exit code 3 when a payment is on no row.
+ */
+async function reconcileMain(argv: string[], file: string): Promise<number> {
+  const cfg: AppConfig = loadConfig({ ...process.env, I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" });
+  const board = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
+  if (board.network !== cfg.network) throw new Error(`${file} is ${board.network}; this run reads ${cfg.network} (set X402_NETWORK)`);
+  const before = board.totals?.paidUsdc;
+  const to = new Date(Date.parse(board.finishedAt) + WINDOW_LEAD_MS);
+  const r = await reconcileFile(board, dirname(file), cfg, to);
+  logReconcile(r);
+  console.log(`${file}: paid ${before} → ${board.totals?.paidUsdc} USDC`);
+  if (argv.includes("--write") && r.status !== "unavailable") {
+    board.reconcile = r;
+    writeJsonAtomic(file, board);
+    console.log(`written: ${file}`);
+  } else if (r.recorded.length || r.unmatched.length) console.log("not written (add --write)");
+  return r.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
+}
+
+/**
+ * Today's daily already finished its purchases: buy nothing. Repeat the payment check (read-only): a
+ * payment the facilitator settled after the first check (a transaction stays valid for about 1,000
+ * rounds) shows up now. The file is rewritten only when the check changed something.
+ */
+async function recheckCompletedDaily(file: string, latest: string, cfg: AppConfig): Promise<number> {
+  const board = JSON.parse(readFileSync(file, "utf8")) as WrittenBoard;
+  console.log(`daily for ${board.date} already completed at ${board.completedAt} (${file}): no purchase in this run.`);
+  const prev = board.reconcile;
+  const r = await reconcileFile(board, dirname(file), cfg, new Date());
+  logReconcile(r);
+  if (r.status === "unavailable" && prev?.status === "ok") {
+    console.log("the earlier payment check of this run found every payment on a row; kept as it is.");
+    return 0;
+  }
+  const changed = !prev || prev.status !== r.status || r.recorded.length > 0 || prev.unmatched.map((u) => u.tx).join() !== r.unmatched.map((u) => u.tx).join();
+  if (changed) {
+    board.reconcile = r;
+    writeJsonAtomic(file, board);
+    const l = existsSync(latest) ? (JSON.parse(readFileSync(latest, "utf8")) as { date?: string }) : null;
+    if (l?.date === board.date) writeJsonAtomic(latest, board);
+    console.log(`written: ${file}`);
+  }
+  return r.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
+}
+
+export async function main(argv: string[]): Promise<number> {
   const repair = argValue(argv, "--repair-settled");
-  if (repair) return repairMain(argv, repair);
+  if (repair) {
+    await repairMain(argv, repair);
+    return 0;
+  }
+  const reconcileOnly = argValue(argv, "--reconcile");
+  if (reconcileOnly) return reconcileMain(argv, reconcileOnly);
   const dryRun = argv.includes("--dry-run");
   const census = argv.includes("--census");
   const env = process.env;
   // A dry run never builds a signer, so it does not need the MainNet unlock.
   const cfg: AppConfig = loadConfig(dryRun ? { ...env, I_UNDERSTAND_MAINNET_MOVES_REAL_FUNDS: "yes" } : env);
+  const targets = argValue(argv, "--targets");
+  // The day is fixed at start: file names, the indexer's "sent today" window and the ledger's
+  // day all use it, even if the run crosses 00:00 UTC.
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
+  const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
+  const latest = join(outDir, census ? "census-latest.json" : "latest.json");
+  // Several schedules a day: the first one that finishes the daily is the only one that buys.
+  if (!dryRun && !census && !targets && existsSync(file) && dailyComplete(JSON.parse(readFileSync(file, "utf8")) as { completedAt?: unknown })) {
+    return recheckCompletedDaily(file, latest, cfg);
+  }
   const boardPerDay = env.BOARD_MAX_PER_DAY_USDC ? usdcToAtomic(env.BOARD_MAX_PER_DAY_USDC) : cfg.maxPerDayAtomic;
   if (boardPerDay < cfg.maxPerCallAtomic) throw new Error("BOARD_MAX_PER_DAY_USDC must be >= the per-call cap");
   const boardCfg: AppConfig = { ...cfg, maxPerDayAtomic: boardPerDay };
@@ -666,10 +809,8 @@ async function main(argv: string[]): Promise<void> {
   const ownHosts = [...OWN_HOSTS, ...(env.BOARD_OWN_HOSTS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)];
 
   // --- candidates
-  const now = new Date();
   let candidates: Candidate[];
   let selection: NonNullable<BoardFile["selection"]>;
-  const targets = argValue(argv, "--targets");
   if (targets) {
     candidates = targets
       .split(",")
@@ -696,16 +837,10 @@ async function main(argv: string[]): Promise<void> {
     candidates = r.candidates;
     selection = { source: `${bazaar} (${items.length} items)`, candidates: candidates.length, excluded: r.excluded };
   }
-  // The day is fixed at start: file names, the indexer's "sent today" window and the ledger's
-  // day all use it, even if the run crosses 00:00 UTC.
-  const date = now.toISOString().slice(0, 10);
   // Census: each day starts each host at a different resource, so the per-host limit reaches the rest on later days.
   if (census) candidates = rotateWithinHost(candidates, dayShift(date, MAX_PER_HOST_PER_RUN));
   const limit = argValue(argv, "--limit");
   if (limit) candidates = candidates.slice(0, Number(limit));
-  const outDir = argValue(argv, "--out") ?? (cfg.networkName === "mainnet" ? "board" : join("state", "board-testnet"));
-  const file = join(outDir, census ? `census-${date}.json` : `${date}.json`);
-  const latest = join(outDir, census ? "census-latest.json" : "latest.json");
   const readSpent = boardPayerAddress
     ? () => usdcSentToday({ indexerUrl: cfg.indexerUrl, address: boardPayerAddress!, asaId: cfg.usdcAsaId, now })
     : undefined;
@@ -770,12 +905,12 @@ async function main(argv: string[]): Promise<void> {
       `pacing: ${census ? "round-robin by host" : "one per host"} · never two purchases in flight to one host · ≥ ${hostGapMs(argv)} ms between purchases from one host · same host next to itself ${adjacent} times (tail run ${tail > 1 ? `${tail} × ${plan[plan.length - 1].host}` : "none"})`,
     );
     console.log("dry-run: no payment was made and no file was written.");
-    return;
+    return 0;
   }
 
   if (!census && !targets && existsSync(otherFile)) {
     console.log(`census already ran on ${date} (${otherFile}); the daily sweep does not run on a census day.`);
-    return;
+    return 0;
   }
   const readJson = (f: string) => (existsSync(f) ? (JSON.parse(readFileSync(f, "utf8")) as { rows?: BoardRow[]; attempts?: string[] }) : null);
   const prev = readJson(file);
@@ -798,7 +933,9 @@ async function main(argv: string[]): Promise<void> {
     );
   }
   const startedAt = (prev as { startedAt?: string } | null)?.startedAt ?? now.toISOString();
-  const snapshot = (): BoardFile & { attempts: string[]; mode: string } => ({
+  let completedAt: string | undefined;
+  let reconcile: ReconcileResult | undefined;
+  const snapshot = (): WrittenBoard & { attempts: string[]; mode: string } => ({
     version: 1,
     mode: census ? "census" : targets ? "targets" : "daily",
     network: cfg.network,
@@ -810,6 +947,8 @@ async function main(argv: string[]): Promise<void> {
     caps: { perCallUsdc: atomicToUsdc(cfg.maxPerCallAtomic), perDayUsdc: atomicToUsdc(boardPerDay) },
     selection,
     totals: totalsOf(rows),
+    ...(completedAt ? { completedAt } : {}),
+    ...(reconcile ? { reconcile } : {}),
     rows,
     attempts,
   });
@@ -863,16 +1002,40 @@ async function main(argv: string[]): Promise<void> {
       console.log(`${r.verdict.padEnd(7)} ${r.reason.padEnd(22)} ${(r.priceUsdc ?? "").padEnd(9)} ${r.url.slice(0, 90)}${r.tx ? `  tx ${r.tx}` : ""}`);
     },
   });
+  // Done buying for today, unless nothing could be bought because the cap could not be read (a later run retries).
+  if (!rows.some((r) => r.reason === "cap_check_unavailable")) completedAt = new Date().toISOString();
+  writeJsonAtomic(file, snapshot());
+  // Payment check: every board-wallet USDC transfer of this run must be on a row. The indexer can trail
+  // the chain by a few seconds, so it waits a little when this run paid anything.
+  if (attempts.length > (prev?.attempts?.length ?? 0)) await new Promise<void>((r) => setTimeout(r, 15_000));
+  const recorded = recordedTxIn(outDir);
+  for (const r of rows) if (r.tx) recorded.add(r.tx);
+  reconcile = await reconcileRows({
+    indexerUrl: cfg.indexerUrl,
+    payer: boardPayerAddress!,
+    asaId: cfg.usdcAsaId,
+    rows,
+    recorded,
+    from: new Date(Date.parse(startedAt) - WINDOW_LEAD_MS),
+    to: new Date(),
+  });
   const final = snapshot();
   writeJsonAtomic(file, final);
   writeJsonAtomic(latest, final);
   const t = final.totals;
   console.log(`done: ${t.rows} rows · ALLOW ${t.allow} · REFUSE ${t.refuse} · SKIPPED ${t.skipped} · UNCLEAR (not sent) ${t.unclear ?? 0} · paid ${t.paidUsdc} USDC → ${file}, ${latest}`);
+  logReconcile(reconcile);
+  return reconcile.status === "ok" ? 0 : EXIT_PAYMENT_CHECK;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  main(process.argv.slice(2)).catch((e) => {
-    console.error(`board-sweep: ${(e as Error).message}`);
-    process.exit(1);
-  });
+  main(process.argv.slice(2)).then(
+    (code) => {
+      if (code) process.exitCode = code;
+    },
+    (e) => {
+      console.error(`board-sweep: ${(e as Error).message}`);
+      process.exit(1);
+    },
+  );
 }

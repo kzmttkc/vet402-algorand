@@ -1,0 +1,4797 @@
+{
+ "daily0929": {
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "startedAt": "2026-09-29T05:34:53.077Z",
+  "finishedAt": "2026-09-29T05:42:55.418Z",
+  "rowsBefore": [
+   {
+    "at": "2026-09-29T05:35:02.010Z",
+    "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "host": "api.algorand-indexer.xyz",
+    "method": "GET",
+    "priceUsdc": "0.000100",
+    "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "GVI4PXHLPXUBH3A7ZHXCCTQYFZCGZGZB4DOF5RIAH7YGOZKPQ3YA"
+   },
+   {
+    "at": "2026-09-29T05:35:02.783Z",
+    "url": "https://algorand-indexer.xyz/api/v1/queries/results/cZjh0_C61ddAVLAR50At_gueIpqvMsTt/unlock",
+    "host": "algorand-indexer.xyz",
+    "method": "POST",
+    "priceUsdc": "0.000100",
+    "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 401, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:03.185Z",
+    "url": "https://a-identity.xyz/api/x402/algorand/tools/verify_agent",
+    "host": "a-identity.xyz",
+    "method": "POST",
+    "priceUsdc": "1.000000",
+    "payTo": "WHZ74ZGNGZGAVEQZTHESENVP5RTHMEQ4BOUKF7UHWOADQMKXDKAK3FESJE",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:03.458Z",
+    "url": "https://agent402.tools/api/hash",
+    "host": "agent402.tools",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+    "verdict": "REFUSE",
+    "reason": "no_supported_accept",
+    "detail": "no exact/algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=/USDC 31566704 accept",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:10.634Z",
+    "url": "https://algo.netintel.dev/email/verify?email=user%40github.com",
+    "host": "algo.netintel.dev",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ZD67F75J6C7REPH2HT3H6HTIHZ6REYH55WSMBRC6QHIN2V4CZHSA"
+   },
+   {
+    "at": "2026-09-29T05:35:22.286Z",
+    "url": "https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
+    "host": "algorand-api.pxke.me",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "KSAVOYTVNB7A6NKCM4W2WBOOGFHWH2SEGR5T6OGB7THCAT5E36LDFEBTII",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "4PYILGGEQI37HIR4BJEWRGOXYZB7QI7LLXFLODDCWW4ALDBTKF3Q"
+   },
+   {
+    "at": "2026-09-29T05:35:27.685Z",
+    "url": "https://algorand.ottoai.services/base-ecosystem-news",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "NDH267QKXFHVEZYHWYIFV6BNK7URQRNL6WVHSQXC4OQHVTEFCDKA"
+   },
+   {
+    "at": "2026-09-29T05:35:35.421Z",
+    "url": "https://api.agentkeep.online/v1/memory",
+    "host": "api.agentkeep.online",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "D4AHBP56UM4LV2BMCVH2HK267DNMAPPQG52S6L2FWKP4RIK3OLSA"
+   },
+   {
+    "at": "2026-09-29T05:35:41.504Z",
+    "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:43.149Z",
+    "url": "https://api.blueprintstech.org/api/verify-counterparty",
+    "host": "api.blueprintstech.org",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "V7XWYKY3WBKWRONX5NTHFNK77A7O3IS7XEMIUJQM6ZLZRWYVNT763I333Y",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:43.727Z",
+    "url": "https://api.glianalabs.com/a402/tools/embed",
+    "host": "api.glianalabs.com",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "SQ2NZ6TVGSGY7MQNEDYK27WX5TEDTV6WDPVIZO77DGKHJGAYV6ZYJUKT5U",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:49.912Z",
+    "url": "https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
+    "host": "api.iomarkets.ai",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "DZUL7JAPQUVT2YDXG4KTOCOS2BAY33MMYSUWWKJPGFWDS3SGR5TUIUDYNE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PJ4E4LRPHIHTAN5KZINR2MFYSBQ7NBIRRZOIRTISXTXLNU2XT3EQ"
+   },
+   {
+    "at": "2026-09-29T05:36:01.000Z",
+    "url": "https://api.pqattest.com/attest",
+    "host": "api.pqattest.com",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5LUZEO77NEQSFUJ72WTL7AYTQPJF44DG5HX2LVHWVTSI5XOGB6MA"
+   },
+   {
+    "at": "2026-09-29T05:36:06.847Z",
+    "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+    "host": "api.synergybcpacific.com",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "CYH6YU5B5ELCRWNKT2MOMVOR2HMUUQD3XYWSLWI2L4NCEFOGTONQ"
+   },
+   {
+    "at": "2026-09-29T05:36:12.159Z",
+    "url": "https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
+    "host": "arbsignal-production.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.050000",
+    "payTo": "N2BHBOQEI5TQQKFKHDRDUACAZE6E55X6VO2U67IQAYBRRLB7LSMO6YRQSM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "J5C7T4IQGNYPN7OHGLQMCZBI2T2V2DIII6D2GC5RYC7MFLZFDWVQ"
+   },
+   {
+    "at": "2026-09-29T05:36:32.767Z",
+    "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "host": "canix402-api.compx.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:36:37.709Z",
+    "url": "https://coil.trade/api/crypto/gate",
+    "host": "coil.trade",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "LYIVIUSN3FAFIC2NUN6UYU2VN764U6YTCPTIX2O6EWYYU5WHAJHYMVTZM4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "CKKB6MUHBQ2VBJ34KXNAYFX4VYWEQHNMCXOC2UZFIIAJIE4ISPNQ"
+   },
+   {
+    "at": "2026-09-29T05:36:45.241Z",
+    "url": "https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
+    "host": "gateway-x402.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "LXPC4GQPYH2EZQX2QDYMHCP2I7MXIZMVRPIYTQ3D7R7HXJ4SIHCSYLF5YA",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, Transaction simulation failed: transaction already in ledger: 5GX3CNZW5Y7QIWQ6ODRRJJLFE7SFWK6YTCQKDYZXTPR6CT6RBKCQ \u00b7 settled on chain: vet402's transfer PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q (same group, round 65497379); no delivery",
+    "paid": true,
+    "tx": "PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q"
+   },
+   {
+    "at": "2026-09-29T05:36:53.242Z",
+    "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+    "host": "growtrack.pro",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "TOUDDR5T4XZIMRPE5ACZW2DQTCC4UOZPJKKPW5JRRJ7MWC3HPZNA"
+   },
+   {
+    "at": "2026-09-29T05:36:59.043Z",
+    "url": "https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
+    "host": "noahs-mac-mini.tail571e99.ts.net",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "F2ZYO2DDPQXOACUYBYQIHMQRAB3TJFZVCNUD3OU3CR5OOJUKFZOF5EYVJ4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "2DH7IQKVXXKQJJGBD5OXY2AXQXTPIP7RME73YNYA2GHZ3KWR2QCQ"
+   },
+   {
+    "at": "2026-09-29T05:37:04.638Z",
+    "url": "https://whaletape.xyz/algo/coverage",
+    "host": "whaletape.xyz",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "ZVZV3J2VQNLTH6MNLOL5IHZECJQVXVSVAK3NNJA6FD7LLNZ5NRHQAIL2J4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "AFHU32BANGS7Q6WFNVW3A2VXSXDGQAEPJCQX2SR4DC7YZLKILUAA"
+   },
+   {
+    "at": "2026-09-29T05:37:11.564Z",
+    "url": "https://agent-keep-684642514120.europe-west1.run.app/v1/budget/receipts",
+    "host": "agent-keep-684642514120.europe-west1.run.app",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "P353GDLUTPKVBOWLDKTAY6Y47VGZ63I4ME624EJGJGALZF75ASNA"
+   },
+   {
+    "at": "2026-09-29T05:37:15.529Z",
+    "url": "https://api.sitelenz.online/v1/analyze/technology",
+    "host": "api.sitelenz.online",
+    "method": "POST",
+    "priceUsdc": "0.002000",
+    "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7LISUXRNOBGHJCIAQNYULEYNBXH5PIVEKYLQTLRC632IXKLYKEUA"
+   },
+   {
+    "at": "2026-09-29T05:37:21.556Z",
+    "url": "https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
+    "host": "legit.gonna.bond",
+    "method": "GET",
+    "priceUsdc": "0.004000",
+    "payTo": "LGT47RVH6STHJF5PWU3BX2S5D4M5UN2TFXOESL34KDFRXMEYDCDVQWCM6M",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PVW4RTLBWPLNGWJ34Q5K25M66A6ADXVPMPQFP3C6ZA5P6ZMFLTQQ"
+   },
+   {
+    "at": "2026-09-29T05:37:32.267Z",
+    "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "host": "amarok-api.compx.io",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5NZUIC3AWGJH4RZBLWI3WTHZSTUDNHBWNZB6HDEAA3JB3EFUCH3Q"
+   },
+   {
+    "at": "2026-09-29T05:37:40.556Z",
+    "url": "https://api-algo.stelardigital.com/pricecheck?asset=SOL",
+    "host": "api-algo.stelardigital.com",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "HFHI5MF4C55AYUSQ2JD2AFYMUHWBNSE3SGU6N2YZ5ET5FUZD5YHZHXSWXU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "F5TBTXRYPT6XJDAMBUNTFNR63WYYRT4K2T3OSMGJOHYVMACJZ76A"
+   },
+   {
+    "at": "2026-09-29T05:37:57.023Z",
+    "url": "https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
+    "host": "api-production-36692.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "36AZ3YZGHLUFFVU4STAQGSQMRB2W3TK5VVTKZVN6L2LH7NRCK7X27TMEJM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ASMLYTW5PQ7H552EW5NBNO74LKJN3MIHHW4MOZFCIXWV5WLS4ZYQ"
+   },
+   {
+    "at": "2026-09-29T05:38:02.685Z",
+    "url": "https://api.agentwork.run/v1/web/changes",
+    "host": "api.agentwork.run",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "H7XW24HYK5HQQQ7K6USYDUY4DPT2UTCBTIHVRF6OTEFQKHIE2BUQ"
+   },
+   {
+    "at": "2026-09-29T05:38:08.073Z",
+    "url": "https://blocksigner.org/commission/sol?check=asset&address=K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA&asset=31566704",
+    "host": "blocksigner.org",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "G7ZF2ZDLRTDYSWFKNVM46APS76YCYMS6NUG3ZAT3ZRMZ5KYPWPGA"
+   },
+   {
+    "at": "2026-09-29T05:38:13.526Z",
+    "url": "https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
+    "host": "elara-verify-x402.aivelikivodja.workers.dev",
+    "method": "POST",
+    "priceUsdc": "0.005000",
+    "payTo": "2PWGUKE4VWUXXZ3IPPX2W4FUTVXAW3HQLBO2GZJZFX4UXWFNSUMWEGSSXE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5CSWZGVPR4PHE34TP2WMLISMKIBVR6IJSJ2KG7RX7S7XMJQK2OBA"
+   },
+   {
+    "at": "2026-09-29T05:38:19.114Z",
+    "url": "https://fry.farm/x402/rewards",
+    "host": "fry.farm",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "E2F2LT2INE75DBOYHQXTCTOP2PAP5MHAXQRXTTCCXFKHQTVG36DJONBQZE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PGUXNBRHUXC4F7GVOT743RZI5ZONCWPYHNLMOQBBF6XMMVQIPLUA"
+   },
+   {
+    "at": "2026-09-29T05:38:30.397Z",
+    "url": "https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
+    "host": "hashlock.pronodealgo.xyz",
+    "method": "POST",
+    "priceUsdc": "0.005000",
+    "payTo": "4OEOVSKSZGG5QGIQ5UUSBAOF3AKR5PP5YZ2K2FKP2SIGEYK3NG4CO6MN4M",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "M2ZFTPYPKMFQBZP3VQFGG4MFXD3KTLKZ7JHGMV3N2T7RYP2KTBRA"
+   },
+   {
+    "at": "2026-09-29T05:38:30.732Z",
+    "url": "https://402signal.com/route",
+    "host": "402signal.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "N2JSJZCSORMYGYO2NSIYRUEMBFRHEOMYODVXV2MXYYHB5H2JVUGG6NJ4NQ",
+    "verdict": "REFUSE",
+    "reason": "probe_error",
+    "detail": "fetch failed",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:38:31.126Z",
+    "url": "https://algorand-swap-x402.onrender.com/execute",
+    "host": "algorand-swap-x402.onrender.com",
+    "method": "GET",
+    "priceUsdc": "4.000000",
+    "payTo": "DIPQL34NWQTXO6ZNLNYOYILJZ7UBLMY5KMTJSOCISGYDSPV2PR6VS6UP2Q",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 4000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:38:35.627Z",
+    "url": "https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
+    "host": "algorandtracker.com",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "HTG6SRVIX4XLGRBRDH57VIK4ONVMLAUJ3NOT4VKBLIVKCHSYE2PQ"
+   },
+   {
+    "at": "2026-09-29T05:38:41.043Z",
+    "url": "https://api.algometrics.org/v1/metrics/microstructure",
+    "host": "api.algometrics.org",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "Y5RCSDS5PG3BJUHRVGQYOFNGNCIL2C6LVFFASVJCVPI7HHJTZCIQ"
+   },
+   {
+    "at": "2026-09-29T05:38:46.538Z",
+    "url": "https://api.callrack.xyz/v1/academic/search",
+    "host": "api.callrack.xyz",
+    "method": "POST",
+    "priceUsdc": "0.080000",
+    "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ABLKN4NLFH2GOYKZPGLQSX2XKEBML3CFBEYM5K6J4FFMFGPQQ65Q"
+   },
+   {
+    "at": "2026-09-29T05:38:52.041Z",
+    "url": "https://api.celloforigin.com/enter",
+    "host": "api.celloforigin.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "DSIIJ6SCGMZ2DYATK7I7GROSUT7INIIZJUE4Q7RSOSUR7PCNUYCX3XIKBI",
+    "verdict": "REFUSE",
+    "reason": "http_error",
+    "paid": true,
+    "tx": "NYZFCBHELAJQVVUWMSKUCDGS3EOVJWZHH3YHALHWZ5FXLCQXTMCA"
+   },
+   {
+    "at": "2026-09-29T05:39:00.531Z",
+    "url": "https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
+    "host": "api.d0xeddev.com",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "F22UWM4HD45QKDLNGT66CR6XJEANNRXUF2WKBF42VV333INY3O3YJMF55U",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7RTHCFAAPDHA3LMUNQ6HQXZTZJH6HB77S36MUEMVZFHSJ4L75HIQ"
+   },
+   {
+    "at": "2026-09-29T05:39:05.835Z",
+    "url": "https://api.depth402.workers.dev/dati/pool-onchain",
+    "host": "api.depth402.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "JEFVXVSK7ZFXBEVQYU54XLGI555Z2VP5NLXWTC4XA2XWHUWHKTFVGVA6ZY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "N6T6AYOIIAEZK4A4SZXBVWVGXAYMPZRDEEXX52JERSWUCWJMXPXQ"
+   },
+   {
+    "at": "2026-09-29T05:39:15.087Z",
+    "url": "https://api.micropay.website/api/v1/chat/completions",
+    "host": "api.micropay.website",
+    "method": "POST",
+    "priceUsdc": "0.100000",
+    "payTo": "3Q3TISRNDGY5KPZKF4DJI6DF3Z6OAJT7OB6UJ6HV7DE4NQONWKIKX4NNHI",
+    "verdict": "REFUSE",
+    "reason": "http_error",
+    "paid": true,
+    "tx": "MABDSKPIJM64FQE7W6GGUSI4NHUJKSQGBGR3KMTUQAEHB4LHRW5Q"
+   },
+   {
+    "at": "2026-09-29T05:39:35.673Z",
+    "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
+    "host": "api.proptech.watch",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "OCFUOE44KV6OQ43XWLDKNRBPSMIMPB6QETX3JXU5J36VKUK6ON5G4FSEMM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "UWMXML7FBHUAX47TW3URUSVPZ2CE5EBGY2EZQAJE67YHEYKCJRPA"
+   },
+   {
+    "at": "2026-09-29T05:39:44.173Z",
+    "url": "https://api.ripar.io/api/payee-check",
+    "host": "api.ripar.io",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "4FXFYJKMBXOOS5DLYRVVFP5VWLW7FK3YJJJCSFG27EBKNFHEJWUA"
+   },
+   {
+    "at": "2026-09-29T05:39:49.648Z",
+    "url": "https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
+    "host": "api.x402node.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "QSNLPPXO64ONBD76E2DLZW6XER5GUV4YPQYHDFJUO2N3IO4RYBL5HRU6EY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ZP2LLQLBMYPUBUFL3NO5AZKFGUTJ4TPRX7KGSTE3V6D7TVLXMZMA"
+   },
+   {
+    "at": "2026-09-29T05:39:50.107Z",
+    "url": "https://civitas-api.civitasv.workers.dev/v1/public/stats",
+    "host": "civitas-api.civitasv.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.300000",
+    "payTo": "F76TVHATG2LJOMUOEFNSDJME2NRK77D2NXRM4IUE6MN7CMMGBZXUFJ3YWQ",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 300000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:39:55.342Z",
+    "url": "https://consensa-endpoint-production.up.railway.app/v1/clearance",
+    "host": "consensa-endpoint-production.up.railway.app",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "PJOXFIBKVKGYGMCW3346P5N4OATMODZYM3VQOXDAEUTIGAOGRYGTIO3NME",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "3DZ7AY27ORAI3LN2CGIDYVLL6LV7WKXZOWKK3M2VAC7JOMLKVIKQ"
+   },
+   {
+    "at": "2026-09-29T05:40:11.467Z",
+    "url": "https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
+    "host": "eth-avm-light-client.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "6XP7MJKMEPSCZ46RPB42FFRQGF7U5ACXLCXNCXWAVJUSP5J7U3ZFWBRIFQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ALJ6XDKQNVGHSMQQJAYVTSKXQZPDRBOX2Q65DO6UVWEZZ4K7LE6A"
+   },
+   {
+    "at": "2026-09-29T05:40:16.964Z",
+    "url": "https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
+    "host": "fluent-x402-algorand-production.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "UDCHQAUAOXG2VF4XDCX7CVBAPFU4IPF7GNKUFCOFODLCWDGIQVEXLT6ZGY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "TTD6CRABU23R7NOXL44KUDPQCBLYJVMRYDMQRBUPSN7IILYPYSYQ"
+   },
+   {
+    "at": "2026-09-29T05:40:25.143Z",
+    "url": "https://moltworld.xyz/v1/models/deepseek/chat/completions",
+    "host": "moltworld.xyz",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "NAPHTASVPDGRYORRYM237OSPA26R2TRRG4XFRRFK7K5H64H6HIIIZZIIXY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "GG7B5Z3IINKYFCT76QX4AWCXMYGPXCY64OE6LENI5P3WW2G7FMZA"
+   },
+   {
+    "at": "2026-09-29T05:40:27.709Z",
+    "url": "https://ora-gate-mainnet.vercel.app/api/ora-gate/message/ora_agent",
+    "host": "ora-gate-mainnet.vercel.app",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "TVXYBRI6H5M5RIPQEHS5ZZOXR7RS3FUVYKIJ3DTV6C6F5ULLQEZM47OKRM",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:40:39.922Z",
+    "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "TEDODVTZFOC6TCQ3KFJI5D4JNLWTVZDQ57ZMM4PDX2UO3MTCIOIA"
+   },
+   {
+    "at": "2026-09-29T05:40:46.850Z",
+    "url": "https://thetrench.fun/api/pulse",
+    "host": "thetrench.fun",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "2LDR3ULZ4IPJUHEPPFF2KMAAX4DB3OEK6QVW7H7EHLGN4X35L3GGMNLYFU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "G6L6E427HOC3VV6ED7UX3PIQYDO6VWAMUOS4IGN47IJPZKACALVQ"
+   },
+   {
+    "at": "2026-09-29T05:40:46.912Z",
+    "url": "https://untarnished-ricky-nonhierarchically.ngrok-free.dev/api/audit",
+    "host": "untarnished-ricky-nonhierarchically.ngrok-free.dev",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "3XFFLNEAJSRDYAFDJQLXV5NFMBHGVXVHHDHPIQZU7EDOD6FRFWPDLU25PM",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 404",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:40:52.257Z",
+    "url": "https://x402-echo-service.vercel.app/api/echo/test",
+    "host": "x402-echo-service.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:41:12.716Z",
+    "url": "https://x402.diiisco.com/v1/chat/completions",
+    "host": "x402.diiisco.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "DIIISCOGT3OTYBKUBVJNW7YOC36N3UAXOK4QTWW46PGBWE24YXFMAX5YDU",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:41:16.874Z",
+    "url": "https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
+    "host": "agenthub-production-8c75.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.080000",
+    "payTo": "G3YVTPURK6VFSM5CXEH7QFTZXLCXBJL6UMAIUUYJO4P2XF3MHQ4FUHYYB4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7YQBSPK7ZAJEZHI6X5NP4DRMRVHWPWYKMW3PLWLPQ4URP4LJTAKA"
+   },
+   {
+    "at": "2026-09-29T05:41:25.054Z",
+    "url": "https://agriintellect.site/weather-risk",
+    "host": "agriintellect.site",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PZVEHNCJ7XQGWPK3HC7WEJ3VGNPJLMKGP6TSXXFHAVW7UVG6RZVA"
+   },
+   {
+    "at": "2026-09-29T05:41:30.531Z",
+    "url": "https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
+    "host": "algo.ochinimus.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "QWOWU2E6BB76HEQRRMXWZ2MU4HAQIYZWEPP2W7Y377ZRDIW7ZKD4MMMEPM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "FY466X7O2IA77D3POCGXHQQJPITZYQS43CTVXW6BISFH6RRUBTVQ"
+   },
+   {
+    "at": "2026-09-29T05:41:38.620Z",
+    "url": "https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
+    "host": "algocheckmain.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "T2I3FKDS5YRUG26ZK3YVHCK45G2OLNCTGWXIYF6J6M75KZB4Q33UWNRMPQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "DUKQ4EC3SKXQKF4KSAAO6NJVKI5ENWLB7XISEVRKTJZ7LW7QGOBQ"
+   },
+   {
+    "at": "2026-09-29T05:41:44.108Z",
+    "url": "https://api.bottrunk.com/s/extract-links",
+    "host": "api.bottrunk.com",
+    "method": "POST",
+    "priceUsdc": "0.020000",
+    "payTo": "UTWS33TM7IT7NINJSFWS5KVGL73G4ERJMYDKHF7KE4WDXHYO4L7V2PNMRE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "53M4FP2WACEDFFKLAQWOWOLPTY5OQDD43OGU2HVWC4KSW6OWW25A"
+   },
+   {
+    "at": "2026-09-29T05:41:49.626Z",
+    "url": "https://kepaix.com/api/x402-atlas.php",
+    "host": "kepaix.com",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "2U3QYTQOHP4SMDUGWNFLNFQPRK2DFTZPFV7P76GV6ENXITYVXOMRAGDVEE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: summary",
+    "paid": true,
+    "tx": "YZFYO7VJBTG4RROS3L5F7C4SZ7P5W44WXWXWMKDCA75WHNXGEHGA"
+   },
+   {
+    "at": "2026-09-29T05:41:55.063Z",
+    "url": "https://oyapicks.app/api/x402/closing-soon-algo",
+    "host": "oyapicks.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "NMVLONWVRZUTUSHOVJLPQZTKII4RNCHA33R5HRRWHBCHGMU4BLIKIJAVA4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "NKJIOSY423V72NEBHP3IVTXSNY3WEJOWJGNLWJ4XRKHCAX4S32HA"
+   },
+   {
+    "at": "2026-09-29T05:41:56.040Z",
+    "url": "https://roundwatch-api.onrender.com/v1/watch",
+    "host": "roundwatch-api.onrender.com",
+    "method": "POST",
+    "priceUsdc": "0.020000",
+    "payTo": "EQPLN32HPLPGBCNPOZUL6BL34CTNQGT3VAAMNAJWSIZGQ5CUNXOHB634XY",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:41:56.177Z",
+    "url": "https://sikho-ai.onrender.com/api/v1/learners/chapters/unlock?chapterId=6a7efc125aa5b8d6d9f8ff3f",
+    "host": "sikho-ai.onrender.com",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "2RIRIX5XK6GWK7LOXDAYIDTN4IYDVNRDJFXR4TJCLYIM72A3EF2UQPROQY",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 503",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:00.490Z",
+    "url": "https://prism-99h2.onrender.com/code-review-accurate",
+    "host": "prism-99h2.onrender.com",
+    "method": "POST",
+    "priceUsdc": "0.012000",
+    "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "IIYWJGVTEP6M2YBTAWLZCOSPS7N34KZKXSCIHWXBUUOSVN3UZRPQ"
+   },
+   {
+    "at": "2026-09-29T05:42:15.500Z",
+    "url": "https://midax402.com/midas-ops/basic",
+    "host": "midax402.com",
+    "method": "POST",
+    "priceUsdc": "0.030000",
+    "payTo": "XFVBA5GJAXJBRWLERVOTZH57NEGPCOP276U4N2E2LCMYWVVESQQPAPBODQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: disclaimer",
+    "paid": true,
+    "tx": "B67R2IDIA5HD22EBMEDG2XFNIZCO746V2IAB5WYQVQ4OV3NPSMHA"
+   },
+   {
+    "at": "2026-09-29T05:42:25.991Z",
+    "url": "https://registry.at1c.com/v1/verify",
+    "host": "registry.at1c.com",
+    "method": "POST",
+    "priceUsdc": "0.030000",
+    "payTo": "IUCQ6VSUINTBEATREWRWSCWV26THLJ44PRGIA7X4V626LQA4BHOE3ZDEQ4",
+    "verdict": "REFUSE",
+    "reason": "probe_error",
+    "detail": "fetch failed",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:33.382Z",
+    "url": "https://43.162.105.66.sslip.io/v1/scan/signature",
+    "host": "43.162.105.66.sslip.io",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "MAGKDEWY5IZ6MBYLKGLHN4UWFM2BYCJ5R62C5AU6JASOY2HAS6XP5SHRII",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "YWF7FBW5QBS66E2ZT3VTN2KFEA75FXDNHME2EMEP5PMX2NQNPIBA"
+   },
+   {
+    "at": "2026-09-29T05:42:35.071Z",
+    "url": "https://alpha-hunter-x402-production.up.railway.app/v1/token/investigate",
+    "host": "alpha-hunter-x402-production.up.railway.app",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "ROO3X2KFNJVXIT2ZA6MFYOV7FRRZNVH2WIPO6TDWFVNEHVMQGFT6O4KFLA",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 503, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:41.330Z",
+    "url": "https://api.validex.space/v1/validate/trust",
+    "host": "api.validex.space",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "MMPI3FTPEWXRZX24KJJXFNDKYHRRYGY75KSHDMR42I7UXK5CNVBQ"
+   },
+   {
+    "at": "2026-09-29T05:42:44.367Z",
+    "url": "https://tendrilhq.com/x402/rent",
+    "host": "tendrilhq.com",
+    "method": "POST",
+    "priceUsdc": "0.100000",
+    "payTo": "ZIK7QQE7ZX446TW3PN7PQ5UDZNTY7JI5RYNTIU3LPEYBOSTVWI6PTNSWKI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 404, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:44.840Z",
+    "url": "https://vead.app/v1/transaction/x402/verify/6939bfbb8cc3c5a6c50c6d93",
+    "host": "vead.app",
+    "method": "GET",
+    "priceUsdc": "0.050000",
+    "payTo": "LQ36IBU2EDLHN2Z3MQCHN2PETQMCMHTICRWB4WNYHNOGQNLVXRYJXEHDZU",
+    "verdict": "REFUSE",
+    "reason": "requirements_body_only",
+    "detail": "x402 v2 requirements are in the 402 body only (no PAYMENT-REQUIRED header); the x402 paying client cannot pay this, so vet402 did not pay",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:49.840Z",
+    "url": "https://x402-algo.pkgproof.net/v1/verify",
+    "host": "x402-algo.pkgproof.net",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "NE3HBSH4MZLCJ3G5UPYBTIHGRCQ5M7K5N2ROWCBK6EQFR62FEROLBVQTTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "SPWKABL73L5WO466234OWA7VRIZI76OTCJV4ISEKHOIRLGKVAANQ"
+   },
+   {
+    "at": "2026-09-29T05:42:50.155Z",
+    "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
+    "host": "www.agent-mesh.app",
+    "method": "GET",
+    "priceUsdc": "0.060000",
+    "payTo": "M6JQNJVX32HEN2LS5W2WX2PMSXPDHHKADVUATIQ5KQIVVVHSVILQNOS62A",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 200",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:50.755Z",
+    "url": "https://api.playclock.xyz/v1/trending?lookback_hours=24",
+    "host": "api.playclock.xyz",
+    "method": "GET",
+    "priceUsdc": "0.100000",
+    "payTo": "MDBJMM6RJ4TM7W5FITZ3MWJTGTHMC4SKQJWRWI2JCQUKIR5LA7BPIUTMMM",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:55.417Z",
+    "url": "https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
+    "host": "finality-x402-backend.onrender.com",
+    "method": "GET",
+    "priceUsdc": "0.100000",
+    "payTo": "UEET5PA753P26B6LVUSXUKUYDVM33YLE6ETZWPLJDHJXQDKNYOUZPFKCSU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: result",
+    "paid": true,
+    "tx": "G4I322EOUZKOZK7TBB6P4DTSS77J7LHRKK4VTUNALTQTKONXQRXA"
+   }
+  ],
+  "rowsAfter": [
+   {
+    "at": "2026-09-29T05:35:02.010Z",
+    "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "host": "api.algorand-indexer.xyz",
+    "method": "GET",
+    "priceUsdc": "0.000100",
+    "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "GVI4PXHLPXUBH3A7ZHXCCTQYFZCGZGZB4DOF5RIAH7YGOZKPQ3YA"
+   },
+   {
+    "at": "2026-09-29T05:35:02.783Z",
+    "url": "https://algorand-indexer.xyz/api/v1/queries/results/cZjh0_C61ddAVLAR50At_gueIpqvMsTt/unlock",
+    "host": "algorand-indexer.xyz",
+    "method": "POST",
+    "priceUsdc": "0.000100",
+    "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 401, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:03.185Z",
+    "url": "https://a-identity.xyz/api/x402/algorand/tools/verify_agent",
+    "host": "a-identity.xyz",
+    "method": "POST",
+    "priceUsdc": "1.000000",
+    "payTo": "WHZ74ZGNGZGAVEQZTHESENVP5RTHMEQ4BOUKF7UHWOADQMKXDKAK3FESJE",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:03.458Z",
+    "url": "https://agent402.tools/api/hash",
+    "host": "agent402.tools",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+    "verdict": "REFUSE",
+    "reason": "no_supported_accept",
+    "detail": "no exact/algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=/USDC 31566704 accept",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:10.634Z",
+    "url": "https://algo.netintel.dev/email/verify?email=user%40github.com",
+    "host": "algo.netintel.dev",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ZD67F75J6C7REPH2HT3H6HTIHZ6REYH55WSMBRC6QHIN2V4CZHSA"
+   },
+   {
+    "at": "2026-09-29T05:35:22.286Z",
+    "url": "https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
+    "host": "algorand-api.pxke.me",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "KSAVOYTVNB7A6NKCM4W2WBOOGFHWH2SEGR5T6OGB7THCAT5E36LDFEBTII",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "4PYILGGEQI37HIR4BJEWRGOXYZB7QI7LLXFLODDCWW4ALDBTKF3Q"
+   },
+   {
+    "at": "2026-09-29T05:35:27.685Z",
+    "url": "https://algorand.ottoai.services/base-ecosystem-news",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "NDH267QKXFHVEZYHWYIFV6BNK7URQRNL6WVHSQXC4OQHVTEFCDKA"
+   },
+   {
+    "at": "2026-09-29T05:35:35.421Z",
+    "url": "https://api.agentkeep.online/v1/memory",
+    "host": "api.agentkeep.online",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "D4AHBP56UM4LV2BMCVH2HK267DNMAPPQG52S6L2FWKP4RIK3OLSA"
+   },
+   {
+    "at": "2026-09-29T05:35:41.504Z",
+    "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt \u00b7 settled on chain: vet402's transfer MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA (to this payTo, round 65497356, 05:35:38 UTC); no delivery",
+    "paid": true,
+    "tx": "MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA"
+   },
+   {
+    "at": "2026-09-29T05:35:43.149Z",
+    "url": "https://api.blueprintstech.org/api/verify-counterparty",
+    "host": "api.blueprintstech.org",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "V7XWYKY3WBKWRONX5NTHFNK77A7O3IS7XEMIUJQM6ZLZRWYVNT763I333Y",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:43.727Z",
+    "url": "https://api.glianalabs.com/a402/tools/embed",
+    "host": "api.glianalabs.com",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "SQ2NZ6TVGSGY7MQNEDYK27WX5TEDTV6WDPVIZO77DGKHJGAYV6ZYJUKT5U",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:35:49.912Z",
+    "url": "https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
+    "host": "api.iomarkets.ai",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "DZUL7JAPQUVT2YDXG4KTOCOS2BAY33MMYSUWWKJPGFWDS3SGR5TUIUDYNE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PJ4E4LRPHIHTAN5KZINR2MFYSBQ7NBIRRZOIRTISXTXLNU2XT3EQ"
+   },
+   {
+    "at": "2026-09-29T05:36:01.000Z",
+    "url": "https://api.pqattest.com/attest",
+    "host": "api.pqattest.com",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5LUZEO77NEQSFUJ72WTL7AYTQPJF44DG5HX2LVHWVTSI5XOGB6MA"
+   },
+   {
+    "at": "2026-09-29T05:36:06.847Z",
+    "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+    "host": "api.synergybcpacific.com",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "CYH6YU5B5ELCRWNKT2MOMVOR2HMUUQD3XYWSLWI2L4NCEFOGTONQ"
+   },
+   {
+    "at": "2026-09-29T05:36:12.159Z",
+    "url": "https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
+    "host": "arbsignal-production.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.050000",
+    "payTo": "N2BHBOQEI5TQQKFKHDRDUACAZE6E55X6VO2U67IQAYBRRLB7LSMO6YRQSM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "J5C7T4IQGNYPN7OHGLQMCZBI2T2V2DIII6D2GC5RYC7MFLZFDWVQ"
+   },
+   {
+    "at": "2026-09-29T05:36:32.767Z",
+    "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "host": "canix402-api.compx.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:36:37.709Z",
+    "url": "https://coil.trade/api/crypto/gate",
+    "host": "coil.trade",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "LYIVIUSN3FAFIC2NUN6UYU2VN764U6YTCPTIX2O6EWYYU5WHAJHYMVTZM4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "CKKB6MUHBQ2VBJ34KXNAYFX4VYWEQHNMCXOC2UZFIIAJIE4ISPNQ"
+   },
+   {
+    "at": "2026-09-29T05:36:45.241Z",
+    "url": "https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
+    "host": "gateway-x402.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "LXPC4GQPYH2EZQX2QDYMHCP2I7MXIZMVRPIYTQ3D7R7HXJ4SIHCSYLF5YA",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, Transaction simulation failed: transaction already in ledger: 5GX3CNZW5Y7QIWQ6ODRRJJLFE7SFWK6YTCQKDYZXTPR6CT6RBKCQ \u00b7 settled on chain: vet402's transfer PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q (same group, round 65497379); no delivery",
+    "paid": true,
+    "tx": "PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q"
+   },
+   {
+    "at": "2026-09-29T05:36:53.242Z",
+    "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+    "host": "growtrack.pro",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "TOUDDR5T4XZIMRPE5ACZW2DQTCC4UOZPJKKPW5JRRJ7MWC3HPZNA"
+   },
+   {
+    "at": "2026-09-29T05:36:59.043Z",
+    "url": "https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
+    "host": "noahs-mac-mini.tail571e99.ts.net",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "F2ZYO2DDPQXOACUYBYQIHMQRAB3TJFZVCNUD3OU3CR5OOJUKFZOF5EYVJ4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "2DH7IQKVXXKQJJGBD5OXY2AXQXTPIP7RME73YNYA2GHZ3KWR2QCQ"
+   },
+   {
+    "at": "2026-09-29T05:37:04.638Z",
+    "url": "https://whaletape.xyz/algo/coverage",
+    "host": "whaletape.xyz",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "ZVZV3J2VQNLTH6MNLOL5IHZECJQVXVSVAK3NNJA6FD7LLNZ5NRHQAIL2J4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "AFHU32BANGS7Q6WFNVW3A2VXSXDGQAEPJCQX2SR4DC7YZLKILUAA"
+   },
+   {
+    "at": "2026-09-29T05:37:11.564Z",
+    "url": "https://agent-keep-684642514120.europe-west1.run.app/v1/budget/receipts",
+    "host": "agent-keep-684642514120.europe-west1.run.app",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "P353GDLUTPKVBOWLDKTAY6Y47VGZ63I4ME624EJGJGALZF75ASNA"
+   },
+   {
+    "at": "2026-09-29T05:37:15.529Z",
+    "url": "https://api.sitelenz.online/v1/analyze/technology",
+    "host": "api.sitelenz.online",
+    "method": "POST",
+    "priceUsdc": "0.002000",
+    "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7LISUXRNOBGHJCIAQNYULEYNBXH5PIVEKYLQTLRC632IXKLYKEUA"
+   },
+   {
+    "at": "2026-09-29T05:37:21.556Z",
+    "url": "https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
+    "host": "legit.gonna.bond",
+    "method": "GET",
+    "priceUsdc": "0.004000",
+    "payTo": "LGT47RVH6STHJF5PWU3BX2S5D4M5UN2TFXOESL34KDFRXMEYDCDVQWCM6M",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PVW4RTLBWPLNGWJ34Q5K25M66A6ADXVPMPQFP3C6ZA5P6ZMFLTQQ"
+   },
+   {
+    "at": "2026-09-29T05:37:32.267Z",
+    "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "host": "amarok-api.compx.io",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5NZUIC3AWGJH4RZBLWI3WTHZSTUDNHBWNZB6HDEAA3JB3EFUCH3Q"
+   },
+   {
+    "at": "2026-09-29T05:37:40.556Z",
+    "url": "https://api-algo.stelardigital.com/pricecheck?asset=SOL",
+    "host": "api-algo.stelardigital.com",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "HFHI5MF4C55AYUSQ2JD2AFYMUHWBNSE3SGU6N2YZ5ET5FUZD5YHZHXSWXU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "F5TBTXRYPT6XJDAMBUNTFNR63WYYRT4K2T3OSMGJOHYVMACJZ76A"
+   },
+   {
+    "at": "2026-09-29T05:37:57.023Z",
+    "url": "https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
+    "host": "api-production-36692.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "36AZ3YZGHLUFFVU4STAQGSQMRB2W3TK5VVTKZVN6L2LH7NRCK7X27TMEJM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ASMLYTW5PQ7H552EW5NBNO74LKJN3MIHHW4MOZFCIXWV5WLS4ZYQ"
+   },
+   {
+    "at": "2026-09-29T05:38:02.685Z",
+    "url": "https://api.agentwork.run/v1/web/changes",
+    "host": "api.agentwork.run",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "H7XW24HYK5HQQQ7K6USYDUY4DPT2UTCBTIHVRF6OTEFQKHIE2BUQ"
+   },
+   {
+    "at": "2026-09-29T05:38:08.073Z",
+    "url": "https://blocksigner.org/commission/sol?check=asset&address=K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA&asset=31566704",
+    "host": "blocksigner.org",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "G7ZF2ZDLRTDYSWFKNVM46APS76YCYMS6NUG3ZAT3ZRMZ5KYPWPGA"
+   },
+   {
+    "at": "2026-09-29T05:38:13.526Z",
+    "url": "https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
+    "host": "elara-verify-x402.aivelikivodja.workers.dev",
+    "method": "POST",
+    "priceUsdc": "0.005000",
+    "payTo": "2PWGUKE4VWUXXZ3IPPX2W4FUTVXAW3HQLBO2GZJZFX4UXWFNSUMWEGSSXE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5CSWZGVPR4PHE34TP2WMLISMKIBVR6IJSJ2KG7RX7S7XMJQK2OBA"
+   },
+   {
+    "at": "2026-09-29T05:38:19.114Z",
+    "url": "https://fry.farm/x402/rewards",
+    "host": "fry.farm",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "E2F2LT2INE75DBOYHQXTCTOP2PAP5MHAXQRXTTCCXFKHQTVG36DJONBQZE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PGUXNBRHUXC4F7GVOT743RZI5ZONCWPYHNLMOQBBF6XMMVQIPLUA"
+   },
+   {
+    "at": "2026-09-29T05:38:30.397Z",
+    "url": "https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
+    "host": "hashlock.pronodealgo.xyz",
+    "method": "POST",
+    "priceUsdc": "0.005000",
+    "payTo": "4OEOVSKSZGG5QGIQ5UUSBAOF3AKR5PP5YZ2K2FKP2SIGEYK3NG4CO6MN4M",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "M2ZFTPYPKMFQBZP3VQFGG4MFXD3KTLKZ7JHGMV3N2T7RYP2KTBRA"
+   },
+   {
+    "at": "2026-09-29T05:38:30.732Z",
+    "url": "https://402signal.com/route",
+    "host": "402signal.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "N2JSJZCSORMYGYO2NSIYRUEMBFRHEOMYODVXV2MXYYHB5H2JVUGG6NJ4NQ",
+    "verdict": "REFUSE",
+    "reason": "probe_error",
+    "detail": "fetch failed",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:38:31.126Z",
+    "url": "https://algorand-swap-x402.onrender.com/execute",
+    "host": "algorand-swap-x402.onrender.com",
+    "method": "GET",
+    "priceUsdc": "4.000000",
+    "payTo": "DIPQL34NWQTXO6ZNLNYOYILJZ7UBLMY5KMTJSOCISGYDSPV2PR6VS6UP2Q",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 4000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:38:35.627Z",
+    "url": "https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
+    "host": "algorandtracker.com",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "HTG6SRVIX4XLGRBRDH57VIK4ONVMLAUJ3NOT4VKBLIVKCHSYE2PQ"
+   },
+   {
+    "at": "2026-09-29T05:38:41.043Z",
+    "url": "https://api.algometrics.org/v1/metrics/microstructure",
+    "host": "api.algometrics.org",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "Y5RCSDS5PG3BJUHRVGQYOFNGNCIL2C6LVFFASVJCVPI7HHJTZCIQ"
+   },
+   {
+    "at": "2026-09-29T05:38:46.538Z",
+    "url": "https://api.callrack.xyz/v1/academic/search",
+    "host": "api.callrack.xyz",
+    "method": "POST",
+    "priceUsdc": "0.080000",
+    "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ABLKN4NLFH2GOYKZPGLQSX2XKEBML3CFBEYM5K6J4FFMFGPQQ65Q"
+   },
+   {
+    "at": "2026-09-29T05:38:52.041Z",
+    "url": "https://api.celloforigin.com/enter",
+    "host": "api.celloforigin.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "DSIIJ6SCGMZ2DYATK7I7GROSUT7INIIZJUE4Q7RSOSUR7PCNUYCX3XIKBI",
+    "verdict": "REFUSE",
+    "reason": "http_error",
+    "paid": true,
+    "tx": "NYZFCBHELAJQVVUWMSKUCDGS3EOVJWZHH3YHALHWZ5FXLCQXTMCA"
+   },
+   {
+    "at": "2026-09-29T05:39:00.531Z",
+    "url": "https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
+    "host": "api.d0xeddev.com",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "F22UWM4HD45QKDLNGT66CR6XJEANNRXUF2WKBF42VV333INY3O3YJMF55U",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7RTHCFAAPDHA3LMUNQ6HQXZTZJH6HB77S36MUEMVZFHSJ4L75HIQ"
+   },
+   {
+    "at": "2026-09-29T05:39:05.835Z",
+    "url": "https://api.depth402.workers.dev/dati/pool-onchain",
+    "host": "api.depth402.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "JEFVXVSK7ZFXBEVQYU54XLGI555Z2VP5NLXWTC4XA2XWHUWHKTFVGVA6ZY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "N6T6AYOIIAEZK4A4SZXBVWVGXAYMPZRDEEXX52JERSWUCWJMXPXQ"
+   },
+   {
+    "at": "2026-09-29T05:39:15.087Z",
+    "url": "https://api.micropay.website/api/v1/chat/completions",
+    "host": "api.micropay.website",
+    "method": "POST",
+    "priceUsdc": "0.100000",
+    "payTo": "3Q3TISRNDGY5KPZKF4DJI6DF3Z6OAJT7OB6UJ6HV7DE4NQONWKIKX4NNHI",
+    "verdict": "REFUSE",
+    "reason": "http_error",
+    "paid": true,
+    "tx": "MABDSKPIJM64FQE7W6GGUSI4NHUJKSQGBGR3KMTUQAEHB4LHRW5Q"
+   },
+   {
+    "at": "2026-09-29T05:39:35.673Z",
+    "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
+    "host": "api.proptech.watch",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "OCFUOE44KV6OQ43XWLDKNRBPSMIMPB6QETX3JXU5J36VKUK6ON5G4FSEMM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "UWMXML7FBHUAX47TW3URUSVPZ2CE5EBGY2EZQAJE67YHEYKCJRPA"
+   },
+   {
+    "at": "2026-09-29T05:39:44.173Z",
+    "url": "https://api.ripar.io/api/payee-check",
+    "host": "api.ripar.io",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "4FXFYJKMBXOOS5DLYRVVFP5VWLW7FK3YJJJCSFG27EBKNFHEJWUA"
+   },
+   {
+    "at": "2026-09-29T05:39:49.648Z",
+    "url": "https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
+    "host": "api.x402node.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "QSNLPPXO64ONBD76E2DLZW6XER5GUV4YPQYHDFJUO2N3IO4RYBL5HRU6EY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ZP2LLQLBMYPUBUFL3NO5AZKFGUTJ4TPRX7KGSTE3V6D7TVLXMZMA"
+   },
+   {
+    "at": "2026-09-29T05:39:50.107Z",
+    "url": "https://civitas-api.civitasv.workers.dev/v1/public/stats",
+    "host": "civitas-api.civitasv.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.300000",
+    "payTo": "F76TVHATG2LJOMUOEFNSDJME2NRK77D2NXRM4IUE6MN7CMMGBZXUFJ3YWQ",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 300000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:39:55.342Z",
+    "url": "https://consensa-endpoint-production.up.railway.app/v1/clearance",
+    "host": "consensa-endpoint-production.up.railway.app",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "PJOXFIBKVKGYGMCW3346P5N4OATMODZYM3VQOXDAEUTIGAOGRYGTIO3NME",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "3DZ7AY27ORAI3LN2CGIDYVLL6LV7WKXZOWKK3M2VAC7JOMLKVIKQ"
+   },
+   {
+    "at": "2026-09-29T05:40:11.467Z",
+    "url": "https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
+    "host": "eth-avm-light-client.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "6XP7MJKMEPSCZ46RPB42FFRQGF7U5ACXLCXNCXWAVJUSP5J7U3ZFWBRIFQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ALJ6XDKQNVGHSMQQJAYVTSKXQZPDRBOX2Q65DO6UVWEZZ4K7LE6A"
+   },
+   {
+    "at": "2026-09-29T05:40:16.964Z",
+    "url": "https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
+    "host": "fluent-x402-algorand-production.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "UDCHQAUAOXG2VF4XDCX7CVBAPFU4IPF7GNKUFCOFODLCWDGIQVEXLT6ZGY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "TTD6CRABU23R7NOXL44KUDPQCBLYJVMRYDMQRBUPSN7IILYPYSYQ"
+   },
+   {
+    "at": "2026-09-29T05:40:25.143Z",
+    "url": "https://moltworld.xyz/v1/models/deepseek/chat/completions",
+    "host": "moltworld.xyz",
+    "method": "POST",
+    "priceUsdc": "0.001000",
+    "payTo": "NAPHTASVPDGRYORRYM237OSPA26R2TRRG4XFRRFK7K5H64H6HIIIZZIIXY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "GG7B5Z3IINKYFCT76QX4AWCXMYGPXCY64OE6LENI5P3WW2G7FMZA"
+   },
+   {
+    "at": "2026-09-29T05:40:27.709Z",
+    "url": "https://ora-gate-mainnet.vercel.app/api/ora-gate/message/ora_agent",
+    "host": "ora-gate-mainnet.vercel.app",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "TVXYBRI6H5M5RIPQEHS5ZZOXR7RS3FUVYKIJ3DTV6C6F5ULLQEZM47OKRM",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:40:39.922Z",
+    "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "TEDODVTZFOC6TCQ3KFJI5D4JNLWTVZDQ57ZMM4PDX2UO3MTCIOIA"
+   },
+   {
+    "at": "2026-09-29T05:40:46.850Z",
+    "url": "https://thetrench.fun/api/pulse",
+    "host": "thetrench.fun",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "2LDR3ULZ4IPJUHEPPFF2KMAAX4DB3OEK6QVW7H7EHLGN4X35L3GGMNLYFU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "G6L6E427HOC3VV6ED7UX3PIQYDO6VWAMUOS4IGN47IJPZKACALVQ"
+   },
+   {
+    "at": "2026-09-29T05:40:46.912Z",
+    "url": "https://untarnished-ricky-nonhierarchically.ngrok-free.dev/api/audit",
+    "host": "untarnished-ricky-nonhierarchically.ngrok-free.dev",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "3XFFLNEAJSRDYAFDJQLXV5NFMBHGVXVHHDHPIQZU7EDOD6FRFWPDLU25PM",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 404",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:40:52.257Z",
+    "url": "https://x402-echo-service.vercel.app/api/echo/test",
+    "host": "x402-echo-service.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt \u00b7 settled on chain: vet402's transfer 522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA (to this payTo, round 65497469, 05:40:49 UTC); no delivery",
+    "paid": true,
+    "tx": "522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA"
+   },
+   {
+    "at": "2026-09-29T05:41:12.716Z",
+    "url": "https://x402.diiisco.com/v1/chat/completions",
+    "host": "x402.diiisco.com",
+    "method": "POST",
+    "priceUsdc": "0.010000",
+    "payTo": "DIIISCOGT3OTYBKUBVJNW7YOC36N3UAXOK4QTWW46PGBWE24YXFMAX5YDU",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:41:16.874Z",
+    "url": "https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
+    "host": "agenthub-production-8c75.up.railway.app",
+    "method": "GET",
+    "priceUsdc": "0.080000",
+    "payTo": "G3YVTPURK6VFSM5CXEH7QFTZXLCXBJL6UMAIUUYJO4P2XF3MHQ4FUHYYB4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7YQBSPK7ZAJEZHI6X5NP4DRMRVHWPWYKMW3PLWLPQ4URP4LJTAKA"
+   },
+   {
+    "at": "2026-09-29T05:41:25.054Z",
+    "url": "https://agriintellect.site/weather-risk",
+    "host": "agriintellect.site",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "PZVEHNCJ7XQGWPK3HC7WEJ3VGNPJLMKGP6TSXXFHAVW7UVG6RZVA"
+   },
+   {
+    "at": "2026-09-29T05:41:30.531Z",
+    "url": "https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
+    "host": "algo.ochinimus.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "QWOWU2E6BB76HEQRRMXWZ2MU4HAQIYZWEPP2W7Y377ZRDIW7ZKD4MMMEPM",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "FY466X7O2IA77D3POCGXHQQJPITZYQS43CTVXW6BISFH6RRUBTVQ"
+   },
+   {
+    "at": "2026-09-29T05:41:38.620Z",
+    "url": "https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
+    "host": "algocheckmain.vercel.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "T2I3FKDS5YRUG26ZK3YVHCK45G2OLNCTGWXIYF6J6M75KZB4Q33UWNRMPQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "DUKQ4EC3SKXQKF4KSAAO6NJVKI5ENWLB7XISEVRKTJZ7LW7QGOBQ"
+   },
+   {
+    "at": "2026-09-29T05:41:44.108Z",
+    "url": "https://api.bottrunk.com/s/extract-links",
+    "host": "api.bottrunk.com",
+    "method": "POST",
+    "priceUsdc": "0.020000",
+    "payTo": "UTWS33TM7IT7NINJSFWS5KVGL73G4ERJMYDKHF7KE4WDXHYO4L7V2PNMRE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "53M4FP2WACEDFFKLAQWOWOLPTY5OQDD43OGU2HVWC4KSW6OWW25A"
+   },
+   {
+    "at": "2026-09-29T05:41:49.626Z",
+    "url": "https://kepaix.com/api/x402-atlas.php",
+    "host": "kepaix.com",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "2U3QYTQOHP4SMDUGWNFLNFQPRK2DFTZPFV7P76GV6ENXITYVXOMRAGDVEE",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: summary",
+    "paid": true,
+    "tx": "YZFYO7VJBTG4RROS3L5F7C4SZ7P5W44WXWXWMKDCA75WHNXGEHGA"
+   },
+   {
+    "at": "2026-09-29T05:41:55.063Z",
+    "url": "https://oyapicks.app/api/x402/closing-soon-algo",
+    "host": "oyapicks.app",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "NMVLONWVRZUTUSHOVJLPQZTKII4RNCHA33R5HRRWHBCHGMU4BLIKIJAVA4",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "NKJIOSY423V72NEBHP3IVTXSNY3WEJOWJGNLWJ4XRKHCAX4S32HA"
+   },
+   {
+    "at": "2026-09-29T05:41:56.040Z",
+    "url": "https://roundwatch-api.onrender.com/v1/watch",
+    "host": "roundwatch-api.onrender.com",
+    "method": "POST",
+    "priceUsdc": "0.020000",
+    "payTo": "EQPLN32HPLPGBCNPOZUL6BL34CTNQGT3VAAMNAJWSIZGQ5CUNXOHB634XY",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 400, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:41:56.177Z",
+    "url": "https://sikho-ai.onrender.com/api/v1/learners/chapters/unlock?chapterId=6a7efc125aa5b8d6d9f8ff3f",
+    "host": "sikho-ai.onrender.com",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "2RIRIX5XK6GWK7LOXDAYIDTN4IYDVNRDJFXR4TJCLYIM72A3EF2UQPROQY",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 503",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:00.490Z",
+    "url": "https://prism-99h2.onrender.com/code-review-accurate",
+    "host": "prism-99h2.onrender.com",
+    "method": "POST",
+    "priceUsdc": "0.012000",
+    "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "IIYWJGVTEP6M2YBTAWLZCOSPS7N34KZKXSCIHWXBUUOSVN3UZRPQ"
+   },
+   {
+    "at": "2026-09-29T05:42:15.500Z",
+    "url": "https://midax402.com/midas-ops/basic",
+    "host": "midax402.com",
+    "method": "POST",
+    "priceUsdc": "0.030000",
+    "payTo": "XFVBA5GJAXJBRWLERVOTZH57NEGPCOP276U4N2E2LCMYWVVESQQPAPBODQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: disclaimer",
+    "paid": true,
+    "tx": "B67R2IDIA5HD22EBMEDG2XFNIZCO746V2IAB5WYQVQ4OV3NPSMHA"
+   },
+   {
+    "at": "2026-09-29T05:42:25.991Z",
+    "url": "https://registry.at1c.com/v1/verify",
+    "host": "registry.at1c.com",
+    "method": "POST",
+    "priceUsdc": "0.030000",
+    "payTo": "IUCQ6VSUINTBEATREWRWSCWV26THLJ44PRGIA7X4V626LQA4BHOE3ZDEQ4",
+    "verdict": "REFUSE",
+    "reason": "probe_error",
+    "detail": "fetch failed",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:33.382Z",
+    "url": "https://43.162.105.66.sslip.io/v1/scan/signature",
+    "host": "43.162.105.66.sslip.io",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "MAGKDEWY5IZ6MBYLKGLHN4UWFM2BYCJ5R62C5AU6JASOY2HAS6XP5SHRII",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "YWF7FBW5QBS66E2ZT3VTN2KFEA75FXDNHME2EMEP5PMX2NQNPIBA"
+   },
+   {
+    "at": "2026-09-29T05:42:35.071Z",
+    "url": "https://alpha-hunter-x402-production.up.railway.app/v1/token/investigate",
+    "host": "alpha-hunter-x402-production.up.railway.app",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "ROO3X2KFNJVXIT2ZA6MFYOV7FRRZNVH2WIPO6TDWFVNEHVMQGFT6O4KFLA",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 503, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:41.330Z",
+    "url": "https://api.validex.space/v1/validate/trust",
+    "host": "api.validex.space",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "MMPI3FTPEWXRZX24KJJXFNDKYHRRYGY75KSHDMR42I7UXK5CNVBQ"
+   },
+   {
+    "at": "2026-09-29T05:42:44.367Z",
+    "url": "https://tendrilhq.com/x402/rent",
+    "host": "tendrilhq.com",
+    "method": "POST",
+    "priceUsdc": "0.100000",
+    "payTo": "ZIK7QQE7ZX446TW3PN7PQ5UDZNTY7JI5RYNTIU3LPEYBOSTVWI6PTNSWKI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 404, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:44.840Z",
+    "url": "https://vead.app/v1/transaction/x402/verify/6939bfbb8cc3c5a6c50c6d93",
+    "host": "vead.app",
+    "method": "GET",
+    "priceUsdc": "0.050000",
+    "payTo": "LQ36IBU2EDLHN2Z3MQCHN2PETQMCMHTICRWB4WNYHNOGQNLVXRYJXEHDZU",
+    "verdict": "REFUSE",
+    "reason": "requirements_body_only",
+    "detail": "x402 v2 requirements are in the 402 body only (no PAYMENT-REQUIRED header); the x402 paying client cannot pay this, so vet402 did not pay",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:49.840Z",
+    "url": "https://x402-algo.pkgproof.net/v1/verify",
+    "host": "x402-algo.pkgproof.net",
+    "method": "POST",
+    "priceUsdc": "0.050000",
+    "payTo": "NE3HBSH4MZLCJ3G5UPYBTIHGRCQ5M7K5N2ROWCBK6EQFR62FEROLBVQTTQ",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "SPWKABL73L5WO466234OWA7VRIZI76OTCJV4ISEKHOIRLGKVAANQ"
+   },
+   {
+    "at": "2026-09-29T05:42:50.155Z",
+    "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
+    "host": "www.agent-mesh.app",
+    "method": "GET",
+    "priceUsdc": "0.060000",
+    "payTo": "M6JQNJVX32HEN2LS5W2WX2PMSXPDHHKADVUATIQ5KQIVVVHSVILQNOS62A",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 200",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:50.755Z",
+    "url": "https://api.playclock.xyz/v1/trending?lookback_hours=24",
+    "host": "api.playclock.xyz",
+    "method": "GET",
+    "priceUsdc": "0.100000",
+    "payTo": "MDBJMM6RJ4TM7W5FITZ3MWJTGTHMC4SKQJWRWI2JCQUKIR5LA7BPIUTMMM",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-29T05:42:55.417Z",
+    "url": "https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
+    "host": "finality-x402-backend.onrender.com",
+    "method": "GET",
+    "priceUsdc": "0.100000",
+    "payTo": "UEET5PA753P26B6LVUSXUKUYDVM33YLE6ETZWPLJDHJXQDKNYOUZPFKCSU",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "detail": "example keys not seen: result",
+    "paid": true,
+    "tx": "G4I322EOUZKOZK7TBB6P4DTSS77J7LHRKK4VTUNALTQTKONXQRXA"
+   }
+  ],
+  "transfers": [
+   {
+    "id": "G4I322EOUZKOZK7TBB6P4DTSS77J7LHRKK4VTUNALTQTKONXQRXA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "WqA68Sq+2L0PN40j5AaZJiPQNnLTpHRRrmoKKflHBWE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1NzEyODY=",
+    "confirmed-round": 65497514,
+    "round-time": 1790660572,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 100000,
+     "receiver": "UEET5PA753P26B6LVUSXUKUYDVM33YLE6ETZWPLJDHJXQDKNYOUZPFKCSU"
+    }
+   },
+   {
+    "id": "SPWKABL73L5WO466234OWA7VRIZI76OTCJV4ISEKHOIRLGKVAANQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "5VvA9AfbBZ2otylPsbpWUP12wiqXWg6OYObomNcluU4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1NjUyNjA=",
+    "confirmed-round": 65497512,
+    "round-time": 1790660567,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 50000,
+     "receiver": "NE3HBSH4MZLCJ3G5UPYBTIHGRCQ5M7K5N2ROWCBK6EQFR62FEROLBVQTTQ"
+    }
+   },
+   {
+    "id": "MMPI3FTPEWXRZX24KJJXFNDKYHRRYGY75KSHDMR42I7UXK5CNVBQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "n5KnRy/dB78HRUDLfE1F5LZN7PCe4YRp+BMkkdQfFjo=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1NTUyOTQ=",
+    "confirmed-round": 65497508,
+    "round-time": 1790660556,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 50000,
+     "receiver": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU"
+    }
+   },
+   {
+    "id": "YWF7FBW5QBS66E2ZT3VTN2KFEA75FXDNHME2EMEP5PMX2NQNPIBA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Ox2MtJmKj6swCn7yVICvHH+hYgVg42bYRhHcsdlpLzM=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1NDY3NTk=",
+    "confirmed-round": 65497505,
+    "round-time": 1790660547,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 50000,
+     "receiver": "MAGKDEWY5IZ6MBYLKGLHN4UWFM2BYCJ5R62C5AU6JASOY2HAS6XP5SHRII"
+    }
+   },
+   {
+    "id": "B67R2IDIA5HD22EBMEDG2XFNIZCO746V2IAB5WYQVQ4OV3NPSMHA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "4twqBadsfpQDe0dg6pZHbLTXop3+M3la/rGaKW/SRQg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1MjExMTY=",
+    "confirmed-round": 65497499,
+    "round-time": 1790660531,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 30000,
+     "receiver": "XFVBA5GJAXJBRWLERVOTZH57NEGPCOP276U4N2E2LCMYWVVESQQPAPBODQ"
+    }
+   },
+   {
+    "id": "IIYWJGVTEP6M2YBTAWLZCOSPS7N34KZKXSCIHWXBUUOSVN3UZRPQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Ntb819gEhlZj2d/VycHpSJLrKQps0gZLaJT8g6ezmOk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1MTY0NjY=",
+    "confirmed-round": 65497494,
+    "round-time": 1790660517,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 12000,
+     "receiver": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE"
+    }
+   },
+   {
+    "id": "NKJIOSY423V72NEBHP3IVTXSNY3WEJOWJGNLWJ4XRKHCAX4S32HA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "ZGz48Wz34DDPc2hPd11lrGE/vx8ep6TKEXX9V2t+ewk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1MTAwMTk=",
+    "confirmed-round": 65497492,
+    "round-time": 1790660512,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "NMVLONWVRZUTUSHOVJLPQZTKII4RNCHA33R5HRRWHBCHGMU4BLIKIJAVA4"
+    }
+   },
+   {
+    "id": "YZFYO7VJBTG4RROS3L5F7C4SZ7P5W44WXWXWMKDCA75WHNXGEHGA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 1000,
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA1MDUzMjE=",
+    "confirmed-round": 65497490,
+    "round-time": 1790660506,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "2U3QYTQOHP4SMDUGWNFLNFQPRK2DFTZPFV7P76GV6ENXITYVXOMRAGDVEE"
+    }
+   },
+   {
+    "id": "53M4FP2WACEDFFKLAQWOWOLPTY5OQDD43OGU2HVWC4KSW6OWW25A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "GzdydHdDwjp7nCf61s7VTRe6SK1kJcIm5hfDFwgP/B0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0OTkwMTQ=",
+    "confirmed-round": 65497488,
+    "round-time": 1790660501,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "UTWS33TM7IT7NINJSFWS5KVGL73G4ERJMYDKHF7KE4WDXHYO4L7V2PNMRE"
+    }
+   },
+   {
+    "id": "DUKQ4EC3SKXQKF4KSAAO6NJVKI5ENWLB7XISEVRKTJZ7LW7QGOBQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "nMy3YHUtCMyr5IZb546vvCYXBwjDp0PgnOCuVBcKYk0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0OTI2MDM=",
+    "confirmed-round": 65497486,
+    "round-time": 1790660495,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "T2I3FKDS5YRUG26ZK3YVHCK45G2OLNCTGWXIYF6J6M75KZB4Q33UWNRMPQ"
+    }
+   },
+   {
+    "id": "FY466X7O2IA77D3POCGXHQQJPITZYQS43CTVXW6BISFH6RRUBTVQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "h/3OsEeRRe4DbVCf7vaaIYdzmD1LiermRY2lTcwKFfg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0ODU2NTY=",
+    "confirmed-round": 65497483,
+    "round-time": 1790660487,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "QWOWU2E6BB76HEQRRMXWZ2MU4HAQIYZWEPP2W7Y377ZRDIW7ZKD4MMMEPM"
+    }
+   },
+   {
+    "id": "PZVEHNCJ7XQGWPK3HC7WEJ3VGNPJLMKGP6TSXXFHAVW7UVG6RZVA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "HinXshLWv76BuTtWmu6OplUpLORgOB4DkfH7VoDp9R0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0Nzc1MjQ=",
+    "confirmed-round": 65497481,
+    "round-time": 1790660482,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 50000,
+     "receiver": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU"
+    }
+   },
+   {
+    "id": "7YQBSPK7ZAJEZHI6X5NP4DRMRVHWPWYKMW3PLWLPQ4URP4LJTAKA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Mcyzbf4zhFjmq2cP0UTyzGyJUpiCVsdvVSdzuaPI90E=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0NzMwNjE=",
+    "confirmed-round": 65497478,
+    "round-time": 1790660474,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 80000,
+     "receiver": "G3YVTPURK6VFSM5CXEH7QFTZXLCXBJL6UMAIUUYJO4P2XF3MHQ4FUHYYB4"
+    }
+   },
+   {
+    "id": "522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "BiD1cEHaMtVOzL12tODcdZ1xxHanjve300nxPnoeQEg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0NDc5ODE=",
+    "confirmed-round": 65497469,
+    "round-time": 1790660449,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI"
+    }
+   },
+   {
+    "id": "G6L6E427HOC3VV6ED7UX3PIQYDO6VWAMUOS4IGN47IJPZKACALVQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Pc470/Q/rrW/yR3MdSiJ7eqjXDQNDD+js7Yuq39qx64=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0NDE0MzY=",
+    "confirmed-round": 65497467,
+    "round-time": 1790660444,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "2LDR3ULZ4IPJUHEPPFF2KMAAX4DB3OEK6QVW7H7EHLGN4X35L3GGMNLYFU"
+    }
+   },
+   {
+    "id": "TEDODVTZFOC6TCQ3KFJI5D4JNLWTVZDQ57ZMM4PDX2UO3MTCIOIA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "0xzTsDMPTHSkSVvVlSc+StLokmgnMOgYN7v3w+S12Ws=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0MzUyODE=",
+    "confirmed-round": 65497464,
+    "round-time": 1790660435,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY"
+    }
+   },
+   {
+    "id": "GG7B5Z3IINKYFCT76QX4AWCXMYGPXCY64OE6LENI5P3WW2G7FMZA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Da+JtRfu5TYIuY7gMgt3vM7VExJhznq5eDyH8ZBms+U=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0MTk2MTU=",
+    "confirmed-round": 65497459,
+    "round-time": 1790660422,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "NAPHTASVPDGRYORRYM237OSPA26R2TRRG4XFRRFK7K5H64H6HIIIZZIIXY"
+    }
+   },
+   {
+    "id": "TTD6CRABU23R7NOXL44KUDPQCBLYJVMRYDMQRBUPSN7IILYPYSYQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "fk1xm0pPqC7AreHbYPJo6+PSiNQ5R50ZOUkAp14/C40=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0MTE4NDg=",
+    "confirmed-round": 65497456,
+    "round-time": 1790660414,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "UDCHQAUAOXG2VF4XDCX7CVBAPFU4IPF7GNKUFCOFODLCWDGIQVEXLT6ZGY"
+    }
+   },
+   {
+    "id": "ALJ6XDKQNVGHSMQQJAYVTSKXQZPDRBOX2Q65DO6UVWEZZ4K7LE6A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "mXEdy2t8GwwpTMUx6ecWaQCiBqSvhB4mdH5YSf+69Eo=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzOTkxNjk=",
+    "confirmed-round": 65497454,
+    "round-time": 1790660408,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "6XP7MJKMEPSCZ46RPB42FFRQGF7U5ACXLCXNCXWAVJUSP5J7U3ZFWBRIFQ"
+    }
+   },
+   {
+    "id": "3DZ7AY27ORAI3LN2CGIDYVLL6LV7WKXZOWKK3M2VAC7JOMLKVIKQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Uzg91nrW6TPEDCbuRJRH5f7mSLyksjoPcHVesM7VLOc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzOTA0NTk=",
+    "confirmed-round": 65497448,
+    "round-time": 1790660392,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "PJOXFIBKVKGYGMCW3346P5N4OATMODZYM3VQOXDAEUTIGAOGRYGTIO3NME"
+    }
+   },
+   {
+    "id": "ZP2LLQLBMYPUBUFL3NO5AZKFGUTJ4TPRX7KGSTE3V6D7TVLXMZMA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "QdRiiabNy9fPsngYNBwQmzjglo1jxzEtMsvhn1Yb7ww=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzODQ3MTY=",
+    "confirmed-round": 65497446,
+    "round-time": 1790660385,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "QSNLPPXO64ONBD76E2DLZW6XER5GUV4YPQYHDFJUO2N3IO4RYBL5HRU6EY"
+    }
+   },
+   {
+    "id": "4FXFYJKMBXOOS5DLYRVVFP5VWLW7FK3YJJJCSFG27EBKNFHEJWUA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "U30rLK4lBWNH8tr7ovEYqZnyXRTu4uaLz7uEBD7DSqg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzNzcxNzk=",
+    "confirmed-round": 65497444,
+    "round-time": 1790660381,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY"
+    }
+   },
+   {
+    "id": "UWMXML7FBHUAX47TW3URUSVPZ2CE5EBGY2EZQAJE67YHEYKCJRPA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "j6mPqD/jF+TBPSz4W21ixOOdbnlWXAXtd4NV+XkBzfs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzNTYwNTU=",
+    "confirmed-round": 65497436,
+    "round-time": 1790660359,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "OCFUOE44KV6OQ43XWLDKNRBPSMIMPB6QETX3JXU5J36VKUK6ON5G4FSEMM"
+    }
+   },
+   {
+    "id": "MABDSKPIJM64FQE7W6GGUSI4NHUJKSQGBGR3KMTUQAEHB4LHRW5Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "6AXqfpBHaBfATAThZNM5mEqIQ60v9vm6METKhZHyFpw=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzNDYxMDE=",
+    "confirmed-round": 65497432,
+    "round-time": 1790660348,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 100000,
+     "receiver": "3Q3TISRNDGY5KPZKF4DJI6DF3Z6OAJT7OB6UJ6HV7DE4NQONWKIKX4NNHI"
+    }
+   },
+   {
+    "id": "N6T6AYOIIAEZK4A4SZXBVWVGXAYMPZRDEEXX52JERSWUCWJMXPXQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "o5J/b0AeNZ/11dnJpeZzP9xisSMSXV+fTzLr++hltZk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzNDA5OTE=",
+    "confirmed-round": 65497430,
+    "round-time": 1790660343,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "JEFVXVSK7ZFXBEVQYU54XLGI555Z2VP5NLXWTC4XA2XWHUWHKTFVGVA6ZY"
+    }
+   },
+   {
+    "id": "7RTHCFAAPDHA3LMUNQ6HQXZTZJH6HB77S36MUEMVZFHSJ4L75HIQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Uhx7IAgtLL2SlPlu+Q5WP6D0KTvgz91RGZmd9fYLrQs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzMzMyMTI=",
+    "confirmed-round": 65497428,
+    "round-time": 1790660337,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "F22UWM4HD45QKDLNGT66CR6XJEANNRXUF2WKBF42VV333INY3O3YJMF55U"
+    }
+   },
+   {
+    "id": "NYZFCBHELAJQVVUWMSKUCDGS3EOVJWZHH3YHALHWZ5FXLCQXTMCA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 1000,
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzMjY4MDY=",
+    "confirmed-round": 65497425,
+    "round-time": 1790660329,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "DSIIJ6SCGMZ2DYATK7I7GROSUT7INIIZJUE4Q7RSOSUR7PCNUYCX3XIKBI"
+    }
+   },
+   {
+    "id": "ABLKN4NLFH2GOYKZPGLQSX2XKEBML3CFBEYM5K6J4FFMFGPQQ65Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "202GF+4FB53Jv7/3qWZ5bqzduIPT3RPslmZNqRHWocs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzMjEzMTc=",
+    "confirmed-round": 65497423,
+    "round-time": 1790660323,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 80000,
+     "receiver": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A"
+    }
+   },
+   {
+    "id": "Y5RCSDS5PG3BJUHRVGQYOFNGNCIL2C6LVFFASVJCVPI7HHJTZCIQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "7aXHB8g0+u7VBMJv1zbgvT9NrpK9Ri8pTXlt9xN1cMY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzMTYxNzg=",
+    "confirmed-round": 65497421,
+    "round-time": 1790660318,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY"
+    }
+   },
+   {
+    "id": "HTG6SRVIX4XLGRBRDH57VIK4ONVMLAUJ3NOT4VKBLIVKCHSYE2PQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "+4x+/g0zTAKkHCtm3qYRhj0c/mB2zsGHCli1duAZ030=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAzMTE5ODg=",
+    "confirmed-round": 65497419,
+    "round-time": 1790660312,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U"
+    }
+   },
+   {
+    "id": "M2ZFTPYPKMFQBZP3VQFGG4MFXD3KTLKZ7JHGMV3N2T7RYP2KTBRA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "R2t2S/NopUU6zJxLyuAjkMkjVnFayGJDs9mF1aeJPRg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyOTk4NDM=",
+    "confirmed-round": 65497417,
+    "round-time": 1790660307,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "4OEOVSKSZGG5QGIQ5UUSBAOF3AKR5PP5YZ2K2FKP2SIGEYK3NG4CO6MN4M"
+    }
+   },
+   {
+    "id": "PGUXNBRHUXC4F7GVOT743RZI5ZONCWPYHNLMOQBBF6XMMVQIPLUA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Fs3TSJknISxjTKy72i6wVeYN3bdmYgsASVN2GILDl4U=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyOTQwMDU=",
+    "confirmed-round": 65497413,
+    "round-time": 1790660296,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "E2F2LT2INE75DBOYHQXTCTOP2PAP5MHAXQRXTTCCXFKHQTVG36DJONBQZE"
+    }
+   },
+   {
+    "id": "5CSWZGVPR4PHE34TP2WMLISMKIBVR6IJSJ2KG7RX7S7XMJQK2OBA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "cZBDMuUNPEYXhuKucW23Aw/0AlWxyIleGptkOIPSHqY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyODg0MjU=",
+    "confirmed-round": 65497411,
+    "round-time": 1790660290,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "2PWGUKE4VWUXXZ3IPPX2W4FUTVXAW3HQLBO2GZJZFX4UXWFNSUMWEGSSXE"
+    }
+   },
+   {
+    "id": "G7ZF2ZDLRTDYSWFKNVM46APS76YCYMS6NUG3ZAT3ZRMZ5KYPWPGA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "bOzEwl2JAUCaPyMimujfI8TJPn8xXjNYnLc8OFFRdls=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyODMyNjI=",
+    "confirmed-round": 65497409,
+    "round-time": 1790660285,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "K5HIZPOUUUBQ5WJ6I3DT6NGIQUMALYJYSVVBY7CXA3BYBWY6225DNNBDSA"
+    }
+   },
+   {
+    "id": "H7XW24HYK5HQQQ7K6USYDUY4DPT2UTCBTIHVRF6OTEFQKHIE2BUQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "NC0Owtlq2UAKIeqhtkW3k99RKgWX7/F3lBXDktuNo2c=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyNzc1NjU=",
+    "confirmed-round": 65497407,
+    "round-time": 1790660279,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA"
+    }
+   },
+   {
+    "id": "ASMLYTW5PQ7H552EW5NBNO74LKJN3MIHHW4MOZFCIXWV5WLS4ZYQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "qhWiRyEGMFbEuIZn2DFyYI0/G3M9NcMdR7iDqelA3xk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyNjA3NTE=",
+    "confirmed-round": 65497405,
+    "round-time": 1790660274,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "36AZ3YZGHLUFFVU4STAQGSQMRB2W3TK5VVTKZVN6L2LH7NRCK7X27TMEJM"
+    }
+   },
+   {
+    "id": "F5TBTXRYPT6XJDAMBUNTFNR63WYYRT4K2T3OSMGJOHYVMACJZ76A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "ZnTchwdObjZEP4CYf6VgE4ZtSC0DY8pnkWLHoG3dHvM=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyNTI3Mzk=",
+    "confirmed-round": 65497398,
+    "round-time": 1790660254,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "HFHI5MF4C55AYUSQ2JD2AFYMUHWBNSE3SGU6N2YZ5ET5FUZD5YHZHXSWXU"
+    }
+   },
+   {
+    "id": "5NZUIC3AWGJH4RZBLWI3WTHZSTUDNHBWNZB6HDEAA3JB3EFUCH3Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Qpf3vToQcFmcH1AfhhNadS/9OfmzmFlYZ2ua8tjQ+JA=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyNDIwNzY=",
+    "confirmed-round": 65497396,
+    "round-time": 1790660249,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU"
+    }
+   },
+   {
+    "id": "PVW4RTLBWPLNGWJ34Q5K25M66A6ADXVPMPQFP3C6ZA5P6ZMFLTQQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "rBpIGoEUsyoLknXpaQXHdtQRkKu9Wn4tFtyxwEI0UTE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMzU4NzM=",
+    "confirmed-round": 65497392,
+    "round-time": 1790660238,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 4000,
+     "receiver": "LGT47RVH6STHJF5PWU3BX2S5D4M5UN2TFXOESL34KDFRXMEYDCDVQWCM6M"
+    }
+   },
+   {
+    "id": "7LISUXRNOBGHJCIAQNYULEYNBXH5PIVEKYLQTLRC632IXKLYKEUA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "BHXdnPFYM6NaXcnYHae596LafMqZXESnxWZQPWX6MEo=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMzE4MDQ=",
+    "confirmed-round": 65497390,
+    "round-time": 1790660232,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q"
+    }
+   },
+   {
+    "id": "P353GDLUTPKVBOWLDKTAY6Y47VGZ63I4ME624EJGJGALZF75ASNA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "yUzo9+y5iRLIbHMn/vbwUADzp3Bs+4TK/lDGNirZdfk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMjQ5ODI=",
+    "confirmed-round": 65497388,
+    "round-time": 1790660227,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ"
+    }
+   },
+   {
+    "id": "AFHU32BANGS7Q6WFNVW3A2VXSXDGQAEPJCQX2SR4DC7YZLKILUAA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "He/FUEdh+I5edFzVfTVbPDZDFkHmOWdd7/WQjT/RoAA=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMTk4NzM=",
+    "confirmed-round": 65497386,
+    "round-time": 1790660221,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "ZVZV3J2VQNLTH6MNLOL5IHZECJQVXVSVAK3NNJA6FD7LLNZ5NRHQAIL2J4"
+    }
+   },
+   {
+    "id": "2DH7IQKVXXKQJJGBD5OXY2AXQXTPIP7RME73YNYA2GHZ3KWR2QCQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "XO6DGWUh5OELKIg555LDdgRD7Ut8EGuafIqM7y/Q0/A=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMTM2NDE=",
+    "confirmed-round": 65497384,
+    "round-time": 1790660216,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "F2ZYO2DDPQXOACUYBYQIHMQRAB3TJFZVCNUD3OU3CR5OOJUKFZOF5EYVJ4"
+    }
+   },
+   {
+    "id": "TOUDDR5T4XZIMRPE5ACZW2DQTCC4UOZPJKKPW5JRRJ7MWC3HPZNA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "7jgBIYqEztWcYA+BwTzJLHj9PefoXFa7zW9IRT1cuSI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAyMDU3NjU=",
+    "confirmed-round": 65497381,
+    "round-time": 1790660207,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE"
+    }
+   },
+   {
+    "id": "PDL2J643OUADZEFBJZPLDI6MZCWNMDWOZAFOE57AP4JFCR5HK22Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "rMpln1Lv/OKJkwV2qkHm79mR9E6JUiLRcbgruSpkea4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxOTgwNTk=",
+    "confirmed-round": 65497379,
+    "round-time": 1790660202,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "LXPC4GQPYH2EZQX2QDYMHCP2I7MXIZMVRPIYTQ3D7R7HXJ4SIHCSYLF5YA"
+    }
+   },
+   {
+    "id": "CKKB6MUHBQ2VBJ34KXNAYFX4VYWEQHNMCXOC2UZFIIAJIE4ISPNQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "02IxCeW5+0BUZvWHm+9XMagJIjJDnYfIEstX1smiXG0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxOTM0NTA=",
+    "confirmed-round": 65497376,
+    "round-time": 1790660194,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "LYIVIUSN3FAFIC2NUN6UYU2VN764U6YTCPTIX2O6EWYYU5WHAJHYMVTZM4"
+    }
+   },
+   {
+    "id": "J5C7T4IQGNYPN7OHGLQMCZBI2T2V2DIII6D2GC5RYC7MFLZFDWVQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "OCdR88TSGM0XjcS6Qn5hEhlgIdb9lpYpas7MtyiiXlY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxNjcyNDA=",
+    "confirmed-round": 65497367,
+    "round-time": 1790660169,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 50000,
+     "receiver": "N2BHBOQEI5TQQKFKHDRDUACAZE6E55X6VO2U67IQAYBRRLB7LSMO6YRQSM"
+    }
+   },
+   {
+    "id": "CYH6YU5B5ELCRWNKT2MOMVOR2HMUUQD3XYWSLWI2L4NCEFOGTONQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "NJnTbdKGjbMZO5sIhAKl+KE9wjk0DxERIImWm5YcfH8=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxNjIzMTc=",
+    "confirmed-round": 65497365,
+    "round-time": 1790660163,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY"
+    }
+   },
+   {
+    "id": "5LUZEO77NEQSFUJ72WTL7AYTQPJF44DG5HX2LVHWVTSI5XOGB6MA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "W3cVgR7gM9nZa++yDLeCRIKXqiD5HrjJBkdsr/2icHc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxNTAzMTM=",
+    "confirmed-round": 65497363,
+    "round-time": 1790660158,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM"
+    }
+   },
+   {
+    "id": "PJ4E4LRPHIHTAN5KZINR2MFYSBQ7NBIRRZOIRTISXTXLNU2XT3EQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "PDZjdQ2qqVvf6reZlNyN6f+8HoZ7+PHcThPPTSajfEI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxNDQzNjI=",
+    "confirmed-round": 65497359,
+    "round-time": 1790660147,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "DZUL7JAPQUVT2YDXG4KTOCOS2BAY33MMYSUWWKJPGFWDS3SGR5TUIUDYNE"
+    }
+   },
+   {
+    "id": "MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "wpkJAiOGY2UZDF9YhYCnJY9bvN4WBQ88HQhrM1DI1Gg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMzU2OTA=",
+    "confirmed-round": 65497356,
+    "round-time": 1790660138,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+    }
+   },
+   {
+    "id": "D4AHBP56UM4LV2BMCVH2HK267DNMAPPQG52S6L2FWKP4RIK3OLSA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "s8fXyfN/bLRHB6e69MXZyVzSIZWV27rgh6YfKqINc64=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMjgwNjU=",
+    "confirmed-round": 65497353,
+    "round-time": 1790660130,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "2VIU2N25S2TRAJ54ZTUY5CSFADU6Y5KEMKAWTRWR2ODNTPULNGHBKWEPTQ"
+    }
+   },
+   {
+    "id": "NDH267QKXFHVEZYHWYIFV6BNK7URQRNL6WVHSQXC4OQHVTEFCDKA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "7hBBOkTBvdyHkn1OGHG8syd3eHssLv/5YXgAVIIVu+8=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMjMwMDM=",
+    "confirmed-round": 65497351,
+    "round-time": 1790660124,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "4PYILGGEQI37HIR4BJEWRGOXYZB7QI7LLXFLODDCWW4ALDBTKF3Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "WMJpXEbob+6lkCDkzsN2dePOGGmanxztdkyzd9/2jdg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMTE0MDM=",
+    "confirmed-round": 65497349,
+    "round-time": 1790660119,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "KSAVOYTVNB7A6NKCM4W2WBOOGFHWH2SEGR5T6OGB7THCAT5E36LDFEBTII"
+    }
+   },
+   {
+    "id": "ZD67F75J6C7REPH2HT3H6HTIHZ6REYH55WSMBRC6QHIN2V4CZHSA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "+pRsT5U0xXxUP5KTvIH+4HEvuxB3c/GQv4tbfiGzKvc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMDM5MDM=",
+    "confirmed-round": 65497345,
+    "round-time": 1790660107,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM"
+    }
+   },
+   {
+    "id": "GVI4PXHLPXUBH3A7ZHXCCTQYFZCGZGZB4DOF5RIAH7YGOZKPQ3YA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "1OJciMRKdw7mrRy/h1Il2vicoJ88mn4yx/DDTVpvdL4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAwOTYwNjE=",
+    "confirmed-round": 65497342,
+    "round-time": 1790660099,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 100,
+     "receiver": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI"
+    }
+   }
+  ],
+  "groups": {
+   "BiD1cEHaMtVOzL12tODcdZ1xxHanjve300nxPnoeQEg=": [
+    {
+     "id": "JN7EFXIQNXTGW57TTFYJFI2HF4UXUGH3BVOWGU4HN6G3UU45CLEQ",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "BiD1cEHaMtVOzL12tODcdZ1xxHanjve300nxPnoeQEg=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDY2MDQ0Nzk4MQ==",
+     "confirmed-round": 65497469,
+     "round-time": 1790660449,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "522EQ5HAVMRI4P37F2WCLXNSZ7L22V7FL2WF4Q6QN3GWIZTBFYYA",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "BiD1cEHaMtVOzL12tODcdZ1xxHanjve300nxPnoeQEg=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjA0NDc5ODE=",
+     "confirmed-round": 65497469,
+     "round-time": 1790660449,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 10000,
+      "receiver": "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI"
+     }
+    }
+   ],
+   "wpkJAiOGY2UZDF9YhYCnJY9bvN4WBQ88HQhrM1DI1Gg=": [
+    {
+     "id": "ZRRLLA4UO46B4NBT6JDWQEHAIUG2EP4JJMCTJAJAIWK7SH3Y7B2Q",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "wpkJAiOGY2UZDF9YhYCnJY9bvN4WBQ88HQhrM1DI1Gg=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDY2MDEzNTY5MA==",
+     "confirmed-round": 65497356,
+     "round-time": 1790660138,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "MH6I6JKDXUKAR4R4OA6NDGFMMDVVOJVMTMAS2WZEP5VA2JBA22BA",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "wpkJAiOGY2UZDF9YhYCnJY9bvN4WBQ88HQhrM1DI1Gg=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA2NjAxMzU2OTA=",
+     "confirmed-round": 65497356,
+     "round-time": 1790660138,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+     }
+    }
+   ]
+  }
+ },
+ "census0927SameTime": {
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "startedAt": "2026-09-27T04:32:00.890Z",
+  "finishedAt": "2026-09-27T05:00:46.511Z",
+  "rows": [
+   {
+    "at": "2026-09-27T04:32:44.562Z",
+    "url": "https://algofile.io/buy-custom-bucket",
+    "host": "algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 200",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:32:52.484Z",
+    "url": "https://algorand.ottoai.services/base-ecosystem-news",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "2B4KPKQTGP524LNYCCKYOLFATRC2SQQMOZSDUXEGLB3TTJAZWJQA"
+   },
+   {
+    "at": "2026-09-27T04:32:55.230Z",
+    "url": "https://algorand.ottoai.services/chain-status",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "WL2B7XA4Q3K5VAJU42UXHMGPLAVXYHPK6YHVZZ7YEM7KEPKYPVIA"
+   },
+   {
+    "at": "2026-09-27T04:32:56.594Z",
+    "url": "https://algorand.ottoai.services/defi-analytics?protocol=example",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 404, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:32:57.969Z",
+    "url": "https://algorand.ottoai.services/crypto-news",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "POERVUR5S55UIJRGWAUGGBLFGAGDQZNV63KAMO72T3IE5X6TTKRA"
+   },
+   {
+    "at": "2026-09-27T04:33:00.725Z",
+    "url": "https://algorand.ottoai.services/dns-lookup?domain=github.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "7EWPYUQTBIDEHSNWSAJSXWXOXSA47MGP5BVVGGLO3O4KH74WQ56Q"
+   },
+   {
+    "at": "2026-09-27T04:33:03.509Z",
+    "url": "https://algorand.ottoai.services/domain-age?domain=coinbase.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "RQNRKPCA5P5MM2EBH7ECYVOFLXRZ6HBBMUHWY72OYB4DP42M3Z2A"
+   },
+   {
+    "at": "2026-09-27T04:33:08.966Z",
+    "url": "https://algorand.ottoai.services/funding-rates?symbol=ETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "T6CG5XHI5GYHDTOX3BI6BMGUR5UCPRD4A6AQQPRYFVL7SSVGZ6MQ"
+   },
+   {
+    "at": "2026-09-27T04:33:14.520Z",
+    "url": "https://algorand.ottoai.services/fx-rates",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "D4HYCF7ML3MT7LBBBE4R4QRAHXUH4AJKIXFRSHQZT4UIY2CPUKFA"
+   },
+   {
+    "at": "2026-09-27T04:33:17.207Z",
+    "url": "https://algorand.ottoai.services/base-season",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 402, Transaction SGOPI3JQVEAKZZAIASLHPDTN7ZBG3O5Q3M6CU7ELYAX6PLYQQUNA submitted but not confirmed: Transaction Rejected: txn dead: round 65433364 outside of 65433353--65433363",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:33:19.926Z",
+    "url": "https://algorand.ottoai.services/gas-oracle",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "UOGXKZRVOUJMUOWUEIYXGZPMLWNQLYXPOVYSBNYY6ALP2MSQHRDA"
+   },
+   {
+    "at": "2026-09-27T04:33:19.953Z",
+    "url": "https://algorand.ottoai.services/filtered-news?topic=example",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "PZBI7B2TFXY5H744IJXIURYZS5SFPNVDMCPYVHHH4XBBTA2C6GDQ"
+   },
+   {
+    "at": "2026-09-27T04:33:22.689Z",
+    "url": "https://algorand.ottoai.services/hl-transaction-history?address=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "FFWUU6YZWZCOFY76N3ERB4GQBJKNB3NMMXDQOAUGD5TMIYB2HD4Q"
+   },
+   {
+    "at": "2026-09-27T04:33:25.440Z",
+    "url": "https://algorand.ottoai.services/hyperliquid-market?asset=BTC",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "G767IQ6YPALDPNW6MU5XUO72OWKMVJNMO3ZOXHS44MXTB4SGQKDQ"
+   },
+   {
+    "at": "2026-09-27T04:33:25.449Z",
+    "url": "https://algorand.ottoai.services/hyperliquid-account?address=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "IYY2FEIMO4PQH472F55OHUXKTTWHKLY6AFFCXODEERD66FOGA2ZQ"
+   },
+   {
+    "at": "2026-09-27T04:33:28.156Z",
+    "url": "https://algorand.ottoai.services/pm-crypto",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "V7DPWKR4YS5VUIEARERR5ESZV3RXTQLXWRX243XTFWNBALNQZV6A"
+   },
+   {
+    "at": "2026-09-27T04:33:30.929Z",
+    "url": "https://algorand.ottoai.services/pm-search?query=fed+rate+cut",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ITFKC4XJVESKOF2SMZAL2BCEL2AVWZRXY23CJFFEB2RSD2CTUBGQ"
+   },
+   {
+    "at": "2026-09-27T04:33:30.935Z",
+    "url": "https://algorand.ottoai.services/pm-markets",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5DVHKFGKPV656GVKHVX4DKWRZ3VUWFDHDYUBYK7EAO4BE23U4EPQ"
+   },
+   {
+    "at": "2026-09-27T04:33:36.377Z",
+    "url": "https://algorand.ottoai.services/pools-trending?network=base",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ADBSQNUYS6XEEOWNJNTCWZM5N5KUAZGVPLBCLXKZNU2IPUMWU5CA"
+   },
+   {
+    "at": "2026-09-27T04:33:39.141Z",
+    "url": "https://algorand.ottoai.services/pools-search?query=WETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "6R4ETWBRINKN4CHNH34RUOUXK43FQNO6MK3KG3SAMR4L2K33BKKA"
+   },
+   {
+    "at": "2026-09-27T04:33:39.160Z",
+    "url": "https://algorand.ottoai.services/portfolio?userId=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "PLMN7OIQZ2T4EW64MWSADY33XA552IFRW4HIEDAZZI34IKZPM77A"
+   },
+   {
+    "at": "2026-09-27T04:33:44.665Z",
+    "url": "https://algorand.ottoai.services/protocol-revenue-leaders",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "IOGTCCMKJCMWO6ZPKNJDQEV6LQAXLCCLWWOJKG7GUWFPIPBESDEA"
+   },
+   {
+    "at": "2026-09-27T04:33:47.377Z",
+    "url": "https://algorand.ottoai.services/stablecoin-watch",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "2V7NV6DP5FKEDNWH2GIOLREDVKXSHS4BAJITMM6IHIQ56X2O4RTQ"
+   },
+   {
+    "at": "2026-09-27T04:33:50.177Z",
+    "url": "https://algorand.ottoai.services/supported-tokens?search=USDC&chainId=8453",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "LGN2TFYKZZHN7WGL7HHRCLKDBVWH73RZNOBPHSTWPUPQN4S6DDZQ"
+   },
+   {
+    "at": "2026-09-27T04:33:52.915Z",
+    "url": "https://algorand.ottoai.services/token-details?symbol=ETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "CKSJ3OD6IKIG5NRIUJFLHM7SHZGACLOLEVVXKL7H54Z2FADBY5MQ"
+   },
+   {
+    "at": "2026-09-27T04:33:58.451Z",
+    "url": "https://algorand.ottoai.services/token-security?address=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=8453",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "VCOGXEBT2BZ6DS6LU3SGAJW7GPBF3QQWSPUOB2A7OL7AP6HNCMYQ"
+   },
+   {
+    "at": "2026-09-27T04:33:59.754Z",
+    "url": "https://algorand.ottoai.services/rh-season",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:34:03.944Z",
+    "url": "https://algorand.ottoai.services/tokenized-equities?thesis=semiconductors",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "MTJJGFRM27TA5UAZTK2NPHX5CQCY2A7WMALYBFHJ7LR73BMRPMCA"
+   },
+   {
+    "at": "2026-09-27T04:34:06.701Z",
+    "url": "https://algorand.ottoai.services/transaction-history?userId=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "M4T623Z4V5JHDOFWBB4VF67VUMKAHVBJONNKJFEY5AO4267LSEQQ"
+   },
+   {
+    "at": "2026-09-27T04:34:08.824Z",
+    "url": "https://algorand.ottoai.services/twitter-summary",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 502, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:34:10.616Z",
+    "url": "https://algorand.ottoai.services/token-price?token=ETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:34:12.120Z",
+    "url": "https://algorand.ottoai.services/weather?location=London",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "Q5X6MNEHCAGPG7CTSBVKEKL3GLBH3WIDRNUNDN65FLBIGKAVYVSQ"
+   },
+   {
+    "at": "2026-09-27T04:34:14.874Z",
+    "url": "https://algorand.ottoai.services/whois-lookup?domain=example.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "6RY5VFULLGYGRANNYB2VYEBFKZHLTTML363LB65CDDLKET3HU4VQ"
+   },
+   {
+    "at": "2026-09-27T04:34:17.613Z",
+    "url": "https://algorand.ottoai.services/yield-farming-active?userAddress=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "5RS6LBZZPCL5XBABSKP4MSQKRUGVAOOXNOHL7IV2XNJZVOUUSC5A"
+   },
+   {
+    "at": "2026-09-27T04:34:17.628Z",
+    "url": "https://algorand.ottoai.services/yield-farming-historical?userAddress=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "EDK3APJUHPJME4KDROMP2FEBXA7SJ7SR22B3JUG7LDJQ73SG4HFQ"
+   },
+   {
+    "at": "2026-09-27T04:34:25.829Z",
+    "url": "https://algorand.ottoai.services/yield-recommendations?userAddress=0x5bB4B0C766E0D5D791d9403Fc275c22064709F68",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "6SICQQE6MTT4MXZ6TAFUBGLVQDLVYGVLC53T2TQ7DPFGZ3PXTB3A"
+   },
+   {
+    "at": "2026-09-27T04:34:25.865Z",
+    "url": "https://algorand.ottoai.services/yield-markets",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "delivery_missing_keys",
+    "paid": true,
+    "tx": "L7YDAJJG2UYIH4CTTYYNTFCK3P4P25CX2IEE67IJ6UAY4CL7HWXA"
+   },
+   {
+    "at": "2026-09-27T04:34:31.180Z",
+    "url": "https://api.algofile.io/api/x402/bazaar/asset-info",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:34:31.185Z",
+    "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-info",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:34:31.190Z",
+    "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.001000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 200, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:35:56.242Z",
+    "url": "https://algorand.ottoai.services/kol-sentiment",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "5IQCCU46W4ELGRJ5PMA5M6E5YEMVX55NCDVD6I5O2PYZZBUBI2UA"
+   },
+   {
+    "at": "2026-09-27T04:35:58.980Z",
+    "url": "https://algorand.ottoai.services/pm-movers",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "57K7ADZTE2IVQ5YADLNVQ6EZ3ODNNFDVW5PVDVHPBRQRCT4MRVUA"
+   },
+   {
+    "at": "2026-09-27T04:36:04.425Z",
+    "url": "https://algorand.ottoai.services/yield-alpha",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "Y5A7H6AFQ4UA7HMXIU7NGUW3VRXKCZD6NS6FYO42ABITCWYU4NOA"
+   },
+   {
+    "at": "2026-09-27T04:36:04.432Z",
+    "url": "https://algorand.ottoai.services/market-risk",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ER6Z42E22D5Q6UOHNPSEL7XAOGLRYYJG63AAJ6ZGURSAG7C5JHIA"
+   },
+   {
+    "at": "2026-09-27T04:36:16.758Z",
+    "url": "https://algorand.ottoai.services/trending-altcoins",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.002000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:37:10.269Z",
+    "url": "https://algorand.ottoai.services/analyst-ratings?ticker=AAPL",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "4EDY6ZYL7EHAPBFUBBYDKUQW6VRG47I6GDX3IQPR2I7AH6YXUWHA"
+   },
+   {
+    "at": "2026-09-27T04:37:13.021Z",
+    "url": "https://algorand.ottoai.services/8k-material-events?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "VCRS3TP4BNNE6OZ5TEDYQTDRGZZLLBF7VJNX6EI47K6MOLJ3PG6Q"
+   },
+   {
+    "at": "2026-09-27T04:37:15.766Z",
+    "url": "https://algorand.ottoai.services/dividend-intel?ticker=AAPL",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "6E45655YWE5HRLBKFNZKNR7LCJ3F7NWAZE3W4VADGZQFCI4NOPNQ"
+   },
+   {
+    "at": "2026-09-27T04:37:15.773Z",
+    "url": "https://algorand.ottoai.services/earnings-calendar?ticker=AAPL",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "I55EI4AYS3O3QMW3FJSSDVP5C4VB73VSF2BURXCVBMOJRCB3RLBQ"
+   },
+   {
+    "at": "2026-09-27T04:37:21.294Z",
+    "url": "https://algorand.ottoai.services/form-4-feed",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "O3KSFSEZWL24P56X5PZDU6JSGOHKHDNQWBPD3CYIKDOTMPTNGOBA"
+   },
+   {
+    "at": "2026-09-27T04:37:21.301Z",
+    "url": "https://algorand.ottoai.services/equity-news?ticker=AAPL",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "UTTTF4IOB6KECTWHYPZMMMJK2SX67XPHNBJMHA6SZW3W6OJM73FQ"
+   },
+   {
+    "at": "2026-09-27T04:37:21.312Z",
+    "url": "https://algorand.ottoai.services/equity-intel?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "VVHGT5NTHVIN7Z5VJIXHEJGKJM6DHX5FZPCJ4VRUVDRRJBI662HQ"
+   },
+   {
+    "at": "2026-09-27T04:37:26.790Z",
+    "url": "https://algorand.ottoai.services/insider-trades?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "S7BCUZWVYVGVR57BMLBC2E5SRPQIZOXPQLCEI7UOAQSRJ25SOCJA"
+   },
+   {
+    "at": "2026-09-27T04:37:26.798Z",
+    "url": "https://algorand.ottoai.services/institutional-holdings?manager=1067983",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "NAQSAIZNTHCSCECU35G33YH3MKWFMQFQ5MJMGXNT5RPFER7LCRFA"
+   },
+   {
+    "at": "2026-09-27T04:37:29.540Z",
+    "url": "https://algorand.ottoai.services/macro-regime",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "P467CIUHFGKVGZRWR5PFP4QSS6JG2IVTDYRNUYGWKMTHPV5JUKOQ"
+   },
+   {
+    "at": "2026-09-27T04:37:32.274Z",
+    "url": "https://algorand.ottoai.services/technical-signals?ticker=AAPL",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "ZV3JMBVWWS25Y7AE5WEZLCADZWY3EORMGZECBLKVYXX74QTCWLMQ"
+   },
+   {
+    "at": "2026-09-27T04:37:35.031Z",
+    "url": "https://algorand.ottoai.services/token-fundamentals?symbol=BTC",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "TW5SSQHYO42X63HCQP5W5IRGMS7MHRYAWOTT4ER2UJBLC4G6K4YQ"
+   },
+   {
+    "at": "2026-09-27T04:37:35.039Z",
+    "url": "https://algorand.ottoai.services/news-recaps",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "L6IW5EUEHJELQSB7NZVFOTKKKZCZMLK5KSSPFPEZG3XXSACQ7KNQ"
+   },
+   {
+    "at": "2026-09-27T04:37:37.775Z",
+    "url": "https://algorand.ottoai.services/tokenized-stock-movers",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "Z2CJOEB3V2MOLRGYI6EP5LXRFOREYBKQRKYJWYGWH4KTRHS3IDHA"
+   },
+   {
+    "at": "2026-09-27T04:37:40.508Z",
+    "url": "https://algorand.ottoai.services/tradfi-data?symbol=ETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "GV4NWRBOCGBVGX7T5QFEUCPAGYECM5QQLOJGHG6ENU3QMIWJLLQQ"
+   },
+   {
+    "at": "2026-09-27T04:37:40.526Z",
+    "url": "https://algorand.ottoai.services/web-links?url=https%3A%2F%2Fexample.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.003000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "QX7Q2S3QLVN4EFJUP3YXWL73CCHZN6FTBZTNMOMH7AIW7GZAUE7Q"
+   },
+   {
+    "at": "2026-09-27T04:39:08.457Z",
+    "url": "https://algorand.ottoai.services/web-extract?url=https%3A%2F%2Fexample.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "SRZXOAH6GFQGV6NGEPL4FXJ6XPW4OCNKLUJXFJFFLBE4BD5VL6AQ"
+   },
+   {
+    "at": "2026-09-27T04:39:08.465Z",
+    "url": "https://algorand.ottoai.services/form-144-filings?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "J3UXDUYEYSNKVQCEGCX5F3LCBQR6WBBLBUKXNLDWGGM7ZME6DWHA"
+   },
+   {
+    "at": "2026-09-27T04:39:16.724Z",
+    "url": "https://algorand.ottoai.services/web-json-extract?url=https%3A%2F%2Fexample.com",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "427SIFA6KFCU5YTLRYBESIICQHZKHVDYD5ZQRQHD33E2Y562V2CQ"
+   },
+   {
+    "at": "2026-09-27T04:39:20.648Z",
+    "url": "https://algorand.ottoai.services/token-alpha?symbol=ETH",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.005000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "The operation was aborted due to timeout",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:40:42.308Z",
+    "url": "https://algorand.ottoai.services/equity-smart-money?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.006000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "LOUCNVSWXJQ2XTUB7EFBGXOIPGRDX3ZN6ULOTZSVD3GT6UNTZJZA"
+   },
+   {
+    "at": "2026-09-27T04:42:05.307Z",
+    "url": "https://algorand.ottoai.services/token-score?token=0x532f27101965dd16442e59d40670faf5ebb142e4",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.010000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "K3COWTIGUHTAEKAZJYVNCBDKVEZPGSERMFEAJS6VFZSIW2R7JKAQ"
+   },
+   {
+    "at": "2026-09-27T04:48:28.706Z",
+    "url": "https://algorand.ottoai.services/token-top-holders?token=0x4ed4e862860bed51a9570b96d89af5e1b0efefed",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 503, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:48:30.142Z",
+    "url": "https://algorand.ottoai.services/wallet-holdings?wallet=0xc65a451047094cdd723fff77334d3b9ff8cf28e7",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 503, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:48:32.303Z",
+    "url": "https://algorand.ottoai.services/domain-report?domain=uniswap.org",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.020000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "EGRLIES6GNVMLGDFJ2QRXNKFQGS24NNELTHHZRXXH75C2PMY65GA"
+   },
+   {
+    "at": "2026-09-27T04:50:26.194Z",
+    "url": "https://algofile.io/buy-custom-bucket",
+    "host": "algofile.io",
+    "method": "POST",
+    "priceUsdc": "0.023438",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 200",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:50:26.520Z",
+    "url": "https://api.algofile.io/api/purchases/x402-verify",
+    "host": "api.algofile.io",
+    "method": "POST",
+    "priceUsdc": "1.000000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:50:26.631Z",
+    "url": "https://api.algofile.io/api/purchases/x402-verify?planType=custom&durationMonths=6&capacityGb=0.009765625",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "1.000000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:50:26.741Z",
+    "url": "https://api.algofile.io/api/v3/purchases/x402-verify",
+    "host": "api.algofile.io",
+    "method": "POST",
+    "priceUsdc": "1.000000",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "price_over_cap",
+    "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:50:37.830Z",
+    "url": "https://api.algofile.io/api/algofile/upload",
+    "host": "api.algofile.io",
+    "method": "GET",
+    "priceUsdc": "0.026454",
+    "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+    "verdict": "REFUSE",
+    "reason": "not_x402",
+    "detail": "expected 402, got 404",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:51:32.169Z",
+    "url": "https://algorand.ottoai.services/holder-analytics?token=0x4ed4e862860bed51a9570b96d89af5e1b0efefed",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.030000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 503, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:55:34.749Z",
+    "url": "https://algorand.ottoai.services/mega-report",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.050000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "REFUSE",
+    "reason": "payment_failed",
+    "detail": "status 502, no settlement receipt",
+    "paid": false
+   },
+   {
+    "at": "2026-09-27T04:59:45.759Z",
+    "url": "https://algorand.ottoai.services/equity-smart-money-brief?ticker=NVDA",
+    "host": "algorand.ottoai.services",
+    "method": "GET",
+    "priceUsdc": "0.100000",
+    "payTo": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI",
+    "verdict": "ALLOW",
+    "reason": "delivered",
+    "paid": true,
+    "tx": "XBJ6CKCEWO5I7KSW5ATCY7KW6OX2GLVC2ECCHWSNNNCYDZYKT2AA"
+   }
+  ],
+  "transfers": [
+   {
+    "id": "XBJ6CKCEWO5I7KSW5ATCY7KW6OX2GLVC2ECCHWSNNNCYDZYKT2AA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Mx+J5vpNQQCFLLVrH8wb4wMTNpihP9v/7Fcw27jLPwE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODUxNzM0OTU=",
+    "confirmed-round": 65433940,
+    "round-time": 1790485182,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 100000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "EGRLIES6GNVMLGDFJ2QRXNKFQGS24NNELTHHZRXXH75C2PMY65GA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "D7VylCSPM83yjMUw/xh9RTWASsOjltXF2BuvGS2NUIU=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODQ1MDU5NDY=",
+    "confirmed-round": 65433696,
+    "round-time": 1790484509,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 20000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "K3COWTIGUHTAEKAZJYVNCBDKVEZPGSERMFEAJS6VFZSIW2R7JKAQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "1Pd5MaqweKIx9thRga8aRjPyOiCIu0fOiiY7uJHcGCs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODQxMTQ5NzI=",
+    "confirmed-round": 65433556,
+    "round-time": 1790484122,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 10000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "LOUCNVSWXJQ2XTUB7EFBGXOIPGRDX3ZN6ULOTZSVD3GT6UNTZJZA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "yzI9cPWDVpBE++p/YR+2ZBoUNkngDEHRphgbSjEBrCE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODQwMzcwODQ=",
+    "confirmed-round": 65433526,
+    "round-time": 1790484039,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 6000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "427SIFA6KFCU5YTLRYBESIICQHZKHVDYD5ZQRQHD33E2Y562V2CQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "pqm1diRT4okO7SptU+K31/b8uisxlQVEHsNPtdappsI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM5NDkyOTE=",
+    "confirmed-round": 65433495,
+    "round-time": 1790483953,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "SRZXOAH6GFQGV6NGEPL4FXJ6XPW4OCNKLUJXFJFFLBE4BD5VL6AQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "fhYPSvil43uH1JS6yhQErwcVX8qf0MDV02RfbZ0ViIE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM5NDM2NTk=",
+    "confirmed-round": 65433492,
+    "round-time": 1790483945,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "J3UXDUYEYSNKVQCEGCX5F3LCBQR6WBBLBUKXNLDWGGM7ZME6DWHA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Ludg089UHZbmAyBAThTywTENNVmVntvJDWQ6uT1qOqg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM5NDEwMjk=",
+    "confirmed-round": 65433492,
+    "round-time": 1790483945,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 5000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "QX7Q2S3QLVN4EFJUP3YXWL73CCHZN6FTBZTNMOMH7AIW7GZAUE7Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "DqXe2qNmeG9WDhqqp5sVUvBe7JjV/e6VfYgulOmoTFk=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NTU4Mjc=",
+    "confirmed-round": 65433460,
+    "round-time": 1790483857,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "GV4NWRBOCGBVGX7T5QFEUCPAGYECM5QQLOJGHG6ENU3QMIWJLLQQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Xa88sXJsEkeksop2OGfoBixyM+BBS9pgtHjL+5OrneI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NTU2NzY=",
+    "confirmed-round": 65433460,
+    "round-time": 1790483857,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "Z2CJOEB3V2MOLRGYI6EP5LXRFOREYBKQRKYJWYGWH4KTRHS3IDHA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "kuVnuNRGpb8YDKxjR72si3g1dyVxlSnqecb/aHD8ouA=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NTMwNDA=",
+    "confirmed-round": 65433459,
+    "round-time": 1790483854,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "TW5SSQHYO42X63HCQP5W5IRGMS7MHRYAWOTT4ER2UJBLC4G6K4YQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "YQK8BsrqNkX32Vytf4FB5udhsE10W7YQwVMa1O0G2Po=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NTAzMDg=",
+    "confirmed-round": 65433458,
+    "round-time": 1790483852,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "L6IW5EUEHJELQSB7NZVFOTKKKZCZMLK5KSSPFPEZG3XXSACQ7KNQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "GcL8D7DnKiGevL7pYNbhQU2+bUO9Hx/VjnFtowwn/Z0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NDc0ODE=",
+    "confirmed-round": 65433458,
+    "round-time": 1790483852,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "ZV3JMBVWWS25Y7AE5WEZLCADZWY3EORMGZECBLKVYXX74QTCWLMQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "04pLn3pSD1PFDWAfIXD+0BBzodfptheQ5BRK2GI34NI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NDc1NzI=",
+    "confirmed-round": 65433457,
+    "round-time": 1790483849,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "P467CIUHFGKVGZRWR5PFP4QSS6JG2IVTDYRNUYGWKMTHPV5JUKOQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "qWADWB8NGb/Wge9gOcR8ZvEjKJ30+o2rRNLjbVQuSdw=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NDE5NzI=",
+    "confirmed-round": 65433456,
+    "round-time": 1790483846,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "S7BCUZWVYVGVR57BMLBC2E5SRPQIZOXPQLCEI7UOAQSRJ25SOCJA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "aH4DHhKf4wNdm/XhzCtvZhVhTRDBM59VmWfiSXWe6to=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NDIwNDc=",
+    "confirmed-round": 65433455,
+    "round-time": 1790483843,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "NAQSAIZNTHCSCECU35G33YH3MKWFMQFQ5MJMGXNT5RPFER7LCRFA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "xJevu5Z5DZW/Ob0oR1Q0b5cvZJF1adUTmHb4BkBDVEw=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4NDE5NDg=",
+    "confirmed-round": 65433455,
+    "round-time": 1790483843,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "VVHGT5NTHVIN7Z5VJIXHEJGKJM6DHX5FZPCJ4VRUVDRRJBI662HQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "DzZy8xmmDlIZ2e9OKYfdG2qrSAgW4CoTGeuJeFCqBQ8=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MzM3NTg=",
+    "confirmed-round": 65433453,
+    "round-time": 1790483838,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "UTTTF4IOB6KECTWHYPZMMMJK2SX67XPHNBJMHA6SZW3W6OJM73FQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "utlktKWPc8NZ27QZiIdADQndGrCTek2K0d7U0YhhctE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MzY0NjU=",
+    "confirmed-round": 65433453,
+    "round-time": 1790483838,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "O3KSFSEZWL24P56X5PZDU6JSGOHKHDNQWBPD3CYIKDOTMPTNGOBA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "S4ivR0Df4vp1X516SVhFD594RPbwsrePLYyBb87kKY4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MzYzOTE=",
+    "confirmed-round": 65433453,
+    "round-time": 1790483838,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "6E45655YWE5HRLBKFNZKNR7LCJ3F7NWAZE3W4VADGZQFCI4NOPNQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "0AQsz9smhY1/+2+i8rKbLIqjw29PaPlN1qxX1Sl86EQ=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MzA4Njk=",
+    "confirmed-round": 65433451,
+    "round-time": 1790483832,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "I55EI4AYS3O3QMW3FJSSDVP5C4VB73VSF2BURXCVBMOJRCB3RLBQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "QONvO8QrL2f7M5TFQxtx3qy8QPDqdLz9jIGmvRmpnh8=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MzA5MDY=",
+    "confirmed-round": 65433451,
+    "round-time": 1790483832,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "VCRS3TP4BNNE6OZ5TEDYQTDRGZZLLBF7VJNX6EI47K6MOLJ3PG6Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "amL3HKViPOLcAgiFpMips+ny7dnO7jKOAI7pOStaIFc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MjU0NzQ=",
+    "confirmed-round": 65433450,
+    "round-time": 1790483830,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "4EDY6ZYL7EHAPBFUBBYDKUQW6VRG47I6GDX3IQPR2I7AH6YXUWHA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "uLM+YHVx4ZuTaKW39XILsoKzhJzWCMMEkjJaqtzkgqs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM4MjUzODg=",
+    "confirmed-round": 65433449,
+    "round-time": 1790483825,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "Y5A7H6AFQ4UA7HMXIU7NGUW3VRXKCZD6NS6FYO42ABITCWYU4NOA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "dHqTQgAkyTMj9s8aCJFvgOmV5guBjlOG3VPX2DDooxc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM3NTk2MDA=",
+    "confirmed-round": 65433425,
+    "round-time": 1790483761,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "ER6Z42E22D5Q6UOHNPSEL7XAOGLRYYJG63AAJ6ZGURSAG7C5JHIA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "FXzhjomkQ4TYMfrAGzsnJrWqxDtSDwPFNJvT6dUMD6M=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM3NTEzMjc=",
+    "confirmed-round": 65433425,
+    "round-time": 1790483761,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "57K7ADZTE2IVQ5YADLNVQ6EZ3ODNNFDVW5PVDVHPBRQRCT4MRVUA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "WkOt3allmt545atQ8iW6VmKvmfxyo0EFp8CHYl2ERmI=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM3NTQwOTk=",
+    "confirmed-round": 65433423,
+    "round-time": 1790483756,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "5IQCCU46W4ELGRJ5PMA5M6E5YEMVX55NCDVD6I5O2PYZZBUBI2UA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "dKOGy408F0khogRh1iwjNsFVbqUAiZeWJeK6qtMAsHQ=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM3NTEzOTU=",
+    "confirmed-round": 65433422,
+    "round-time": 1790483753,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 3000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "VBZIK2DBXYYHMYFVYOS6MOSJYXAW6BGFCJYXODK7OPO7TNHQWAQQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "3PAXWkNKtZEc0N4pWKLIG0d1ZeB5yqYIksDHGhTFZ1c=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjY1MTM=",
+    "confirmed-round": 65433391,
+    "round-time": 1790483668,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+    }
+   },
+   {
+    "id": "XED7NSAI7ZXOA4MRRVEGDSWMY7OVTM6GKF4OKL4SGW4YBKGPHQBA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "7BrNLvqyzfIgUF18CYX4pm+NpJjKf9h8u/XaAIp0WVM=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjYyOTE=",
+    "confirmed-round": 65433391,
+    "round-time": 1790483668,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+    }
+   },
+   {
+    "id": "3QDAONYNX2US3TLE3UUNT5VTEFJVLMMXYKB65LKM7DZZ3D57HYZQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "hohHjbHWObTFIi3kD7Kcpg03Va4toNFxqlfnUNsvIBs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjYxNTI=",
+    "confirmed-round": 65433391,
+    "round-time": 1790483668,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+    }
+   },
+   {
+    "id": "L7YDAJJG2UYIH4CTTYYNTFCK3P4P25CX2IEE67IJ6UAY4CL7HWXA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "vI+RId9uY3KK+lu8LmG72h13isIq1ScQ5Dt+atu01kg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NTU1MDM=",
+    "confirmed-round": 65433389,
+    "round-time": 1790483662,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "6SICQQE6MTT4MXZ6TAFUBGLVQDLVYGVLC53T2TQ7DPFGZ3PXTB3A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Goa8EuZevGNNnPp7M9w1I7D5HfZYX8Cy9y51aWk/HUA=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NTgyMjU=",
+    "confirmed-round": 65433389,
+    "round-time": 1790483662,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "EDK3APJUHPJME4KDROMP2FEBXA7SJ7SR22B3JUG7LDJQ73SG4HFQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "COaSpB0EwpjP1p1hs1juYc9JwVsW67IfZ+06UXHkJ0g=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NTI4MDE=",
+    "confirmed-round": 65433386,
+    "round-time": 1790483654,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "5RS6LBZZPCL5XBABSKP4MSQKRUGVAOOXNOHL7IV2XNJZVOUUSC5A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "wPsNav6bPW5ieJBiA4yJSwu5K8yrGXezMHF+zvYMiDc=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NTEzMjQ=",
+    "confirmed-round": 65433386,
+    "round-time": 1790483654,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "6RY5VFULLGYGRANNYB2VYEBFKZHLTTML363LB65CDDLKET3HU4VQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "jR9qfEzfrMAK/ctaAuHulCQmoBOVM2TgHxSHNCJpLdg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NDk1NTk=",
+    "confirmed-round": 65433385,
+    "round-time": 1790483652,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "Q5X6MNEHCAGPG7CTSBVKEKL3GLBH3WIDRNUNDN65FLBIGKAVYVSQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "FJSkEq4tf/jvyMuifVuiLMrDjy3mzLoz0ZsARNpRdag=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NDczMzc=",
+    "confirmed-round": 65433384,
+    "round-time": 1790483649,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 2000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "VVLQU7XJMW3REBT7WFFADNDCA7KR2HXPN23YSDRVR4TVYGGTYETQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "5VLGoOCoFd9nh/9uq7xIQm2WKU63XUseXP0FLi7sZ7o=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MzA3Nzk=",
+    "confirmed-round": 65433384,
+    "round-time": 1790483649,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "QBSI7KUAUD77HFQEVGSGOZLOMSEEZWGZ4JTSHLZHCELXELPFGTAA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "lTpKCr/pxoX4iXuexqdVb47/A4Phlce/AgALby9i44A=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NDQ1NzM=",
+    "confirmed-round": 65433383,
+    "round-time": 1790483646,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "M4T623Z4V5JHDOFWBB4VF67VUMKAHVBJONNKJFEY5AO4267LSEQQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "bWZgtpcysAylc8g8hg4bgQCnADZdHa9LcZDynLI1wnE=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NDA0NjI=",
+    "confirmed-round": 65433382,
+    "round-time": 1790483643,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "MTJJGFRM27TA5UAZTK2NPHX5CQCY2A7WMALYBFHJ7LR73BMRPMCA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "vi9Dlvro8HSqtyTvBbq9s1kJVrxi3oTgvReFI/5cW9k=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MzkwNzc=",
+    "confirmed-round": 65433381,
+    "round-time": 1790483641,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "VCOGXEBT2BZ6DS6LU3SGAJW7GPBF3QQWSPUOB2A7OL7AP6HNCMYQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "9ZuzlUNtjKFyk6T8e01tC1ynSnIS3uAoWD1ZAlgzG7I=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MzM1Mzk=",
+    "confirmed-round": 65433379,
+    "round-time": 1790483635,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "CKSJ3OD6IKIG5NRIUJFLHM7SHZGACLOLEVVXKL7H54Z2FADBY5MQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "zpR4zJhiX2yI9lq0MAID28w5vthPklpV6VeGm3jFfi8=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MjgwNzI=",
+    "confirmed-round": 65433377,
+    "round-time": 1790483629,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "LGN2TFYKZZHN7WGL7HHRCLKDBVWH73RZNOBPHSTWPUPQN4S6DDZQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Kme4y1z2pOixKPpYUtW+2GFAWocb5MoeW8l83NMKqvg=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MjUyOTI=",
+    "confirmed-round": 65433376,
+    "round-time": 1790483627,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "2V7NV6DP5FKEDNWH2GIOLREDVKXSHS4BAJITMM6IHIQ56X2O4RTQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Oe1KLuSdzmZbxBb99f7VRD0f8SMfxQOp1Q3WXXnXm34=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MTk4Mjc=",
+    "confirmed-round": 65433375,
+    "round-time": 1790483624,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "IOGTCCMKJCMWO6ZPKNJDQEV6LQAXLCCLWWOJKG7GUWFPIPBESDEA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "XqG+cAyL+h6856fHV/yBMHQspBn5rSvJO9cqr63zESY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MTcyMTg=",
+    "confirmed-round": 65433374,
+    "round-time": 1790483621,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "PLMN7OIQZ2T4EW64MWSADY33XA552IFRW4HIEDAZZI34IKZPM77A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "lhZminnlbaTMo7HMuzNHAZdNmI8Y9dMGkdbaeoKYVjU=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MTE1NTA=",
+    "confirmed-round": 65433372,
+    "round-time": 1790483616,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "6R4ETWBRINKN4CHNH34RUOUXK43FQNO6MK3KG3SAMR4L2K33BKKA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "+Qf8+GQbOwiKtDHXfp31Ov9bSD/bRD7ijUI7JRBf+6g=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDg3ODA=",
+    "confirmed-round": 65433372,
+    "round-time": 1790483616,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "ADBSQNUYS6XEEOWNJNTCWZM5N5KUAZGVPLBCLXKZNU2IPUMWU5CA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Vqz5mCz3PMbhglgBMbX0idAhKBEcsgnft+UWnbHGFgQ=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MTE2NjI=",
+    "confirmed-round": 65433371,
+    "round-time": 1790483613,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "ITFKC4XJVESKOF2SMZAL2BCEL2AVWZRXY23CJFFEB2RSD2CTUBGQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "/myJBUNNJeYcAv0aYM1GEKG49OBQ7jXz8vsHijyqdVs=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDYwNTQ=",
+    "confirmed-round": 65433369,
+    "round-time": 1790483608,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "5DVHKFGKPV656GVKHVX4DKWRZ3VUWFDHDYUBYK7EAO4BE23U4EPQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "4GxmhLPsElyfvEua0RIJ418y5tGgYAppZjR27zP+G7A=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDYxNDM=",
+    "confirmed-round": 65433369,
+    "round-time": 1790483608,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "V7DPWKR4YS5VUIEARERR5ESZV3RXTQLXWRX243XTFWNBALNQZV6A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "kAiiW7E0ler8/oxmtcN9dqw6+VGfwruv4SQcT3ZapGw=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDMzOTU=",
+    "confirmed-round": 65433368,
+    "round-time": 1790483605,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "G767IQ6YPALDPNW6MU5XUO72OWKMVJNMO3ZOXHS44MXTB4SGQKDQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "6fAhNymMPrb6ejrUjMQb6CImYY1V6ltWuErq6ez4YkY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDA2NDk=",
+    "confirmed-round": 65433367,
+    "round-time": 1790483602,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "IYY2FEIMO4PQH472F55OHUXKTTWHKLY6AFFCXODEERD66FOGA2ZQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "WNpmjkihGuGo0sc8qy7C86s6S2hF1SMGSWTWCadG9I0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MDA1MjQ=",
+    "confirmed-round": 65433367,
+    "round-time": 1790483602,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "FFWUU6YZWZCOFY76N3ERB4GQBJKNB3NMMXDQOAUGD5TMIYB2HD4Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "hJWx6h8Kuld21tZy101NMFbIOW3eTfhzQr5iWv/eGhU=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1OTc5MDQ=",
+    "confirmed-round": 65433366,
+    "round-time": 1790483599,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "PZBI7B2TFXY5H744IJXIURYZS5SFPNVDMCPYVHHH4XBBTA2C6GDQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Fa9WJyOkxP+dGUOskoeeE3Xvx+5mn+/XAuVVfF5Om5c=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1ODEzNTk=",
+    "confirmed-round": 65433365,
+    "round-time": 1790483597,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "UOGXKZRVOUJMUOWUEIYXGZPMLWNQLYXPOVYSBNYY6ALP2MSQHRDA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Ddj0TlSwhosdJRPOimTDGexSUPc5qyfMb0/rnS/fo7A=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1OTUxMzA=",
+    "confirmed-round": 65433365,
+    "round-time": 1790483597,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "D4HYCF7ML3MT7LBBBE4R4QRAHXUH4AJKIXFRSHQZT4UIY2CPUKFA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "pmm+M1sr5tS7gs7pWgPFYhYzsAElssj+jhbuo2Csx9Q=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1ODk2NjI=",
+    "confirmed-round": 65433363,
+    "round-time": 1790483591,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "T6CG5XHI5GYHDTOX3BI6BMGUR5UCPRD4A6AQQPRYFVL7SSVGZ6MQ",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "gHNG99YA8NSR5dEGtokiaS77ByOgDyKwi7rtb4EhB0Q=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1ODQxOTc=",
+    "confirmed-round": 65433361,
+    "round-time": 1790483586,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "RQNRKPCA5P5MM2EBH7ECYVOFLXRZ6HBBMUHWY72OYB4DP42M3Z2A",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "PUS5fY4keaag5BJqTncf+6WL5f9h1bLf49j6mjUChTw=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1Nzg1NzY=",
+    "confirmed-round": 65433359,
+    "round-time": 1790483580,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "7EWPYUQTBIDEHSNWSAJSXWXOXSA47MGP5BVVGGLO3O4KH74WQ56Q",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "Z4Z+85Q8jR/P/xBQcptUlzHmz0Rk/K3hVjyV21SUSn4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1NzcyNzU=",
+    "confirmed-round": 65433358,
+    "round-time": 1790483577,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "POERVUR5S55UIJRGWAUGGBLFGAGDQZNV63KAMO72T3IE5X6TTKRA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "f59pb61MdCgwU7OHTIW3idijqCFGPnwx0VzMvZNf+G0=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1NzMxMDM=",
+    "confirmed-round": 65433357,
+    "round-time": 1790483575,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "WL2B7XA4Q3K5VAJU42UXHMGPLAVXYHPK6YHVZZ7YEM7KEPKYPVIA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "8PD+4i49vUL5oGzzS0jGpgKPyMndIrGEaVtkzKSAjO4=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1NzA3MjA=",
+    "confirmed-round": 65433356,
+    "round-time": 1790483572,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   },
+   {
+    "id": "2B4KPKQTGP524LNYCCKYOLFATRC2SQQMOZSDUXEGLB3TTJAZWJQA",
+    "tx-type": "axfer",
+    "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+    "fee": 0,
+    "group": "4qm2SADaGUesPZu0GiY6Ae5mqUzded6BqA3DoQQOuzY=",
+    "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM1Njc3MTc=",
+    "confirmed-round": 65433355,
+    "round-time": 1790483569,
+    "asset-transfer-transaction": {
+     "asset-id": 31566704,
+     "amount": 1000,
+     "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+    }
+   }
+  ],
+  "groups": {
+   "3PAXWkNKtZEc0N4pWKLIG0d1ZeB5yqYIksDHGhTFZ1c=": [
+    {
+     "id": "UTWVGNOZDTIICKT4TTRT33CNQXFY57YNGEE5FUA22QBCOFISU5UA",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "3PAXWkNKtZEc0N4pWKLIG0d1ZeB5yqYIksDHGhTFZ1c=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDQ4MzY2NjUxMw==",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "VBZIK2DBXYYHMYFVYOS6MOSJYXAW6BGFCJYXODK7OPO7TNHQWAQQ",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "3PAXWkNKtZEc0N4pWKLIG0d1ZeB5yqYIksDHGhTFZ1c=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjY1MTM=",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+     }
+    }
+   ],
+   "7BrNLvqyzfIgUF18CYX4pm+NpJjKf9h8u/XaAIp0WVM=": [
+    {
+     "id": "GWMU7LAVA26CQM5Q3EW3YP3U2G25KQCPZNEI7M6CLNFE4SIHGY7A",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "7BrNLvqyzfIgUF18CYX4pm+NpJjKf9h8u/XaAIp0WVM=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDQ4MzY2NjI5MQ==",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "XED7NSAI7ZXOA4MRRVEGDSWMY7OVTM6GKF4OKL4SGW4YBKGPHQBA",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "7BrNLvqyzfIgUF18CYX4pm+NpJjKf9h8u/XaAIp0WVM=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjYyOTE=",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+     }
+    }
+   ],
+   "hohHjbHWObTFIi3kD7Kcpg03Va4toNFxqlfnUNsvIBs=": [
+    {
+     "id": "IRJ4VGGH6OS7RJLZ6EIJ7CAXOP2WMUPX3LPX2FYTR65T5NSQCLNA",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "hohHjbHWObTFIi3kD7Kcpg03Va4toNFxqlfnUNsvIBs=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDQ4MzY2NjE1Mg==",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "3QDAONYNX2US3TLE3UUNT5VTEFJVLMMXYKB65LKM7DZZ3D57HYZQ",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "hohHjbHWObTFIi3kD7Kcpg03Va4toNFxqlfnUNsvIBs=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NjYxNTI=",
+     "confirmed-round": 65433391,
+     "round-time": 1790483668,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M"
+     }
+    }
+   ],
+   "5VLGoOCoFd9nh/9uq7xIQm2WKU63XUseXP0FLi7sZ7o=": [
+    {
+     "id": "WCG42TU6EMWWDHBLSRECDKKLAIBTD5GKOJ4D4WX2I27IIGN3EANA",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "5VLGoOCoFd9nh/9uq7xIQm2WKU63XUseXP0FLi7sZ7o=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDQ4MzYzMDc3OQ==",
+     "confirmed-round": 65433384,
+     "round-time": 1790483649,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "VVLQU7XJMW3REBT7WFFADNDCA7KR2HXPN23YSDRVR4TVYGGTYETQ",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "5VLGoOCoFd9nh/9uq7xIQm2WKU63XUseXP0FLi7sZ7o=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2MzA3Nzk=",
+     "confirmed-round": 65433384,
+     "round-time": 1790483649,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+     }
+    }
+   ],
+   "lTpKCr/pxoX4iXuexqdVb47/A4Phlce/AgALby9i44A=": [
+    {
+     "id": "RSHDFAEUDSWAQTPFDXO7KPZAFZDW33FJSVNLKGC5VVFNUI3MQMQQ",
+     "tx-type": "pay",
+     "sender": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+     "fee": 2000,
+     "group": "lTpKCr/pxoX4iXuexqdVb47/A4Phlce/AgALby9i44A=",
+     "note": "eDQwMi1mZWUtcGF5ZXItMTc5MDQ4MzY0NDU3Mw==",
+     "confirmed-round": 65433383,
+     "round-time": 1790483646,
+     "payment-transaction": {
+      "amount": 0,
+      "receiver": "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"
+     }
+    },
+    {
+     "id": "QBSI7KUAUD77HFQEVGSGOZLOMSEEZWGZ4JTSHLZHCELXELPFGTAA",
+     "tx-type": "axfer",
+     "sender": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+     "fee": 0,
+     "group": "lTpKCr/pxoX4iXuexqdVb47/A4Phlce/AgALby9i44A=",
+     "note": "eDQwMi1wYXltZW50LXYyLTE3OTA0ODM2NDQ1NzM=",
+     "confirmed-round": 65433383,
+     "round-time": 1790483646,
+     "asset-transfer-transaction": {
+      "asset-id": 31566704,
+      "amount": 1000,
+      "receiver": "IYNQCLXJUQFCQLAQYN4YOUYVHKIRHNIPP3HKBTEJC5666FJDZKY5AFEJUI"
+     }
+    }
+   ]
+  }
+ },
+ "_source": "Read from https://mainnet-idx.algonode.cloud on 2026-09-30 (board wallet USDC transfers and their groups) and from board/*.json at 2080c56 (before) and bbf5b13 (after); fields trimmed."
+}

@@ -61,7 +61,60 @@ export interface BoardFile {
   totals: { rows: number; allow: number; refuse: number; skipped: number; unclear?: number; paidUsdc: string };
   /** Set only on hand-made sample files. The page shows it as a banner. */
   fixture?: string;
+  /** Set when the day's purchases finished (a later scheduled run that day buys nothing). */
+  completedAt?: string;
+  /**
+   * The check after the run (src/reconcile.ts): is every USDC transfer the board wallet sent during the
+   * run on a row? Absent in files written before 2026-09-30. The page shows a banner unless status is ok.
+   */
+  reconcile?: BoardReconcile;
   rows: BoardRow[];
+}
+
+export interface BoardReconcile {
+  checkedAt: string;
+  status: "ok" | "unmatched" | "unavailable";
+  transfers: number;
+  onRows: number;
+  recorded: number;
+  unmatched: number;
+  /** The payments on no row (at most 50): tx, amount, payTo, and why no row could be chosen. */
+  unmatchedTx?: { tx: string; amountUsdc: string; payTo: string; why: string }[];
+  error?: string;
+}
+
+function cleanReconcile(v: unknown): BoardReconcile | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  const status = o.status === "ok" || o.status === "unmatched" || o.status === "unavailable" ? o.status : undefined;
+  if (!status) return undefined;
+  const n = (x: unknown) => (typeof x === "number" && Number.isInteger(x) && x >= 0 ? x : 0);
+  const len = (x: unknown) => (Array.isArray(x) ? x.length : n(x));
+  return {
+    checkedAt: str(o.checkedAt, 40) ?? "",
+    status,
+    transfers: n(o.transfers),
+    onRows: n(o.onRows),
+    recorded: len(o.recorded),
+    unmatched: len(o.unmatched),
+    unmatchedTx: Array.isArray(o.unmatched)
+      ? o.unmatched.slice(0, 50).flatMap((u) => {
+          const x = (u ?? {}) as Record<string, unknown>;
+          const tx = str(x.tx, 60);
+          return tx && TXID.test(tx) ? [{ tx, amountUsdc: str(x.amountUsdc, 20) ?? "", payTo: str(x.payTo, 60) ?? "", why: str(x.why, 200) ?? "" }] : [];
+        })
+      : undefined,
+    error: str(o.error, 300),
+  };
+}
+
+/** The banner for a run whose payments are not all on a row, or could not be checked ("" when all are). */
+export function reconcileBanner(r: BoardReconcile | undefined): string {
+  if (!r || r.status === "ok") return "";
+  if (r.status === "unavailable")
+    return "Payment check not done: after this run the chain could not be read, so it is not confirmed that every payment the board wallet made is on a row.";
+  const s = r.unmatched === 1 ? "" : "s";
+  return `Payment check: ${r.unmatched} USDC payment${s} the board wallet made during this run ${r.unmatched === 1 ? "is" : "are"} on chain but on no row, because ${r.unmatched === 1 ? "it" : "they"} could not be paired one to one with a purchase. Listed in board.json under reconcile.`;
 }
 
 export const BOARD_ISSUES_URL = "https://github.com/kzmttkc/vet402-algorand/issues";
@@ -179,6 +232,8 @@ export function parseBoard(text: string): BoardFile | null {
       paidUsdc: str(t.paidUsdc, 20) ?? "0",
     },
     fixture: str(o.fixture, 200),
+    completedAt: str(o.completedAt, 40),
+    reconcile: cleanReconcile(o.reconcile),
     rows,
   };
 }
@@ -571,6 +626,8 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
       `<p class="note">The Bazaar lists ${fmt(rows.length)} resources from ${fmt(hosts.length)} sellers: one seller can list many URLs (for example one verification URL per transaction; the largest lists ${fmt(top)}). So the picture below has one dot per seller.</p></div>`;
   }
   const fixture = board?.fixture ? `<p class="fixture">FIXTURE: ${esc(board.fixture)}</p>` : "";
+  const unchecked = reconcileBanner(board?.reconcile);
+  const payCheck = unchecked ? `<p class="fixture">${esc(unchecked)}</p>` : "";
   const tableRows = rows
     .map((r, i) => {
       const link = txLink(r.tx, board!.networkName);
@@ -657,6 +714,7 @@ ${tabs}
 ${headline}
 ${sellers}
 ${fixture}
+${payCheck}
 ${svg}
 <p class="legend"><i style="background:var(--delivered)"></i>DELIVERED<i style="background:var(--mismatch)"></i>MISMATCH<i style="background:var(--unreach)"></i>UNREACHABLE<i style="background:var(--unclear)"></i>UNCLEAR · ${lightNote}</p>
 <div id="detail" aria-live="polite">${has ? (view === "census" ? "Tap a dot to see that seller." : "Tap a dot to see that purchase.") : "Not run yet."}</div>
