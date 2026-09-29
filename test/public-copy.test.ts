@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { CONTENT_NOTES, countBy, displayClass, hostOf, readBoard, type BoardFile } from "../src/board.js";
+import { CONTENT_NOTES, boardHtml, countBy, displayClass, hostOf, readBoard, type BoardFile } from "../src/board.js";
 import { CHECKER_FIX_URL, FEATURED_CENSUS, demoHtml, landingHtml } from "../src/landing.js";
 import { PATH_MODES, failureMode, fixFirst, fixFirstHtml } from "../src/fix-first.js";
 import { sellerHtml, sellerView } from "../src/seller.js";
@@ -87,6 +87,42 @@ test("content notes: only on the noted purchases, on /board and on the seller pa
   // Another seller's page carries no note.
   const other = sellerHtml(sellerView("agent402.tools", { daily: null, census: b as BoardFile }));
   assert.ok(!other.includes("Note added 2026-09-29"));
+});
+
+test("content notes: /board marks the 3 moltworld speech rows in the result column and the headline counts them, DELIVERED count unchanged", () => {
+  const LABEL = /the audio is a generated tone, not speech\. This mismatch is outside what vet402 checks\./;
+  for (const [d, n] of [["2026-09-27", 1], ["2026-09-28", 2]] as const) {
+    const b = board(d);
+    const html = boardHtml(b, "census", { date: d });
+    const resultCells = [...html.matchAll(/<td class="v [^"]*">([\s\S]*?)<\/td>/g)].map((m) => m[1]);
+    const marked = resultCells.filter((c) => LABEL.test(c));
+    assert.equal(marked.length, n, d);
+    for (const c of marked) assert.match(c, /^DELIVERED<br>/);
+    const delivered = countBy(b.rows, displayClass).DELIVERED;
+    assert.match(visible(html), new RegExp(`${delivered.toLocaleString("en-US")} DELIVERED \\(${n} with a content note\\)`));
+  }
+  const total = ["2026-09-27", "2026-09-28"].reduce((s, d) => s + board(d).rows.filter((r) => r.tx && CONTENT_NOTES[r.tx]).length, 0);
+  assert.equal(total, 3);
+  // The seller card shows the label next to the class.
+  const card = sellerHtml(sellerView("moltworld.xyz", { daily: null, census: board("2026-09-28") as BoardFile }));
+  assert.equal(card.split("This mismatch is outside what vet402 checks.").length - 1, 2);
+  // A board without noted rows says nothing about content notes.
+  const plain = { ...board("2026-09-28"), rows: board("2026-09-28").rows.filter((r) => !(r.tx && CONTENT_NOTES[r.tx])) };
+  assert.doesNotMatch(visible(boardHtml(plain as BoardFile, "census")), /content note/);
+});
+
+test("census 09-27: the eth-avm-light-client timeout row is paid with GP46 (on chain) and totals.paidUsdc is the sum of paid rows", () => {
+  const b = board("2026-09-27");
+  const r = b.rows.find((x) => x.url === "https://eth-avm-light-client.vercel.app/verify-receipt/25782067/2/0")!;
+  assert.equal(r.paid, true);
+  assert.equal(r.tx, "GP46GFPSE3JAER7CNWN65GRRJVVNJHEKE4LJ363KZGMA7LR24CFQ");
+  assert.equal(r.reason, "payment_failed");
+  assert.equal(displayClass(r), "UNCLEAR"); // nothing was read, so nothing is held against the seller
+  assert.equal(failureMode(r), "timeout");
+  assert.equal(b.rows.filter((x) => x.tx === r.tx).length, 1);
+  const sum = b.rows.filter((x) => x.paid).reduce((s, x) => s + Math.round(Number(x.priceUsdc) * 1e6), 0);
+  assert.equal((sum / 1e6).toFixed(6), b.totals.paidUsdc);
+  assert.equal(b.totals.paidUsdc, "16.087200");
 });
 
 test("changed pages: no we/us/our, no em dash, and no promise about the content", () => {

@@ -304,13 +304,26 @@ export const UNCLEAR_NOTE =
  * Notes on single purchases whose result stays as recorded (the declared keys were there) but whose content
  * was later found to differ from the listing's description. Keyed by vet402's payment tx id, so a later
  * purchase of the same URL never inherits the note. Facts only; the evidence is in README "Corrections".
+ *
+ * Such a row keeps its class and stays in the DELIVERED count: the class says what the check found (declared
+ * keys), and a file is corrected only toward what the chain shows. The mismatch is outside the check, so it is
+ * shown next to the class (`label`) and in full (`text`), and the headline says how many DELIVERED rows carry one.
  */
-const SPEECH_TONE_NOTE =
-  "Note added 2026-09-29: the declared keys were present, so the result stays DELIVERED. The content differed from the listing's description (speech synthesis): " +
-  "the answer's id began with audio-free- and its audio_url held a WAV file with RIFF size 29,876. In the seller's public source at commit c2b4344, " +
-  "generateWavBase64() (src/providers/openrouter.ts) builds that answer for this 56-character input: 3.73 s of 8-bit audio at 8,000 samples a second, a tone whose pitch " +
-  "follows the input characters. Details: README, Corrections.";
-export const CONTENT_NOTES: Readonly<Record<string, string>> = {
+export interface ContentNote {
+  /** Short, shown under the class in the result column and on the seller card. */
+  label: string;
+  /** The facts, shown with the reason. */
+  text: string;
+}
+const SPEECH_TONE_NOTE: ContentNote = {
+  label: "Content note: the declared keys came back, but the audio is a generated tone, not speech. This mismatch is outside what vet402 checks.",
+  text:
+    "Note added 2026-09-29: the declared keys were present, so the result stays DELIVERED. vet402 checks the declared keys, not the content. " +
+    "The content did not match the listing's description (speech synthesis): the answer's id began with audio-free- and its audio_url held a WAV file with RIFF size 29,876. " +
+    "In the seller's public source at commit c2b4344, generateWavBase64() (src/providers/openrouter.ts) builds that answer for this 56-character input: 3.73 s of 8-bit audio " +
+    "at 8,000 samples a second, a tone whose pitch follows the input characters, not synthesized speech. Details: README, Corrections.",
+};
+export const CONTENT_NOTES: Readonly<Record<string, ContentNote>> = {
   // moltworld.xyz POST /v1/models/tts-1/audio/speech, census 2026-09-27 and 2026-09-28
   AMVUEQ3SOQQLWOJSCNQPZO4ZEB3LFSHKRGT7TNAAVDOFWBHF7CZQ: SPEECH_TONE_NOTE,
   XXF5QZMWBATOATXZCUSZYYABIXYYIZ6A7GRY7RZ6YVFZ4YIPWXPA: SPEECH_TONE_NOTE,
@@ -320,7 +333,12 @@ export const CONTENT_NOTES: Readonly<Record<string, string>> = {
 
 /** The content note for this purchase ("" when there is none). */
 export function contentNote(r: Pick<BoardRow, "tx">): string {
-  return r.tx ? (CONTENT_NOTES[r.tx] ?? "") : "";
+  return r.tx ? (CONTENT_NOTES[r.tx]?.text ?? "") : "";
+}
+
+/** The short label for this purchase's content note ("" when there is none). */
+export function contentLabel(r: Pick<BoardRow, "tx">): string {
+  return r.tx ? (CONTENT_NOTES[r.tx]?.label ?? "") : "";
 }
 
 /** Unpaid-look status codes that say more about vet402's request than about the seller. */
@@ -532,12 +550,13 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
       : rows.map((r) => ({ label: `${shortUrl(r.url)}: ${displayClass(r)} ${r.reason}`, cls: displayClass(r), paid: r.paid }));
   const { svg, cycleMs } = networkSvg(points, view === "census" ? "data-h" : "data-i");
   const c = countBy(rows, displayClass);
+  const noted = rows.filter((r) => displayClass(r) === "DELIVERED" && contentNote(r)).length;
   const what = view === "census" ? "listed resources" : "sellers";
   const tabs =
     `<nav class="tabs"><a href="/board"${view === "daily" ? ' aria-current="page"' : ""}>Daily (one per seller)</a><a href="/board?view=census"${view === "census" ? ' aria-current="page"' : ""}>Census (every listed resource)</a><a href="/board/fix-first">What to fix first</a><a href="/fairness">Payments to other teams</a></nav>` +
     (view === "census" ? censusDateNav(board, o) : "");
   const headline = has
-    ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${fmt(rows.length)}</b> ${what} · <b class="delivered">${fmt(c.DELIVERED)} DELIVERED</b> · <b class="mismatch">${fmt(c.MISMATCH)} MISMATCH</b> · <b class="unreach">${fmt(c.UNREACHABLE)} UNREACHABLE</b> · <b class="unclear">${fmt(c.UNCLEAR)} UNCLEAR</b> · paid <b>${esc(board!.totals.paidUsdc)}</b> USDC</p>`
+    ? `<p class="kpi"><span>${esc(board!.date)}</span> · <span>${netLabel}</span> · <b>${fmt(rows.length)}</b> ${what} · <b class="delivered">${fmt(c.DELIVERED)} DELIVERED</b>${noted ? ` (${fmt(noted)} with a content note)` : ""} · <b class="mismatch">${fmt(c.MISMATCH)} MISMATCH</b> · <b class="unreach">${fmt(c.UNREACHABLE)} UNREACHABLE</b> · <b class="unclear">${fmt(c.UNCLEAR)} UNCLEAR</b> · paid <b>${esc(board!.totals.paidUsdc)}</b> USDC</p>`
     : `<p class="kpi">Not run yet${o.date ? ` for ${esc(o.date)}` : ""}. vet402 has not run a sweep${o.date ? " on that day" : ""}, so there is nothing to show.</p>`;
   let sellers = "";
   if (has && view === "census") {
@@ -557,13 +576,14 @@ export function boardHtml(board: BoardFile | null, view: BoardView = "daily", o:
       const link = txLink(r.tx, board!.networkName);
       const tx = link ? `<a href="${esc(link)}" rel="noopener">${esc(r.tx!.slice(0, 8))}…</a>` : "no payment";
       const note = contentNote(r);
+      const label = contentLabel(r);
       const decl = [r.declared?.description, r.declared?.expectedKeys?.length ? `keys: ${r.declared.expectedKeys.join(", ")}` : ""].filter(Boolean).join(" · ");
       const cls = displayClass(r);
       return (
         `<tr id="row-${i}"><td>${esc(r.at.slice(11, 19))}</td>` +
         `<td class="u"><span class="h">${esc(r.method)} ${esc(shortUrl(r.url))}</span>${r.host ? ` <a class="sl" href="${esc(sellerPath(r.host))}">seller page</a>` : ""}${decl ? `<br><small>${esc(decl)}</small>` : ""}${r.input ? `<br><small>sent: ${esc(r.input)}</small>` : ""}${filledNote(r) ? `<br><small>${esc(filledNote(r))}</small>` : ""}</td>` +
         `<td>${esc(r.priceUsdc ?? "")}</td>` +
-        `<td class="v ${CSS_CLASS[cls]}">${cls}${cls === "UNCLEAR" ? `<br><small class="nc">${esc(UNCLEAR_NOTE)}</small>` : ""}</td>` +
+        `<td class="v ${CSS_CLASS[cls]}">${cls}${label ? `<br><small class="cn">${esc(label)}</small>` : ""}${cls === "UNCLEAR" ? `<br><small class="nc">${esc(UNCLEAR_NOTE)}</small>` : ""}</td>` +
         `<td><code>${esc(r.reason)}</code>${r.detail ? `<br><small>${esc(r.detail)}</small>` : ""}${note ? `<br><small class="cn">${esc(note)}</small>` : ""}</td>` +
         `<td>${tx}</td></tr>`
       );

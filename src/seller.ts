@@ -24,6 +24,7 @@ import {
   type BoardRow,
   type DisplayClass,
   UNCLEAR_NOTE,
+  contentLabel,
   contentNote,
   filledNote,
 } from "./board.js";
@@ -211,6 +212,7 @@ export function sellerHtml(v: SellerView, o: SellerPageOptions = AUDIT_OFF): str
       const fix = sellerFix(r);
       return (
         `<li class="card"><div class="top"><b class="${CSS_CLASS[r.cls]}">${r.cls}</b><span>${esc(r.day)} · ${r.source}${r.priceUsdc ? ` · ${esc(r.priceUsdc)} USDC` : ""}</span></div>` +
+        (contentLabel(r) ? `<div><small class="cn">${esc(contentLabel(r))}</small></div>` : "") +
         `<div class="u">${esc(r.method)} ${esc(pathOf(r.url))}</div>` +
         (decl ? `<small>${esc(decl)}</small>` : "") +
         (filledNote(r) ? `<div><small>${esc(filledNote(r))}</small></div>` : "") +

@@ -29,7 +29,7 @@
     "allow": 495,
     "refuse": 1324,
     "skipped": 0,
-    "paidUsdc": "16.077200"
+    "paidUsdc": "16.087200"
   },
   "rows": [
     {
@@ -18641,8 +18641,9 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
+      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer GP46GFPSE3JAER7CNWN65GRRJVVNJHEKE4LJ363KZGMA7LR24CFQ (to this payTo, round 65433626, 04:45:15 UTC); no delivery",
+      "paid": true,
+      "tx": "GP46GFPSE3JAER7CNWN65GRRJVVNJHEKE4LJ363KZGMA7LR24CFQ"
     },
     {
       "at": "2026-09-27T04:45:18.722Z",
