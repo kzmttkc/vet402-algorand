@@ -518,7 +518,7 @@ export function activityHtml(r: ActivityReport): string {
       const head = `<tr${cls}><td>${when(w.time)}</td>${who}<td>${onBase ? baseTx(w.customerTx) : tx(w.customerTx)}</td><td class="n">${esc(w.amountUsdc)}</td>`;
       const ps = w.sellerPayments ?? [];
       if (w.kind !== "audit" || ps.length === 0) {
-        return `${head}<td>${w.seller ? addr(w.seller) : `<span class="muted">${w.kind === "verdict" ? "none (lookup)" : "not paid"}</span>`}</td><td>${w.sellerTx ? tx(w.sellerTx) : "—"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "—"}</td></tr>`;
+        return `${head}<td>${w.seller ? addr(w.seller) : `<span class="muted">${w.kind === "verdict" ? "none (lookup)" : "not paid"}</span>`}</td><td>${w.sellerTx ? tx(w.sellerTx) : "none"}</td><td class="n">${w.sellerAmountUsdc ? esc(w.sellerAmountUsdc) : "n/a"}</td></tr>`;
       }
       // One customer payment, several seller payments: one row for the audit, one indented line per seller payment.
       const sub = ps

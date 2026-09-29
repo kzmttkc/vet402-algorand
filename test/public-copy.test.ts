@@ -52,7 +52,7 @@ test("landing and demo: the correction is stated, with the fix commit and the re
   assert.ok(html.includes('href="/board?view=census&amp;date=2026-09-28"'));
   assert.doesNotMatch(text, /took the payment and sent back something else|went through all|nobody checks|delivered what the listing promised/);
   const demo = demoHtml();
-  assert.match(visible(demo), /recorded on 27 September 2026, and the 80 MISMATCH it shows come from a checker rule that later turned out to be too strict/);
+  assert.match(visible(demo), /recorded on 27 September 2026, and most of the 80 MISMATCH it shows come from a checker rule that later turned out to be too strict/);
   assert.match(visible(demo), /55 of those 80 delivered/);
   assert.ok(demo.includes('href="/board?view=census&amp;date=2026-09-28"'));
   assert.ok(demo.indexOf("<video") < demo.indexOf('class="fix"'), "the note sits under the video");

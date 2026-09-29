@@ -308,7 +308,7 @@ export const UNCLEAR_NOTE =
 const SPEECH_TONE_NOTE =
   "Note added 2026-09-29: the declared keys were present, so the result stays DELIVERED. The content differed from the listing's description (speech synthesis): " +
   "the answer's id began with audio-free- and its audio_url held a WAV file with RIFF size 29,876. In the seller's public source at commit c2b4344, " +
-  "generateWavBase64() (src/providers/openrouter.ts) builds that answer for this 56-character input: 3.73 s of an 8,000 Hz, 8-bit tone whose pitch " +
+  "generateWavBase64() (src/providers/openrouter.ts) builds that answer for this 56-character input: 3.73 s of 8-bit audio at 8,000 samples a second, a tone whose pitch " +
   "follows the input characters. Details: README, Corrections.";
 export const CONTENT_NOTES: Readonly<Record<string, string>> = {
   // moltworld.xyz POST /v1/models/tts-1/audio/speech, census 2026-09-27 and 2026-09-28

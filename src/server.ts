@@ -199,7 +199,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps) {
         `$${cfg.checkPriceUsdc}`,
       ),
       description:
-        "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
+        "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you whether the paid answer came back with the keys the listing declares (GET endpoints).",
       mimeType: "application/json",
       extensions: discovery,
     },

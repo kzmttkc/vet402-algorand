@@ -190,7 +190,7 @@ export function demoHtml(): string {
 </head><body><main>
 <h1>vet402 on Algorand: demo</h1>
 <video controls preload="metadata" playsinline src="${DEMO_VIDEO_URL}"></video>
-<p class="fix">A correction to the video: it was recorded on 27 September 2026, and the ${FEATURED_CENSUS.firstRunMismatch} MISMATCH it shows come from a checker rule that later turned out to be too strict (it treated every example key in a listing as a promise). vet402 fixed the rule that day and bought everything again on 28 September: ${FEATURED_CENSUS.firstRunMismatchDelivered} of those ${FEATURED_CENSUS.firstRunMismatch} delivered. The corrected numbers: <a href="/board?view=census&amp;date=${FEATURED_CENSUS.date}">census of ${FEATURED_CENSUS.date}</a>.</p>
+<p class="fix">A correction to the video: it was recorded on 27 September 2026, and most of the ${FEATURED_CENSUS.firstRunMismatch} MISMATCH it shows come from a checker rule that later turned out to be too strict (it treated every example key in a listing as a promise). The video's legend says "delivered as declared"; what vet402 checks is narrower: the paid answer had the keys the listing declares. vet402 fixed the rule that day and bought everything again on 28 September: ${FEATURED_CENSUS.firstRunMismatchDelivered} of those ${FEATURED_CENSUS.firstRunMismatch} delivered. The corrected numbers: <a href="/board?view=census&amp;date=${FEATURED_CENSUS.date}">census of ${FEATURED_CENSUS.date}</a>.</p>
 <p><a href="${DEMO_VIDEO_URL}">Download the video (MP4)</a> &middot; <a href="/board?view=census">Census board</a> &middot; <a href="/activity">Activity ledger</a> &middot; <a href="https://github.com/kzmttkc/vet402-algorand">Source</a></p>
 </main></body></html>`;
 }

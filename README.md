@@ -10,7 +10,7 @@ What the check covers: after payment, a 2xx answer of non-empty JSON with the ke
 
 Built for the Algorand Foundation Global x402 Challenge (Orchestrator track). The payment requirements carry `accepts[].extra.tag = "x402-global-challenge"`.
 
-You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint itself, checks what came back against what the seller declared (the output schema's `required` keys, or the example's keys when there is no `required` list, and the `402 accepts`), and returns:
+You name an x402 endpoint and pay vet402 0.05 USDC. vet402 pays that endpoint itself, checks what came back against what the seller declared (the output schema's `required` keys, or, when there is no `required` list, at least one of the example's keys, and the `402 accepts`), and returns:
 
 - `ALLOW` or `REFUSE`, with a machine-readable reason,
 - the tx id of **your payment to vet402** and the tx id of **vet402's payment to the seller**, and
@@ -329,12 +329,13 @@ Published board files are corrected only toward what the chain shows, and every 
 
 ### 2026-09-27 12:1x JST: first MainNet checks (operator smoke test)
 
-The paying client here is vet402's own payer wallet, so these two calls are a deployment check by the operator, not customer usage.
+The paying client here is vet402's own payer wallet, so these three calls are a deployment check by the operator, not customer usage.
 
 | target | verdict | payment 1 (client → vet402) | payment 2 (vet402 → seller) |
 |---|---|---|---|
 | blocksigner.org/commission/pulse (0.01 USDC) | ALLOW delivered | UTFFAINOX54Y4BI6K5ANNVWQRXGYM56P7NETSMCD4QYCGO5TJVOA (round 65431727, 0.05 USDC) | 4GMCTRIGQYL3Z5DRHKIBFOUKHNG5NNAYR7ZNYFU5ICCUCAC7F3TA (round 65431730, 0.01 USDC) |
 | agent402.tools/api/time (0.001 USDC) | REFUSE payment_failed (the seller's facilitator answered `subcent_quota_exceeded`) | QU6RPL2CKPD4SLDARRKM637PFPHHGCWQUWCW7WCJXHTKLBCXRL2A (round 65431721, 0.05 USDC) | not paid |
+| canix402 (0.01 USDC), 03:51 UTC | seller paid (see `/activity`) | WUHOUH5C6MMSQY5QAJAI6ZTPQWXDA3GUVNNZ5FUKA6XNB367BDFA (round 65432448, 0.05 USDC) | 2SJMXF6T4OF3467QB4DBOKBXPWQIRJMZ3ZLTPXEACC5U5VPKZ7QA (round 65432457, 0.01 USDC) |
 
 Rounds were read from `mainnet-idx.algonode.cloud`. The customer's payment confirms before the seller payment.
 
@@ -342,7 +343,7 @@ MainNet addresses: vet402 payTo `RMMD7KW5F627Q72AJKNZEIEP33I3RD4VSCBGUSYVUTPZARJ
 
 ### 2026-09-27: one seller payment without a customer payment (bug, fixed)
 
-`OZZH2TRA3MANN55OTTWOXVBDHRRYIJ52IBXEPVBBE4BNQUOR6CCQ` (04:42 UTC, 0.01 USDC to canix402) had no customer payment in front of it. An unpaid `HEAD /v1/check` skipped the payment check and reached the handler, which paid the seller. Fixed at 05:28 UTC in 3d1377f: HEAD is priced like GET, and the handler refuses without a settled customer payment. It shows on `/activity` under unmatched seller payments.
+`OZZH2TRA3MANN55OTTWOXVBDHRRYIJ52IBXEPVBBE4BNQUOR6CCQ` (04:42 UTC, 0.01 USDC to canix402) had no customer payment in front of it. An unpaid `HEAD /v1/check` skipped the payment check and reached the handler, which paid the seller. Fixed at 05:28 UTC in 84121e6 (3d1377f before the history rewrite): HEAD is priced like GET, and the handler refuses without a settled customer payment. It shows on `/activity` under unmatched seller payments.
 
 ## TestNet run record
 

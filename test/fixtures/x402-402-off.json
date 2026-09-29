@@ -6,7 +6,7 @@
    "error": "Payment required",
    "resource": {
     "url": "http://localhost/v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
-    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
+    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you whether the paid answer came back with the keys the listing declares (GET endpoints).",
     "mimeType": "application/json"
    },
    "accepts": [
@@ -175,7 +175,7 @@
    "error": "Payment required",
    "resource": {
     "url": "http://localhost/v1/check?url=http%3A%2F%2Flocalhost%3A4031%2Fhonest",
-    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you if the delivery matched the listing (GET endpoints).",
+    "description": "Check an x402 seller before your first payment to it: vet402 pays it once with its own wallet and tells you whether the paid answer came back with the keys the listing declares (GET endpoints).",
     "mimeType": "application/json"
    },
    "accepts": [

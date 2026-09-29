@@ -5,7 +5,9 @@
  * Imports only modules that existed at e563b4c, so the same file produces the golden there.
  * One later change to the golden (fix/listing-example): only the Bazaar example input and output
  * (extensions.bazaar.info.input / .output.example) of each route, from the placeholder seller to a
- * real one. Status, accepts, resource and body are as at e563b4c.
+ * real one. A second (fix/public-copy): the /v1/check resource description, from "tells you if the
+ * delivery matched the listing" to what vet402 checks (the declared keys). Status, accepts, amounts
+ * and the rest of each body are as at e563b4c.
  */
 import { join } from "node:path";
 import { ALGORAND_TESTNET_CAIP2 } from "@x402/avm";
