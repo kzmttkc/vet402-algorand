@@ -35,41 +35,17 @@
   },
   "completedAt": "2026-10-01T10:15:59.096Z",
   "reconcile": {
-    "checkedAt": "2026-10-01T10:16:14.691Z",
+    "checkedAt": "2026-10-02T10:05:32.002Z",
     "status": "ok",
     "window": {
       "from": "2026-10-01T10:03:26.704Z",
-      "to": "2026-10-01T10:16:14.141Z"
+      "to": "2026-10-01T12:16:14.691Z"
     },
     "transfers": 70,
-    "onRows": 64,
-    "recorded": [
-      {
-        "tx": "OR3AHWYRHCHC6PGTNKOHUQ2H3IMDXGZH24UIRIHJTXFJ734NYD3A",
-        "url": "https://x402.diiisco.com/v1/chat/completions"
-      },
-      {
-        "tx": "WEQGSA3BDWMXJCVYW5EQ6TPPXQT74IBYYPJ6S44HU6ERUMP365MA",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "W5AVGIOGKGQ55TGCKH4SPCUBPM434BQBKZTN6OBQ726CXKZAEFXA",
-        "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30"
-      },
-      {
-        "tx": "O2IV6SSJXYZPD3W7UGWGHLGJNC6GYLO45UAUYCGOURNTY2DHNJUA",
-        "url": "https://api.agentwork.run/v1/web/changes"
-      },
-      {
-        "tx": "C7LLJHRRAA2UTFVN3WF4BJ4B6PRDWBRPGKGPMNMMR65HCUL7OBIQ",
-        "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
-      },
-      {
-        "tx": "N2PKFEDCODEJO7PXSI6OC7PO5U7KTHA7O26WPYEEM272WOG24GLQ",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 70,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-02T10:05:32.002Z"
   },
   "rows": [
     {
