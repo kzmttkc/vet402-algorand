@@ -35,33 +35,17 @@
   },
   "completedAt": "2026-10-03T10:15:01.489Z",
   "reconcile": {
-    "checkedAt": "2026-10-03T10:15:16.944Z",
+    "checkedAt": "2026-10-04T12:19:34.808Z",
     "status": "ok",
     "window": {
       "from": "2026-10-03T10:03:22.745Z",
-      "to": "2026-10-03T10:15:16.533Z"
+      "to": "2026-10-03T12:15:16.944Z"
     },
     "transfers": 72,
-    "onRows": 68,
-    "recorded": [
-      {
-        "tx": "LIKAP4T3CYYZO4G74F2DHECOOTQH3DOTVNLRJSGJT4W7V4IHY36Q",
-        "url": "https://x402.diiisco.com/v1/chat/completions"
-      },
-      {
-        "tx": "OI7VW7JUQSG7KCV5HNACEL6SSOXYMS7RTSOV3YOISLXWJB25K5TQ",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "AK6IB27XJ55D3Q7JB46LIBQN3XUZI7UHEKPCF33ZWVJBZTHMYXGA",
-        "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
-      },
-      {
-        "tx": "MLNVGRGEEDUDSNLOX3RDGZXDAL4VIFJN6XKTR6BOZ6Z5P64FUWGQ",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 72,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-04T12:19:34.808Z"
   },
   "rows": [
     {
