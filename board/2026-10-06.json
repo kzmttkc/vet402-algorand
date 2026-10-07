@@ -36,29 +36,17 @@
   },
   "completedAt": "2026-10-06T00:11:37.835Z",
   "reconcile": {
-    "checkedAt": "2026-10-06T00:11:53.265Z",
+    "checkedAt": "2026-10-07T11:05:29.944Z",
     "status": "ok",
     "window": {
       "from": "2026-10-05T23:59:04.196Z",
-      "to": "2026-10-06T00:11:52.892Z"
+      "to": "2026-10-06T02:11:53.265Z"
     },
     "transfers": 68,
-    "onRows": 65,
-    "recorded": [
-      {
-        "tx": "PYJHOJWYWOQZZ7HDWXKZOYNPSOW57ZDKDXZJGC4S2DLMAL6XBWMA",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "IISUONFYTETT2HBGVMNIXTGKW6YM6DMMPLEQQ3UZ4MM7CDAY3E7A",
-        "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
-      },
-      {
-        "tx": "SEG7QCVZNDPJZ4SKIIWK5L2TEO43F4TYCIAI3RSXOFL4KLH7Z23A",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 68,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-07T11:05:29.944Z"
   },
   "rows": [
     {
