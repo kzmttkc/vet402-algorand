@@ -36,33 +36,17 @@
   },
   "completedAt": "2026-10-08T11:16:01.474Z",
   "reconcile": {
-    "checkedAt": "2026-10-08T11:16:17.341Z",
+    "checkedAt": "2026-10-09T12:42:30.328Z",
     "status": "ok",
     "window": {
       "from": "2026-10-08T11:03:26.957Z",
-      "to": "2026-10-08T11:16:16.527Z"
+      "to": "2026-10-08T13:16:17.341Z"
     },
     "transfers": 71,
-    "onRows": 67,
-    "recorded": [
-      {
-        "tx": "6JJN2O5TZMNN4SV4XKGSNCUQ2H5S464AR366S6AUSQHMR63443UQ",
-        "url": "https://x402.frostylabs.ai/asa-intel/a2a"
-      },
-      {
-        "tx": "FGDJF3HP4LZNDGDWVLHUMRDGZAZOF7ZGY2KXDEMQQWGDXPJR4EHA",
-        "url": "https://x402.diiisco.com/v1/chat/completions"
-      },
-      {
-        "tx": "4DIPWTS2JJ342F3J2OCW35LCZ5NMFMFXIRUU7M6U2ACZ4FZMBVAQ",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "PPAP6M4S5QTTTP267DEPHUZUJLX4MBR6G77IYVXLIFO45MTYEVWQ",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 71,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-09T12:42:30.328Z"
   },
   "rows": [
     {
