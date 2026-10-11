@@ -36,29 +36,17 @@
   },
   "completedAt": "2026-10-10T11:15:48.721Z",
   "reconcile": {
-    "checkedAt": "2026-10-10T11:16:04.280Z",
+    "checkedAt": "2026-10-11T11:05:30.631Z",
     "status": "ok",
     "window": {
       "from": "2026-10-10T11:03:26.816Z",
-      "to": "2026-10-10T11:16:03.765Z"
+      "to": "2026-10-10T13:16:04.280Z"
     },
     "transfers": 73,
-    "onRows": 70,
-    "recorded": [
-      {
-        "tx": "CVRKPVHZ2BZKWLCYV6C3ADRBZ44D7FLLELYPPCJSGR3ED4MSWQHQ",
-        "url": "https://x402.frostylabs.ai/asa-intel/a2a"
-      },
-      {
-        "tx": "PZ25FKNBV4OVTT4PZEGHAJHEAWOJH3D4AN23EFUBXUQCX4NZ6OJA",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "K4JHUPHQ56RSRJQFU5IA32FTSMOW7UHTXJXHH6VDV2YVGNB47EVQ",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 73,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-11T11:05:30.631Z"
   },
   "rows": [
     {
