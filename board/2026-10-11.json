@@ -35,41 +35,17 @@
   },
   "completedAt": "2026-10-11T11:16:46.927Z",
   "reconcile": {
-    "checkedAt": "2026-10-11T11:17:02.795Z",
+    "checkedAt": "2026-10-12T11:05:38.840Z",
     "status": "ok",
     "window": {
       "from": "2026-10-11T11:03:30.184Z",
-      "to": "2026-10-11T11:17:01.972Z"
+      "to": "2026-10-11T13:17:02.795Z"
     },
     "transfers": 73,
-    "onRows": 67,
-    "recorded": [
-      {
-        "tx": "EINRWHPXDHDAAHXJDU2TIUB4E4A6GGB5HAN6FUHZEMLBXVT3RGRQ",
-        "url": "https://x402.pipeforge.tech/api/v1/inspect"
-      },
-      {
-        "tx": "EEEGIZYIFHBE2ORKJW6DW4HATYFOEJTOG3ZAA5PHTFPE5J6VFF4Q",
-        "url": "https://x402.frostylabs.ai/asa-intel/a2a"
-      },
-      {
-        "tx": "ZNOG7ZK3H7KRRUIAQDKROPHTXC7HZN72DQEYDKXI7EMEY4UD66LQ",
-        "url": "https://x402.diiisco.com/v1/chat/completions"
-      },
-      {
-        "tx": "E33CIBUTAVEWI7OUCR22VEE57VBUL2K4WDJOTVZY4UO7DWTIGBFQ",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "YMY2SUJQMLMOOUMOSFJZUUDH7KNEY4Q6AWQWOFTGWQMZO5NWNNEQ",
-        "url": "https://algo.borisinc.com/trust?url=https%3A%2F%2Fapi.example.com%2Fdata"
-      },
-      {
-        "tx": "MVXUDWKFB57JQCDTFP7PYRH426QZIOCTTTELUAQK42TJBDSTOMJQ",
-        "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
-      }
-    ],
-    "unmatched": []
+    "onRows": 73,
+    "recorded": [],
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-12T11:05:38.840Z"
   },
   "rows": [
     {
