@@ -3,56 +3,48 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-10-16",
-  "startedAt": "2026-10-16T11:05:27.789Z",
-  "finishedAt": "2026-10-16T11:15:51.019Z",
+  "date": "2026-10-17",
+  "startedAt": "2026-10-17T10:41:30.470Z",
+  "finishedAt": "2026-10-17T10:45:36.713Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2660 items)",
-    "candidates": 86,
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2663 items)",
+    "candidates": 85,
     "excluded": {
-      "price_over_cap": 288,
+      "price_over_cap": 289,
       "other_network_or_asset": 287,
       "not_https": 1,
-      "stale": 1828,
+      "stale": 1834,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 168
+      "not_cheapest_on_host": 165
     }
   },
   "totals": {
-    "rows": 86,
-    "allow": 61,
-    "refuse": 25,
+    "rows": 85,
+    "allow": 9,
+    "refuse": 76,
     "skipped": 0,
     "unclear": 0,
-    "paidUsdc": "1.542100"
+    "paidUsdc": "0.010100"
   },
-  "completedAt": "2026-10-16T11:15:35.524Z",
+  "completedAt": "2026-10-17T10:45:21.247Z",
   "reconcile": {
-    "checkedAt": "2026-10-16T11:15:51.019Z",
+    "checkedAt": "2026-10-17T10:45:36.713Z",
     "status": "ok",
     "window": {
-      "from": "2026-10-16T11:03:27.789Z",
-      "to": "2026-10-16T11:15:50.582Z"
+      "from": "2026-10-17T10:39:30.470Z",
+      "to": "2026-10-17T10:45:36.306Z"
     },
-    "transfers": 70,
-    "onRows": 67,
+    "transfers": 11,
+    "onRows": 10,
     "recorded": [
       {
-        "tx": "NJKHULLUKT5IGXGZ3LSQ7GXUMPK33EAHKYPLOYTXF5VZY3MQPEJQ",
-        "url": "https://x402.frostylabs.ai/asa-intel/a2a"
-      },
-      {
-        "tx": "BCSGG6LDBCD3IQH55NQKH62RPSRVKYLM5LJVSP7YMVPN6TTOCSFQ",
-        "url": "https://x402-echo-service.vercel.app/api/echo/test"
-      },
-      {
-        "tx": "6BF22XCK5ZIO7DRC54BL6P34M2ZXTCNIAOSFXCYAXTXKWTJO5VNA",
+        "tx": "XAAQAIYLAAMMSBNLD3A3EOSHWLKXHJMXPTPXZ2B3UTD7G3646ERQ",
         "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info"
       }
     ],
@@ -60,7 +52,7 @@
   },
   "rows": [
     {
-      "at": "2026-10-16T11:05:44.604Z",
+      "at": "2026-10-17T10:41:39.643Z",
       "url": "https://auditpay.appl3s.in/audit/certificate?service=my-registered-service&from=2026-09-01&to=2026-09-30&asset=USDC&network=mainnet",
       "host": "auditpay.appl3s.in",
       "method": "GET",
@@ -73,13 +65,12 @@
         "expectedKeys": []
       },
       "verdict": "REFUSE",
-      "reason": "delivery_missing_keys",
-      "paid": true,
-      "tx": "KV7G6MFZUEXDD7RQY5XTVD7PL43YVUIKHFUEIZHC7BZD6HVRTHFA",
-      "delivery": "201 application/json; charset=utf-8 object{status:string=\"generated\", certificateId:string=\"CERT-20261016-FFD3F79E1CF729E6\", serviceName:string=\"my-registered-service\", dateFrom:string=\"2026-09-01\", dateTo:string=\"2026-09-30\", assetFilter:string=\"USDC\", transactionCount:numb…"
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:05:49.981Z",
+      "at": "2026-10-17T10:41:46.564Z",
       "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "host": "api.algorand-indexer.xyz",
       "method": "GET",
@@ -94,29 +85,11 @@
       "verdict": "REFUSE",
       "reason": "delivery_missing_keys",
       "paid": true,
-      "tx": "2K3ETVUUVZEOWCUECDSMQ66ZHHPPSXC47BZXJMXVX7UCTBGBA4UQ",
-      "delivery": "200 application/json object{account:object, current-round:number=66037287}"
+      "tx": "OX7GDSX7X6NGDV2YPDQIBXSDANUJDACLK5Y6A7JHCTIPKWOQA5XQ",
+      "delivery": "200 application/json object{account:object, current-round:number=66068016}"
     },
     {
-      "at": "2026-10-16T11:05:50.707Z",
-      "url": "https://algorand-indexer.xyz/api/v1/queries/results/1YXqLq-4eLnM4eoUL5GQHgjN9rec2eYf/unlock",
-      "host": "algorand-indexer.xyz",
-      "method": "POST",
-      "input": "body {\"payment_signature\":\"\"}",
-      "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
-      "priceUsdc": "0.000100",
-      "declared": {
-        "description": "Unlock analytics query results (x402 hop-equivalent payment)",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 401, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-10-16T11:05:55.420Z",
+      "at": "2026-10-17T10:41:52.046Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -135,11 +108,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "6JPBWVLH44MSSKP36FVECWHJNXFDTNO2LTYIA7CNH6FG5JWVGSQA",
+      "tx": "NV2EY6E6TYYRCUCDWJBTQCIQQLGYBJARU2KF33ST5R22BT7JGFKQ",
       "delivery": "200 application/json; charset=utf-8 object{algo:string=\"sha256\", hex:string=\"b94d27b9934d3e08a52e52d7da7dabfac484efe, base64:string=\"uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOL}"
     },
     {
-      "at": "2026-10-16T11:06:00.928Z",
+      "at": "2026-10-17T10:41:57.541Z",
       "url": "https://algo.netintel.dev/email/verify?email=user%40github.com",
       "host": "algo.netintel.dev",
       "method": "GET",
@@ -154,11 +127,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "II6YHZVSVLXD5J23SMZ3SATESOV7OUTUG76RZT55LV4QEK36GYRQ",
+      "tx": "24FLFL3X27TLQ7TWA3FSPTVTV4AUXCVOGP4YHTBA4ELQLBIBSTJQ",
       "delivery": "200 application/json; charset=utf-8 object{email:string=\"user@github.com\", deliverable:boolean=true, safe_to_send:boolean=true, result:string=\"deliverable\", reason:string=\"ok\", risk_flags:array(0), domain:string=\"github.com\", format_valid:boolean=true, mx_found:boolean=true,…"
     },
     {
-      "at": "2026-10-16T11:06:06.534Z",
+      "at": "2026-10-17T10:42:03.281Z",
       "url": "https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
       "host": "algorand-api.pxke.me",
       "method": "GET",
@@ -173,11 +146,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "U7CIGBJINBGWNH4PH6XSKEIWLGJSDNAVVXXP5N4JDO7XWPOYTZUA",
-      "delivery": "200 application/json object{query:string=\"tinyman volume\", engine:string=\"typesense\", items:array(10), settlement_tx_id:string=\"U7CIGBJINBGWNH4PH6XSKEIWLGJSDNAVVXXP5N4}"
+      "tx": "C4KOH7IHI7RUVHUN5PTYP2AGLCYDUQ2JFNCEWI5UROUVQAC2KGIA",
+      "delivery": "200 application/json object{query:string=\"tinyman volume\", engine:string=\"typesense\", items:array(10), settlement_tx_id:string=\"C4KOH7IHI7RUVHUN5PTYP2AGLCYDUQ2JFNCEWI5}"
     },
     {
-      "at": "2026-10-16T11:06:11.969Z",
+      "at": "2026-10-17T10:42:08.729Z",
       "url": "https://algorand.ottoai.services/base-ecosystem-news",
       "host": "algorand.ottoai.services",
       "method": "GET",
@@ -195,11 +168,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "O2N7VVTXVV5M3QWKLTWRH57ZHHSLBUGVOBYS7WHSOKCEZ4YQBHGQ",
+      "tx": "IY4J57MGIJHDLNONKATKAMJ7CWAONZTAC54IJV3SVPSS3LKXSU5A",
       "delivery": "200 application/json; charset=utf-8 object{status:string=\"success\", data:object, meta:object}"
     },
     {
-      "at": "2026-10-16T11:06:19.622Z",
+      "at": "2026-10-17T10:42:16.500Z",
       "url": "https://api.agentkeep.online/v1/memory",
       "host": "api.agentkeep.online",
       "method": "GET",
@@ -214,11 +187,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "MXDHQJQVHEVMJMSM6ASZTGRYIRHBFHXKM5AUVVTSUEXB56JG7YMQ",
+      "tx": "DCLZK6CR4XWABRGZW7UXA4Z2CSZ6IJON6IGC3AIPI4BCSQBT65KQ",
       "delivery": "200 application/json object{keys:array(0), receipt:object}"
     },
     {
-      "at": "2026-10-16T11:06:25.638Z",
+      "at": "2026-10-17T10:42:22.469Z",
       "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
       "host": "api.algofile.io",
       "method": "GET",
@@ -232,12 +205,12 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer 6BF22XCK5ZIO7DRC54BL6P34M2ZXTCNIAOSFXCYAXTXKWTJO5VNA (to this payTo, round 66037302, 11:06:22 UTC); no delivery",
+      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer XAAQAIYLAAMMSBNLD3A3EOSHWLKXHJMXPTPXZ2B3UTD7G3646ERQ (to this payTo, round 66068032, 10:42:19 UTC); no delivery",
       "paid": true,
-      "tx": "6BF22XCK5ZIO7DRC54BL6P34M2ZXTCNIAOSFXCYAXTXKWTJO5VNA"
+      "tx": "XAAQAIYLAAMMSBNLD3A3EOSHWLKXHJMXPTPXZ2B3UTD7G3646ERQ"
     },
     {
-      "at": "2026-10-16T11:06:33.964Z",
+      "at": "2026-10-17T10:42:28.050Z",
       "url": "https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
       "host": "api.iomarkets.ai",
       "method": "GET",
@@ -252,11 +225,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "4F3PWHYSALLDD6BZJ5UQDTTYNIQF5YFYZLLQBYAEZWXY3VDLZ3UQ",
-      "delivery": "200 application/json object{symbol:string=\"BTC-USDC\", vwap:number=82163.27262771032}"
+      "tx": "IWAUT4PECG56EWMI4DM5NHMGRG7WTCFYKXIG44PCE3ZLWW3ASGIQ",
+      "delivery": "200 application/json object{symbol:string=\"BTC-USDC\", vwap:number=81548.13422985404}"
     },
     {
-      "at": "2026-10-16T11:06:39.546Z",
+      "at": "2026-10-17T10:42:36.543Z",
       "url": "https://api.kocalgo.io/v1/events/changes?since=2026-10-03T21%3A00%3A00Z&sport=football&limit=100",
       "host": "api.kocalgo.io",
       "method": "GET",
@@ -275,29 +248,27 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "3SHUYU43F2STBRCCKSTCQVKAVTYBNGESJNAG3LUR3FWC63THYEVQ",
+      "tx": "3PYHHFGHDU4BRQPOKFVQ3SIS4V53G2QEJOOUL5HRTNQCCKIGO2UQ",
       "delivery": "200 application/json object{data:object, meta:object, proof:object}"
     },
     {
-      "at": "2026-10-16T11:06:40.322Z",
-      "url": "https://api.pqattest.com/attest",
+      "at": "2026-10-17T10:42:36.741Z",
+      "url": "https://api.pqattest.com/attest-block",
       "host": "api.pqattest.com",
       "method": "POST",
       "input": "body {\"txid\":\"OZ24DXUP6W3YIKK2KZ642WG2EAAIYJZE2IDGHCKMWOUERNL4UKWA\",\"chain\":\"algorand\"}",
       "payTo": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM",
       "priceUsdc": "0.001000",
       "declared": {
-        "description": "pq-attest proof bundle for a confirmed transaction, recorded on Algorand MainNet",
-        "mimeType": "application/json",
-        "expectedKeys": []
+        "description": "pq-attest proof bundle for a confirmed transaction, recorded on Algorand MainNet"
       },
       "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 500, no settlement receipt",
+      "reason": "not_x402",
+      "detail": "expected 402, got 400",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:06:47.995Z",
+      "at": "2026-10-17T10:42:42.698Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -312,11 +283,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "F5GOTPTRK2JSCD34RTVTKMFEOVZ7LB4CY5TUWDM5NB2RK667HNHQ",
-      "delivery": "200 application/json object{base:string=\"USD\", timestamp:string=\"2026-10-16T11:06:42.051Z\", source:string=\"currency-api\", rates:object, micro_state_pegs:array(3), data_sources:array(1), data_currency:string=\"daily\", coverage_note:string=\"All rates sourced from…"
+      "tx": "ZVVDMRQRJEDUT7OVHSTB3S7W7EG6B2X74X5K2IVEN2MZQELESY3Q",
+      "delivery": "200 application/json object{base:string=\"USD\", timestamp:string=\"2026-10-17T10:42:38.159Z\", source:string=\"currency-api\", rates:object, micro_state_pegs:array(3), data_sources:array(1), data_currency:string=\"daily\", coverage_note:string=\"All rates sourced from…"
     },
     {
-      "at": "2026-10-16T11:06:55.992Z",
+      "at": "2026-10-17T10:42:43.422Z",
       "url": "https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
       "host": "arbsignal-production.up.railway.app",
       "method": "GET",
@@ -328,14 +299,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "CNUZTKRWAQ6I4AT4QJDQVJGLXMY6BRHHT6BCZZNRFBZUZQKHACYQ",
-      "delivery": "200 application/json object{generatedAt:string=\"2026-10-16T11:06:50.826Z\", pair:string=\"goBTC/USDC\", opportunity:null}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:01.372Z",
+      "at": "2026-10-17T10:42:52.860Z",
       "url": "https://blocksigner.org/commission/tick",
       "host": "blocksigner.org",
       "method": "GET",
@@ -352,11 +322,11 @@
       "verdict": "ALLOW",
       "reason": "delivered",
       "paid": true,
-      "tx": "NJXZNFA6HM2NBQPN7RCBL64VTTTOV3GHU22HVHNQIG5QWGTZLLRQ",
-      "delivery": "200 application/json object{_meta:object, agents:number=6, agents_total_algo:number=4.8, algorand_round:number=66037313, as_of:string=\"2026-10-16T11:06:57Z\", headline:string=\"As we dive back into the world of Unity, service:string=\"World Tick - Agent World's s…"
+      "tx": "7XCBMBUU7F3IN4Y5ZB4KQDZN43K3TN4JYFJ2TVOVAID6NI4XSZHQ",
+      "delivery": "200 application/json object{_meta:object, agents:number=6, agents_total_algo:number=4.8, algorand_round:number=66068041, as_of:string=\"2026-10-17T10:42:49Z\", headline:string=\"The Algorand Community Unites We're wit, service:string=\"World Tick - Agent World's s…"
     },
     {
-      "at": "2026-10-16T11:07:20.661Z",
+      "at": "2026-10-17T10:43:13.681Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -368,14 +338,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "X5WJYTDA46YEGXHMJH6FZEPEOZBS2RFF3VN6AQKS7NGW6IWB4MUA",
-      "delivery": "200 application/json; charset=utf-8 object{data:array(0), protocols:array(5), totals:object, claimAllQuotes:object, meta:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "The operation was aborted due to timeout",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:26.961Z",
+      "at": "2026-10-17T10:43:15.376Z",
       "url": "https://coil.trade/api/crypto/gate",
       "host": "coil.trade",
       "method": "GET",
@@ -387,14 +356,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "GOWWN5XGJ2TO7LIEKCOBURB72MRITGISTBORICXLZ5MQPOXV6MYA",
-      "delivery": "200 application/json; charset=utf-8 object{product:string=\"coil-crypto-gate\", asof_daily:string=\"2026-10-15\", timestamp:string=\"2026-10-15T13:28:22\", signal_close_date:string=\"2026-10-15\", gate_open:boolean=true, mode:string=\"NAMES_ON\", sleeves:array(81), verdict:string=\"CON…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:31.713Z",
+      "at": "2026-10-17T10:43:17.703Z",
       "url": "https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
       "host": "gateway-x402.vercel.app",
       "method": "GET",
@@ -408,12 +376,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 402, Transaction simulation failed: transaction already in ledger: XBJYI737YZB2YEM5UQUKT6D6PMVDAW7YKOQTIKQ4S5EYGRELHRPQ · settled on chain: vet402's transfer A7MML5ARMGDSGOEQN4JPDXMAFZTQGGFPX5TVCNH2HN6WWSUNLCBQ (same group, round 66037326); no delivery",
-      "paid": true,
-      "tx": "A7MML5ARMGDSGOEQN4JPDXMAFZTQGGFPX5TVCNH2HN6WWSUNLCBQ"
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:32.208Z",
+      "at": "2026-10-17T10:43:17.860Z",
       "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
       "host": "growtrack.pro",
       "method": "GET",
@@ -431,7 +398,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:07:37.238Z",
+      "at": "2026-10-17T10:43:19.218Z",
       "url": "https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
       "host": "noahs-mac-mini.tail571e99.ts.net",
       "method": "GET",
@@ -443,14 +410,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "RK2XIP5PS7GGEJDBK2HDGXVW5IOENTJ4VLWFC7IMVT5LQKOT7EOA",
-      "delivery": "200 application/json object{hub:string=\"Henry Hub (Louisiana)\", date:string=\"2026-10-14\", spotUsdPerMmbtu:number=3.22, avgLast30TradingDays:number=2.998, minLast30TradingDays:number=2.71, maxLast30TradingDays:number=3.24, changeOverPeriodPct:number=9.2, histor…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:42.803Z",
+      "at": "2026-10-17T10:43:21.414Z",
       "url": "https://whaletape.xyz/algo/coverage",
       "host": "whaletape.xyz",
       "method": "GET",
@@ -462,14 +428,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "JX4AFRXPVQZKDSG62H7BSVKAEPK7T3P4BHGTG735XDR32AECWCJA",
-      "delivery": "200 application/json object{symbols:number=359, asset_classes:array(6), first_ts:number=1787245200, last_ts:number=1792148641, note:string=\"call /coverage/{symbol} for one market'}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:53.865Z",
+      "at": "2026-10-17T10:43:23.028Z",
       "url": "https://x402-doctor.fizzl.eu/api/v1/preflight?url=https%3A%2F%2Fichimoku-signal.fizzl.eu%2Fsignal%2FBTC-USDT&max_usd=0.05",
       "host": "x402-doctor.fizzl.eu",
       "method": "GET",
@@ -488,14 +453,13 @@
           "reasons"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "ZZXGYC3R6VB3SZ3F3OAQWBBISMTOXCV4UHYBFG7OAJONHSZ6XLNQ",
-      "delivery": "200 application/json; charset=utf-8 object{url:string=\"https://ichimoku-signal.fizzl.eu/signal, method:string=\"GET\", verdict:string=\"go\", safe_to_pay:boolean=true, summary:string=\"OK to pay: $0.01 on Base.\", recommended_option:number=0, options:array(6), signals:object, reas…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:07:59.296Z",
+      "at": "2026-10-17T10:43:23.961Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -507,14 +471,31 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "Q2FRE3JODJ67AQDGZK6T6TBG23WAQGH6G6XDFCFXP4WBLSYYT26A",
-      "delivery": "200 application/json; charset=utf-8 object{analyzeJobId:string=\"sl_aj_01M526BDXF0STSEKK93R3DYGXZ\", status:string=\"queued\", endpoint:string=\"technology\", createdAt:string=\"2026-10-16T11:07:59.280Z\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:05.552Z",
+      "at": "2026-10-17T10:43:24.734Z",
+      "url": "https://algorand-indexer.xyz/api/v1/queries/results/v4NtiyeYzlkup4-TWXo63zTJa_pzafNd/unlock",
+      "host": "algorand-indexer.xyz",
+      "method": "POST",
+      "input": "body {\"payment_signature\":\"\"}",
+      "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+      "priceUsdc": "0.000100",
+      "declared": {
+        "description": "Unlock analytics query results (x402 hop-equivalent payment)",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 401, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-17T10:43:25.441Z",
       "url": "https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
       "host": "legit.gonna.bond",
       "method": "GET",
@@ -531,14 +512,13 @@
           "rationale"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "OIPKP6SY655ZHLOR4WYFXWK46MYDDVBXJLOPIFZZUZCTKCOIQBIA",
-      "delivery": "200 application/json object{generated_at:string=\"2026-10-16T11:08:05.491057+00:00\", entries:array(2), winner:null, rationale:string=\"No winner: none of the compared address}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:10.175Z",
+      "at": "2026-10-17T10:43:26.807Z",
       "url": "https://agentpay.agentpay-apis.workers.dev/lookup/v1/dns?name=example.com&type=MX",
       "host": "agentpay.agentpay-apis.workers.dev",
       "method": "GET",
@@ -550,14 +530,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "ZDL4BT6FRWAZFDWBO4NUGW7O7PTZHUXTEKMWSJXSAT3ZM7UATBCA",
-      "delivery": "200 application/json object{name:string=\"example.com\", type:string=\"MX\", status:string=\"NOERROR\", dnssecValidated:boolean=true, answers:array(1)}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:23.826Z",
+      "at": "2026-10-17T10:43:37.935Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -569,14 +548,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "J6ZTHSZRSOETWWSPSA3YGO2JEP2EBWRCNUVGPREYDFU37W6YNJBA",
-      "delivery": "200 application/json; charset=utf-8 object{balances:object, totals:object, positions:array(4), openOrders:array(3), meta:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 502, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:29.221Z",
+      "at": "2026-10-17T10:43:39.364Z",
       "url": "https://api-algo.stelardigital.com/pricecheck?asset=SOL",
       "host": "api-algo.stelardigital.com",
       "method": "GET",
@@ -588,30 +566,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "DUOBJMSFYKLCGC4RE2BG3HV6YVAKB6ACQXPESCJDCEHNH7SMODFQ",
-      "delivery": "200 application/json object{as_of:number=1792148906, asset:string=\"SOL\", chg_24h:number=4.41, chg_7d:number=-2.23, price:number=106.74, signal:string=\"neutral\", symbol:string=\"SOLUSDT\"}"
-    },
-    {
-      "at": "2026-10-16T11:08:29.264Z",
-      "url": "https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
-      "host": "api-production-36692.up.railway.app",
-      "method": "GET",
-      "input": "?fresh=false&basis=all_pools_usd_priced",
-      "payTo": "36AZ3YZGHLUFFVU4STAQGSQMRB2W3TK5VVTKZVN6L2LH7NRCK7X27TMEJM",
-      "priceUsdc": "0.005000",
-      "declared": {
-        "description": "One standardized financial KPI for one Algorand DeFi protocol, in USD or as a decimal ratio, with per-response provenance, cache state and a 0-1 confidence score."
-      },
       "verdict": "REFUSE",
-      "reason": "not_x402",
-      "detail": "expected 402, got 404",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:08:34.688Z",
+      "at": "2026-10-17T10:43:41.416Z",
       "url": "https://api.agentwork.run/v1/web/changes",
       "host": "api.agentwork.run",
       "method": "POST",
@@ -623,14 +584,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "IZH3ERG5CKPA3YCFEC7UXXEL62T5KCOK2H65J23HQHSK5D2E2XVQ",
-      "delivery": "200 application/json; charset=utf-8 object{ok:boolean=true, version:string=\"web-evidence-1.2.3\", url:string=\"https://example.com/\", final_url:string=\"https://example.com/\", fetched_at:string=\"2026-10-16T11:08:31.108Z\", source_status:number=200, content_type:string=\"text/html…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:40.122Z",
+      "at": "2026-10-17T10:43:42.088Z",
       "url": "https://api.predge.io/v1/whales/latest?limit=50",
       "host": "api.predge.io",
       "method": "GET",
@@ -642,14 +602,13 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "C455SBVE4RXGIPGNUP4AC4ZG4UTMWHYRZ2PL4QZDP6GURPTLKEKA",
-      "delivery": "200 application/json; charset=utf-8 object{count:number=50, delay_minutes:number=15, whale_min_usd:number=10000, trades:array(50)}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:41.567Z",
+      "at": "2026-10-17T10:43:43.400Z",
       "url": "https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
       "host": "elara-verify-x402.aivelikivodja.workers.dev",
       "method": "POST",
@@ -663,11 +622,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 422, no settlement receipt",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:08:48.306Z",
+      "at": "2026-10-17T10:43:45.133Z",
       "url": "https://fry.farm/x402/rewards",
       "host": "fry.farm",
       "method": "GET",
@@ -679,18 +638,17 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "LULEHEANRHHQYRB2CCFY3FZJOITQRDZ5YXO6Z5ZOMMDBHWHS3ORQ",
-      "delivery": "200 application/json; charset=utf-8 object{resource:string=\"rewards\", generatedAt:string=\"2026-10-16T11:08:42.535Z\", source:string=\"fry.farm\", token:string=\"FRY\", dailyBudget:object, leaderboard:array(20)}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:08:59.431Z",
+      "at": "2026-10-17T10:43:46.751Z",
       "url": "https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
       "host": "hashlock.pronodealgo.xyz",
       "method": "POST",
-      "input": "body {\"hash\":\"690cc91a2323ef80e089c7ad85f4d7ade9a2012d60072d0161bb2b9d6ab6fd09\",\"filename\":\"document.pdf\",\"source\":\"agent\"}",
+      "input": "body {\"hash\":\"35f0f8b10d76d070c882708dd1cb6adff2c46ae694c91caed1a8d68fa423e0d0\",\"filename\":\"document.pdf\",\"source\":\"agent\"}",
       "filled": [
         "hash"
       ],
@@ -701,14 +659,13 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "ZH7ISEB7V3MW3GU6Z7HRXXV2XLDJEPILTQOVRJ5EENYBYU24H3SQ",
-      "delivery": "200 application/json; charset=utf-8 object{success:boolean=true, hash:string=\"690cc91a2323ef80e089c7ad85f4d7ade9a2012, txId:string=\"PTFPJD5RDBRJF6EXGVS5A4HRKGTESAANFT7JQH4, block:number=66037356, network:string=\"algorand-mainnet\", explorerUrl:string=\"https://lora.algokit.io/…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:07.521Z",
+      "at": "2026-10-17T10:43:49.919Z",
       "url": "https://algo.borisinc.com/trust?url=https%3A%2F%2Fapi.example.com%2Fdata",
       "host": "algo.borisinc.com",
       "method": "GET",
@@ -720,31 +677,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: delivery_verified, n_probes",
-      "paid": true,
-      "tx": "K53ZH5N3BWZFI5OFPYDIV46WNHJH6SERHE2URUBPZ6BHHMWF3TAA",
-      "delivery": "200 application/json object{url:string=\"https://api.example.com/data\", match:string=\"none\", trust_score:null, tier:string=\"unverified\", recommendation:string=\"unknown — not in Aegis registry\", hint:string=\"free discovery: /discover?query=… · /re, verified_by:s…"
-    },
-    {
-      "at": "2026-10-16T11:09:07.878Z",
-      "url": "https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
-      "host": "algorandtracker.com",
-      "method": "GET",
-      "input": "(none)",
-      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "List of available monthly-report months for the ASA."
-      },
       "verdict": "REFUSE",
-      "reason": "not_x402",
-      "detail": "expected 402, got 400",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:09:12.708Z",
+      "at": "2026-10-17T10:43:51.708Z",
       "url": "https://api.algometrics.org/v1/metrics/microstructure",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -756,14 +695,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "AV7CNKFPBK76M6JKTX5AXOAAD7PVUUXULALNY5L6TZ7PYZOMAGHA",
-      "delivery": "200 application/json object{service:string=\"ALGOMetrics\", version:string=\"0.1.0\", asOf:string=\"2026-10-16T11:09:09.517Z\", network:string=\"mainnet\", data:object, quality:array(5), methodologyRef:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:20.899Z",
+      "at": "2026-10-17T10:43:52.611Z",
       "url": "https://api.callrack.xyz/v1/academic/search",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -778,14 +716,13 @@
           "meta"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "EKBWCGRGOFR4F3BLWBRKRHE2ARQDWRUK2LDBWOKPAZ7HPNUOY4KQ",
-      "delivery": "200 application/json; charset=utf-8 object{data:object, meta:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:26.353Z",
+      "at": "2026-10-17T10:43:53.180Z",
       "url": "https://api.celloforigin.com/enter",
       "host": "api.celloforigin.com",
       "method": "POST",
@@ -798,13 +735,12 @@
         "expectedKeys": []
       },
       "verdict": "REFUSE",
-      "reason": "http_error",
-      "paid": true,
-      "tx": "ZM4FT6CJWSDIAMRWFFY522GRXRPMACCDQ4JUNUNWC5LPWCDVIT2A",
-      "delivery": "400 application/json; charset=utf-8 status 400"
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:34.741Z",
+      "at": "2026-10-17T10:43:55.802Z",
       "url": "https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
       "host": "api.d0xeddev.com",
       "method": "GET",
@@ -816,14 +752,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "IC7SRXWWPZUKOXVATZ3UBWZWDHCEWYPLM7CR4HJSSSP4DAFU7JSQ",
-      "delivery": "200 application/json object{success:boolean=true, data:object, metadata:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:40.014Z",
+      "at": "2026-10-17T10:43:57.598Z",
       "url": "https://api.depth402.workers.dev/dati/pool-onchain",
       "host": "api.depth402.workers.dev",
       "method": "GET",
@@ -842,14 +777,13 @@
           "dati"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "HXKYAKTJ2Z5DEJ6ND6XUOXEEMLTZWTAJ72KBT7LLSITUWCNSFDVA",
-      "delivery": "200 application/json object{dato_del:string=\"2026-10-16T07:00:02Z\", eta_ore:number=4.16, stantio:boolean=false, cadenza:string=\"3 letture al giorno (09:00 / 15:30 / 22, fonte:string=\"osservatorio proprio, misure on-chain e, dati:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:09:46.579Z",
+      "at": "2026-10-17T10:43:58.419Z",
       "url": "https://api.micropay.website/api/v1/chat/completions",
       "host": "api.micropay.website",
       "method": "POST",
@@ -862,13 +796,12 @@
         "expectedKeys": []
       },
       "verdict": "REFUSE",
-      "reason": "http_error",
-      "paid": true,
-      "tx": "I3KLIJS5Y6OT6ID6RFMKAIW6YJXD5V33PRKAWMS7WAQKBBMAKVJQ",
-      "delivery": "502 application/json; charset=utf-8 status 502"
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:07.273Z",
+      "at": "2026-10-17T10:44:00.502Z",
       "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
       "host": "api.proptech.watch",
       "method": "GET",
@@ -880,14 +813,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "TUCHVYOIMVDD7O6ZQ3GJWWFJ3C3TYBH4DMWAJE3AML27VGG34FMA",
-      "delivery": "200 application/json; charset=utf-8 object{methodologyVersion:string=\"hot-zones-v3\", country:string=\"FR\", department:string=\"69\", commune:string=\"Lyon\", propertyType:string=\"Appartement\", nature:string=\"Vente\", from:string=\"2024-08-11\", minN:number=20, topN:number=30, simple…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:15.783Z",
+      "at": "2026-10-17T10:44:02.367Z",
       "url": "https://api.ripar.io/api/payee-check",
       "host": "api.ripar.io",
       "method": "POST",
@@ -899,14 +831,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "C33URACILF5XY5YSYQDDZQQ47RCUU7NEWXNKKG2WBQSTNLQMZJPA",
-      "delivery": "200 application/json object{address:string=\"3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6V, network:string=\"mainnet\", checkedAt:string=\"2026-10-16T11:10:10.608Z\", exists:boolean=true, canReceiveUsdc:boolean=true, usdcBalance:number=1.713433, firstFunded:string=\"2026-…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:21.259Z",
+      "at": "2026-10-17T10:44:03.064Z",
       "url": "https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
       "host": "api.x402node.dev",
       "method": "GET",
@@ -918,14 +849,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "EKFB2W7KEJU27CWQN3Z7EEUD3MFZYD5JG6UP55UKTMRY6FLPM77Q",
-      "delivery": "200 application/json; charset=utf-8 object{token:string=\"0x4200000000000000000000000000000000000, chain:string=\"base\", symbol:string=\"WETH\", decimals:number=18, totalSupply:string=\"273761435689938196498315\", hasActiveOwner:boolean=false, riskLevel:string=\"low\", flags:array(0…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:26.768Z",
+      "at": "2026-10-17T10:44:04.003Z",
       "url": "https://cacho402.vercel.app/roll",
       "host": "cacho402.vercel.app",
       "method": "GET",
@@ -937,14 +867,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "53OSHVVBP4A7GWUABBYMHKFJ36A3VYXQR2SSQ6EQPL5WFEDWC6UQ",
-      "delivery": "200 application/json; charset=utf-8 object{game:string=\"cacho\", dice:array(5), best:object, options:array(6), grandeServida:boolean=false, rolledAt:string=\"2026-10-16T11:10:23.726Z\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:32.582Z",
+      "at": "2026-10-17T10:44:04.609Z",
       "url": "https://consensa-endpoint-production.up.railway.app/v1/clearance",
       "host": "consensa-endpoint-production.up.railway.app",
       "method": "POST",
@@ -956,14 +885,13 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "UZYEOFQGWCZORSISJFDNJ2677KYEUXZHDI3HIDLNXTATF4MXR5JQ",
-      "delivery": "200 application/json object{clearance:string=\"granted\", receipt:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:45.979Z",
+      "at": "2026-10-17T10:44:05.441Z",
       "url": "https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
       "host": "eth-avm-light-client.vercel.app",
       "method": "GET",
@@ -980,14 +908,13 @@
           "result"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "BTDQ7NHGUPEJ2DLQCNJSSSTVXJKSZF3S6U2PQT24STMGA2VVVLJA",
-      "delivery": "200 application/json object{block_number:number=25691209, trust_model:string=\"rpc-trusted-receiptsRoot\", verified_by:string=\"Algorand app 3670577356, round 66037395, result:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:51.609Z",
+      "at": "2026-10-17T10:44:06.052Z",
       "url": "https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
       "host": "fluent-x402-algorand-production.up.railway.app",
       "method": "GET",
@@ -999,14 +926,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "3LADV2QPFPWZWIGTFRNOVPAJ7GOUUUQUFDHJPK27U6ZW627NTRQA",
-      "delivery": "200 application/json object{receipt:object, hash:string=\"f5cf990f95c186cbcf4203e772afe514aae0636}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:10:59.906Z",
+      "at": "2026-10-17T10:44:06.984Z",
       "url": "https://microvern-x402-mainnet.onrender.com/v1/inspect-transaction",
       "host": "microvern-x402-mainnet.onrender.com",
       "method": "POST",
@@ -1030,14 +956,13 @@
           "reportChecksum"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "GQV7ZW5EMQPHQSC7Y5NK6ANFVS37BX23OW7RWMUTBZAGHJV6KMOQ",
-      "delivery": "200 application/json object{verdict:string=\"allow\", riskScore:number=0, summary:string=\"No configured rule triggered; independe, reviewSummary:object, actions:array(1), findings:array(0), policyEvaluation:object, rulesetVersion:string=\"2026-09-mvp\", disclaimer…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:11:21.817Z",
+      "at": "2026-10-17T10:44:08.675Z",
       "url": "https://moltworld.xyz/v1/models/gemini-lite/chat/completions",
       "host": "moltworld.xyz",
       "method": "POST",
@@ -1051,11 +976,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:11:22.182Z",
+      "at": "2026-10-17T10:44:09.255Z",
       "url": "https://onestepchess.xyz/api/v1/moves",
       "host": "onestepchess.xyz",
       "method": "POST",
@@ -1071,7 +996,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:11:36.367Z",
+      "at": "2026-10-17T10:44:14.147Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -1083,14 +1008,13 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "Q3PH7D3IZFOB3QULIGLUXM5FOGRANATQTX5VZJJZ6MN2YZJCABWQ",
-      "delivery": "200 application/json object{schema_version:string=\"pdp-1.0\", category:string=\"fisheries\", sub_category:string=\"tuna_stock_assessment\", data_warning:string=\"SYNTHETIC DATA: This dataset demonstrat, provider:object, query:object, data:object, methodology_summary…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:11:48.442Z",
+      "at": "2026-10-17T10:44:17.003Z",
       "url": "https://pq-verifiable-archive.vercel.app/api/anchor",
       "host": "pq-verifiable-archive.vercel.app",
       "method": "POST",
@@ -1102,14 +1026,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "INMLWI2TQDTZHSF24FH62PROBHAFYA4MOOVWTH7OURKGDYYSDCEA",
-      "delivery": "200 application/json; charset=utf-8 object{success:boolean=true, algorandTxnId:string=\"UMP3ZPYSYV4WZS4NITDYLGWQS2RX7DHGYQLSR7P, algorandRound:number=66037419, bundle:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:11:53.603Z",
+      "at": "2026-10-17T10:44:18.478Z",
       "url": "https://presign-guard.fizzl.eu/v1/check",
       "host": "presign-guard.fizzl.eu",
       "method": "POST",
@@ -1124,14 +1047,13 @@
           "reasons"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "XHYC35YZIVVXNERPQZAWCRHLEBKT7VRAWQRFMYW42JYSG4P2YWSQ",
-      "delivery": "200 application/json; charset=utf-8 object{version:string=\"2\", verdict:string=\"green\", reasons:array(6), subject:object, scope:string=\"On-chain transactions and approvals, pl, sources:array(3), checkedAt:string=\"2026-10-16T11:11:50.272Z\", receipt:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:12:13.902Z",
+      "at": "2026-10-17T10:44:20.327Z",
       "url": "https://privacybuddy.up.railway.app/v1/chat/completions",
       "host": "privacybuddy.up.railway.app",
       "method": "POST",
@@ -1145,11 +1067,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:12:21.614Z",
+      "at": "2026-10-17T10:44:22.479Z",
       "url": "https://thetrench.fun/api/pulse",
       "host": "thetrench.fun",
       "method": "GET",
@@ -1161,14 +1083,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "HEB6NRAM3KHXKXQDTAOIVVLA5HBPKZ3VW7CLM7XCQDEM65VABIAQ",
-      "delivery": "200 application/json object{service:string=\"The Trench\", endpoint:string=\"pulse\", tagline:string=\"Back a meme. Crown a winner. Welcome to, season:object, pot:object, links:object, ts:string=\"2026-10-16T11:12:16.358Z\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:12:27.244Z",
+      "at": "2026-10-17T10:44:23.699Z",
       "url": "https://www.qwibi.xyz/api/x402/verify",
       "host": "www.qwibi.xyz",
       "method": "POST",
@@ -1180,14 +1101,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "QT77C2BX5CYUKYOQ6IC3BFZR5FTC27IKZGM7U32OLQCIGMQGGZQA",
-      "delivery": "200 application/json object{ok:boolean=true, status:string=\"verified\", verified:boolean=true, untampered:boolean=true, jobId:string=\"00000000-0000-0000-0000-000000000000\", attestationHash:string=\"8f3a19d2c41efc3f7f1e4f7a65f5c18cc969b83, fileType:string=\"pdf\", …"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:12:32.857Z",
+      "at": "2026-10-17T10:44:25.260Z",
       "url": "https://x402-echo-service.vercel.app/api/echo/test",
       "host": "x402-echo-service.vercel.app",
       "method": "GET",
@@ -1201,12 +1121,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 200, no settlement receipt · settled on chain: vet402's transfer BCSGG6LDBCD3IQH55NQKH62RPSRVKYLM5LJVSP7YMVPN6TTOCSFQ (to this payTo, round 66037435, 11:12:30 UTC); no delivery",
-      "paid": true,
-      "tx": "BCSGG6LDBCD3IQH55NQKH62RPSRVKYLM5LJVSP7YMVPN6TTOCSFQ"
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:12:53.890Z",
+      "at": "2026-10-17T10:44:27.731Z",
       "url": "https://x402.diiisco.com/v1/chat/completions",
       "host": "x402.diiisco.com",
       "method": "POST",
@@ -1220,11 +1139,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:13:15.350Z",
+      "at": "2026-10-17T10:44:28.439Z",
       "url": "https://x402.frostylabs.ai/asa-intel/a2a",
       "host": "x402.frostylabs.ai",
       "method": "POST",
@@ -1238,12 +1157,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout · settled on chain: vet402's transfer NJKHULLUKT5IGXGZ3LSQ7GXUMPK33EAHKYPLOYTXF5VZY3MQPEJQ (to this payTo, round 66037452, 11:13:17 UTC); no delivery",
-      "paid": true,
-      "tx": "NJKHULLUKT5IGXGZ3LSQ7GXUMPK33EAHKYPLOYTXF5VZY3MQPEJQ"
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:20.518Z",
+      "at": "2026-10-17T10:44:29.334Z",
       "url": "https://xenodice.rngoddess.com/roll?sides=20&count=2&backend=moonlab",
       "host": "xenodice.rngoddess.com",
       "method": "GET",
@@ -1255,14 +1173,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "JDDNQ2DTA5WDYONQB6K7P76YN2IS2DLRLCJQGMLNQJSXZ44P5HTQ",
-      "delivery": "200 application/json object{rolls:array(2), sides:number=20, count:number=2, provenance:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:26.244Z",
+      "at": "2026-10-17T10:44:30.073Z",
       "url": "https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
       "host": "agenthub-production-8c75.up.railway.app",
       "method": "GET",
@@ -1274,14 +1191,13 @@
         "mimeType": "",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "GL6CR5Z5J2XN5S6BPF5TJJGRMVSVWVRL3N6XVHUGGXRAFYXN5ZHQ",
-      "delivery": "200 application/json; charset=utf-8 object{txid:string=\"U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQ, type:string=\"axfer\", typeLabel:string=\"Asset transfer\", summary:string=\"MUVW2R…QVVM sent 0.02 USDC to G3YVTP…YY, sender:string=\"MUVW2RFKNVHWX4CNF6YIYNMX5EHK7TW3ERUDPDA, confirmed…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:31.889Z",
+      "at": "2026-10-17T10:44:31.277Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -1293,14 +1209,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "B4PQZXW3P55PTS7N5YROXIGDX5XJZAJY6QQUJKG3AZKSNM3FW5YA",
-      "delivery": "200 application/json object{error:boolean=false, crop:string=\"soybean\", lat:number=18.35, lon:number=77.31, sowing_date:null, harvest_date:null, days_to_harvest:null, season_to_date:object, horizon_1_forecast:object, horizon_2_subseasonal:object, horizon_3_sea…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:40.298Z",
+      "at": "2026-10-17T10:44:33.076Z",
       "url": "https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
       "host": "algo.ochinimus.app",
       "method": "GET",
@@ -1312,14 +1227,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "76ARHFXPB3RTFJBSIIVTNF6OM7YQKN5K5EHMAUSMUWCNB7JRCCMQ",
-      "delivery": "200 application/json; charset=utf-8 object{status:string=\"measured\", value:object, asOf:number=1792149214851, basis:string=\"forced liquidations reported by Binance, source:string=\"agentfeed liquidation tape\", control:object, route:string=\"liquidation_window\", network:string=…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:45.815Z",
+      "at": "2026-10-17T10:44:34.582Z",
       "url": "https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
       "host": "algocheckmain.vercel.app",
       "method": "GET",
@@ -1331,14 +1245,31 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "FTO3QIYIU4QOOXLWRPR2Q3FDVC2VA7IPZTCCTWMBOCI4L6QWUBXA",
-      "delivery": "200 application/json object{asset_id:number=31566704, score:number=65, flags:array(3), permissions:object, holders:object, creator:object, methodology_version:string=\"2026-08-01\", analyzed_at:string=\"2026-10-16T11:13:41.855330+00:00\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:51.470Z",
+      "at": "2026-10-17T10:44:37.406Z",
+      "url": "https://algorandtracker.com/x402/asa/0/activity",
+      "host": "algorandtracker.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "ASA or ALGO (asaId=0) activity metrics. Wallet/Foundation/supply/Nodes compare two snapshots; Active User stays on averages (vs 7d avg / week avg / month avg). Daily returns the latest completed comp…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-17T10:44:38.415Z",
       "url": "https://api.bottrunk.com/s/extract-links",
       "host": "api.bottrunk.com",
       "method": "POST",
@@ -1350,14 +1281,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "26TDUAONYNDUVMA2U7ZB2VIXKMW5LOGBAS6DELYTPUOO6OSLSPMQ",
-      "delivery": "200 application/json; charset=utf-8 object{url:string=\"https://example.com\", total:number=0, internal:number=0, external:number=0, links:array(0)}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:13:57.188Z",
+      "at": "2026-10-17T10:44:39.385Z",
       "url": "https://ichimoku-signal.fizzl.eu/signal/BTC-USDT?interval=1h",
       "host": "ichimoku-signal.fizzl.eu",
       "method": "GET",
@@ -1377,14 +1307,13 @@
           "signal"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "XZTTWVVTMHQ2SN2FUVY43KABQHV4RV4LZC4FJNFGNH3NLHTRVENA",
-      "delivery": "200 application/json; charset=utf-8 object{pair:string=\"BTC-USDT\", interval:string=\"1h\", timestamp:string=\"2026-10-16T11:13:52.955Z\", price:number=82708.23, tenkan_sen:number=82215.14, kijun_sen:number=81254.11499999999, senkou_span_a:number=81734.6275, senkou_span_b:number=…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:05.648Z",
+      "at": "2026-10-17T10:44:40.280Z",
       "url": "https://kepaix.com/api/x402-atlas.php",
       "host": "kepaix.com",
       "method": "GET",
@@ -1396,15 +1325,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: summary",
-      "paid": true,
-      "tx": "RPOTAYQWHRFHLQOKR5G5P3S4P752SGRS4FTIXC5IBQYILL65EGNQ",
-      "delivery": "200 application/json; charset=utf-8 object{success:boolean=true, project:string=\"KepAIx\", endpoint:string=\"x402-atlas\", type:string=\"premium_educational_synthesis\", version:string=\"v1\", schema_version:string=\"0.1.0\", access:string=\"x402_premium\", payment_status:string=\"settl…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:11.230Z",
+      "at": "2026-10-17T10:44:42.427Z",
       "url": "https://x402.pipeforge.tech/api/v1/inspect",
       "host": "x402.pipeforge.tech",
       "method": "POST",
@@ -1416,14 +1343,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "2JNZ6RHUPAATX5IHHYB5MR3SPUF3V6CWYAPBNEPR5DD2Z3GR4GMA",
-      "delivery": "200 application/json object{target:string=\"example.com\", timestamp:string=\"2026-10-16T11:14:07.566Z\", dns:object, http:object, tls:object, security_headers:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:16.810Z",
+      "at": "2026-10-17T10:44:44.067Z",
       "url": "https://prism-99h2.onrender.com/code-review-accurate",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -1436,13 +1362,12 @@
         "expectedKeys": []
       },
       "verdict": "REFUSE",
-      "reason": "delivery_missing_keys",
-      "paid": true,
-      "tx": "HEZYVZBFWBR64RPSGTKA3TAM4D2NEP2JVDA5N5O6PHKG7A5V4L3Q",
-      "delivery": "200 application/json object{file_path:string=\"src/index.ts\", issues:array(0), overall_quality_score:number=0.96, confidence:number=0.95, latency_ms:number=61, timestamp:string=\"2026-10-16T11:14:12.751Z\"}"
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:22.381Z",
+      "at": "2026-10-17T10:44:44.924Z",
       "url": "https://brandforge-cyan.vercel.app/v1/brand-kit?name=Northwind&industry=fintech&vibe=modern%2Cbold",
       "host": "brandforge-cyan.vercel.app",
       "method": "GET",
@@ -1454,14 +1379,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "G6MJLFVH5HOKN2J7BNGEMCCDN2MZPL7P3NFVDIMBVIBPHV3TKPNQ",
-      "delivery": "200 application/json object{name:string=\"Northwind\", brief:object, seed:number=811899353, matchedVibes:array(2), scheme:string=\"complementary\", palette:object, swatches:array(6), fonts:object, tagline:string=\"Modern. Sharp. Northwind.\", taglines:array(3), voic…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:34.341Z",
+      "at": "2026-10-17T10:44:45.846Z",
       "url": "https://midax402.com/midas-ops/basic",
       "host": "midax402.com",
       "method": "POST",
@@ -1473,15 +1397,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: disclaimer",
-      "paid": true,
-      "tx": "R4C2IN47SJPL4SYX4MOYQK4USO5DDFMU2ITPCQ5FURFVLQV3KJXQ",
-      "delivery": "200 application/json; charset=utf-8 object{endpoint:string=\"midas-ops\", version:string=\"2.0\", tier:string=\"basic\", request_id:string=\"6b1f77fd-a8fd-4959-b458-e8f21f064e87\", timestamp:string=\"2026-10-16T11:14:29.926174+00:00\", answer_type:string=\"business_intelligence\", verdi…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:34.615Z",
+      "at": "2026-10-17T10:44:46.211Z",
       "url": "https://plaintext.fizzl.eu/api/explain",
       "host": "plaintext.fizzl.eu",
       "method": "POST",
@@ -1497,7 +1419,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:14:42.097Z",
+      "at": "2026-10-17T10:44:56.938Z",
       "url": "https://43.162.105.66.sslip.io/v1/scan/signature",
       "host": "43.162.105.66.sslip.io",
       "method": "POST",
@@ -1505,18 +1427,15 @@
       "payTo": "MAGKDEWY5IZ6MBYLKGLHN4UWFM2BYCJ5R62C5AU6JASOY2HAS6XP5SHRII",
       "priceUsdc": "0.050000",
       "declared": {
-        "description": "Decode an EIP-712 typed-data / permit / permit2 signature before you sign it: unlimited approvals, zero-price orders, malicious spenders.",
-        "mimeType": "application/json",
-        "expectedKeys": []
+        "description": "Decode an EIP-712 typed-data / permit / permit2 signature before you sign it: unlimited approvals, zero-price orders, malicious spenders."
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "A3CGB3EDN6KSYMZPHDZ4NVDNJKSOJ4FQ3DO7KCQNUSRDWYGXO2WQ",
-      "delivery": "200 application/json object{report_id:string=\"SEN-9ede0b90\", scanner:string=\"sentinel402-signature-v1\", kind:string=\"permit\", domain:object, summary:string=\"Token approval via signature (gasless a, risks:array(3), risk_score:number=36, risk_grade:string=\"MEDIU…"
+      "verdict": "REFUSE",
+      "reason": "probe_error",
+      "detail": "fetch failed",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:48.427Z",
+      "at": "2026-10-17T10:45:00.211Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -1527,14 +1446,13 @@
         "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "4A76APXLNYQDQNWN6JY3JQSX7N3ZOIXRKOWQBRRSCPKDASMQ4APA",
-      "delivery": "201 application/json; charset=utf-8 object{success:boolean=true, data:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:14:53.456Z",
+      "at": "2026-10-17T10:45:03.165Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -1548,11 +1466,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 404, no settlement receipt",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-16T11:14:58.846Z",
+      "at": "2026-10-17T10:45:03.843Z",
       "url": "https://x402-algo.pkgproof.net/v1/verify",
       "host": "x402-algo.pkgproof.net",
       "method": "POST",
@@ -1571,14 +1489,13 @@
           "checked_at"
         ]
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "BFGVUMHALM66HW66Y5RU4PV4FP5Q43AEQFSTGMVQD56Y74CJ7ZAQ",
-      "delivery": "200 application/json; charset=utf-8 object{ecosystem:string=\"npm\", name:string=\"left-pad\", version:string=\"1.3.0\", resolved_version:string=\"1.3.0\", dist_tag:null, verdict:string=\"caution\", reasons:array(10), sources:object, checked_at:string=\"2026-10-16T11:14:55Z\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:15:04.518Z",
+      "at": "2026-10-17T10:45:06.095Z",
       "url": "https://x402.darkhold.dev/v1/brief",
       "host": "x402.darkhold.dev",
       "method": "POST",
@@ -1590,14 +1507,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "MT4QIOXLBFLJKUVH547PDA26I46GTJV4YNMVD7TYZ6FPAGUWQS4Q",
-      "delivery": "200 application/json object{generated_at:string=\"2026-10-16T11:15:00.855Z\", topics:array(2), meta:object, request_id:string=\"959b2d30-5454-409f-86ca-d8edaf857dbb\"}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:15:04.909Z",
+      "at": "2026-10-17T10:45:06.380Z",
       "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
       "host": "www.agent-mesh.app",
       "method": "GET",
@@ -1613,7 +1529,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:15:10.399Z",
+      "at": "2026-10-17T10:45:07.766Z",
       "url": "https://abr.kloudle.dev/v1/verifier-manifest?checks=aws-sts-identity%3A1",
       "host": "abr.kloudle.dev",
       "method": "GET",
@@ -1625,15 +1541,13 @@
         "mimeType": "application/vnd.abr.verifier-manifest+json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: runsOn, serverReceives",
-      "paid": true,
-      "tx": "ARIS763JAA6WBV3E3AWOIUI7TYJO3VWJ32YAWUKSDJY6BLDVT63Q",
-      "delivery": "200 application/vnd.abr.verifier-manifest+json object{schema_version:string=\"abr.verifier.v1\", bundle_id:string=\"aws-sts-identity-v1\", verifier_classes:array(1), runtime_vars:array(1), commands:array(2)}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:15:11.306Z",
+      "at": "2026-10-17T10:45:09.041Z",
       "url": "https://api.playclock.xyz/v1/trending?lookback_hours=24",
       "host": "api.playclock.xyz",
       "method": "GET",
@@ -1651,7 +1565,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:15:11.325Z",
+      "at": "2026-10-17T10:45:09.118Z",
       "url": "https://arcade.goplausible.xyz/api/coins",
       "host": "arcade.goplausible.xyz",
       "method": "POST",
@@ -1667,7 +1581,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:15:15.817Z",
+      "at": "2026-10-17T10:45:09.961Z",
       "url": "https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
       "host": "finality-x402-backend.onrender.com",
       "method": "GET",
@@ -1679,15 +1593,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: result",
-      "paid": true,
-      "tx": "5HDXHTLKX42KYXNEHJMCZWNTUJTED7CIEGVHNJ4QF3KYTDY4KYZA",
-      "delivery": "200 application/json object{success:boolean=true, operationId:string=\"onchain.algodParams\", requestId:string=\"0bef827f-5114-4ca4-b93e-f737fd425822\", data:object, meta:object, payment:object}"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:15:26.323Z",
+      "at": "2026-10-17T10:45:14.640Z",
       "url": "https://intyr.timjosh507.workers.dev/v1/trips/check",
       "host": "intyr.timjosh507.workers.dev",
       "method": "POST",
@@ -1699,15 +1611,13 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "detail": "example keys not seen: commit_order",
-      "paid": true,
-      "tx": "PPI25PXGYAFMCHKPUIVEJRBNYXA5GSOMDO53SRY4Y3VFH7ZYZBFQ",
-      "delivery": "200 application/json object{operation_id:string=\"ops_ed936843f8f6376ea76f95ea\", trip_id:string=\"trp_391d0d1b7fa5139da6afb324\", state:string=\"CHECKED\", plan_id:string=\"pln_76a233c39e7e9ec9808ad579\", verdict:string=\"REVALIDATE_FIRST\", decision:object, next_actio…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     },
     {
-      "at": "2026-10-16T11:15:27.522Z",
+      "at": "2026-10-17T10:45:16.344Z",
       "url": "https://roundwatch-api.onrender.com/v1/watch",
       "host": "roundwatch-api.onrender.com",
       "method": "POST",
@@ -1732,7 +1642,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-16T11:15:35.523Z",
+      "at": "2026-10-17T10:45:21.246Z",
       "url": "https://x402-quant-signals.onrender.com/api/v1/market-signal/ALGO",
       "host": "x402-quant-signals.onrender.com",
       "method": "GET",
@@ -1744,17 +1654,15 @@
         "mimeType": "application/json",
         "expectedKeys": []
       },
-      "verdict": "ALLOW",
-      "reason": "delivered",
-      "paid": true,
-      "tx": "K6X7MJUADH4KYIXEDCOWP4D7LPNOFB6PPQFAUK5A7ADASYOLELQA",
-      "delivery": "200 application/json object{analysis_mode:string=\"technical_only\", as_of:string=\"2026-10-16T11:15:29.634886+00:00\", indicators:object, limitations:array(3), market:object, methodology:string=\"EMA 20/50 alignment, MACD 12/26/9, RSI , name:string=\"Algorand\", new…"
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     }
   ],
   "attempts": [
     "GET https://auditpay.appl3s.in/audit/certificate?service=my-registered-service&from=2026-09-01&to=2026-09-30&asset=USDC&network=mainnet",
     "GET https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-    "POST https://algorand-indexer.xyz/api/v1/queries/results/1YXqLq-4eLnM4eoUL5GQHgjN9rec2eYf/unlock",
     "POST https://agent402.tools/api/hash",
     "GET https://algo.netintel.dev/email/verify?email=user%40github.com",
     "GET https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
@@ -1763,7 +1671,7 @@
     "GET https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
     "GET https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
     "GET https://api.kocalgo.io/v1/events/changes?since=2026-10-03T21%3A00%3A00Z&sport=football&limit=100",
-    "POST https://api.pqattest.com/attest",
+    "POST https://api.pqattest.com/attest-block",
     "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
     "GET https://blocksigner.org/commission/tick",
@@ -1775,18 +1683,17 @@
     "GET https://whaletape.xyz/algo/coverage",
     "GET https://x402-doctor.fizzl.eu/api/v1/preflight?url=https%3A%2F%2Fichimoku-signal.fizzl.eu%2Fsignal%2FBTC-USDT&max_usd=0.05",
     "POST https://api.sitelenz.online/v1/analyze/technology",
+    "POST https://algorand-indexer.xyz/api/v1/queries/results/v4NtiyeYzlkup4-TWXo63zTJa_pzafNd/unlock",
     "GET https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
     "GET https://agentpay.agentpay-apis.workers.dev/lookup/v1/dns?name=example.com&type=MX",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
     "GET https://api-algo.stelardigital.com/pricecheck?asset=SOL",
-    "GET https://api-production-36692.up.railway.app/metric/tinyman/tvl?fresh=false&basis=all_pools_usd_priced",
     "POST https://api.agentwork.run/v1/web/changes",
     "GET https://api.predge.io/v1/whales/latest?limit=50",
     "POST https://elara-verify-x402.aivelikivodja.workers.dev/verify/record",
     "GET https://fry.farm/x402/rewards",
     "POST https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
     "GET https://algo.borisinc.com/trust?url=https%3A%2F%2Fapi.example.com%2Fdata",
-    "GET https://algorandtracker.com/x402/asa/393537671/monthly-report/months",
     "GET https://api.algometrics.org/v1/metrics/microstructure",
     "POST https://api.callrack.xyz/v1/academic/search",
     "POST https://api.celloforigin.com/enter",
@@ -1817,6 +1724,7 @@
     "POST https://agriintellect.site/weather-risk",
     "GET https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
     "GET https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
+    "GET https://algorandtracker.com/x402/asa/0/activity",
     "POST https://api.bottrunk.com/s/extract-links",
     "GET https://ichimoku-signal.fizzl.eu/signal/BTC-USDT?interval=1h",
     "GET https://kepaix.com/api/x402-atlas.php",
