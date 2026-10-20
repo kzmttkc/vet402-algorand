@@ -3,42 +3,42 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-10-19",
-  "startedAt": "2026-10-19T12:05:29.385Z",
-  "finishedAt": "2026-10-19T12:10:25.750Z",
+  "date": "2026-10-20",
+  "startedAt": "2026-10-20T11:33:41.990Z",
+  "finishedAt": "2026-10-20T11:37:07.358Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2670 items)",
-    "candidates": 84,
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2678 items)",
+    "candidates": 80,
     "excluded": {
       "price_over_cap": 292,
       "other_network_or_asset": 287,
       "not_https": 1,
-      "stale": 1831,
+      "stale": 1788,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 173
+      "not_cheapest_on_host": 228
     }
   },
   "totals": {
-    "rows": 84,
+    "rows": 80,
     "allow": 0,
-    "refuse": 84,
+    "refuse": 80,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000100"
   },
-  "completedAt": "2026-10-19T12:10:10.414Z",
+  "completedAt": "2026-10-20T11:36:52.012Z",
   "reconcile": {
-    "checkedAt": "2026-10-19T12:10:25.750Z",
+    "checkedAt": "2026-10-20T11:37:07.358Z",
     "status": "ok",
     "window": {
-      "from": "2026-10-19T12:03:29.385Z",
-      "to": "2026-10-19T12:10:25.473Z"
+      "from": "2026-10-20T11:31:41.990Z",
+      "to": "2026-10-20T11:37:07.068Z"
     },
     "transfers": 1,
     "onRows": 1,
@@ -47,7 +47,7 @@
   },
   "rows": [
     {
-      "at": "2026-10-19T12:05:38.695Z",
+      "at": "2026-10-20T11:33:51.309Z",
       "url": "https://auditpay.appl3s.in/audit/certificate?service=my-registered-service&from=2026-09-01&to=2026-09-30&asset=USDC&network=mainnet",
       "host": "auditpay.appl3s.in",
       "method": "GET",
@@ -65,7 +65,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:05:47.017Z",
+      "at": "2026-10-20T11:33:58.561Z",
       "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "host": "api.algorand-indexer.xyz",
       "method": "GET",
@@ -80,11 +80,11 @@
       "verdict": "REFUSE",
       "reason": "delivery_missing_keys",
       "paid": true,
-      "tx": "URYQ6J3FLIRZEVKETAK4NHIGLMA5DUH5FPZBYFA44PBCPEXPUUFQ",
-      "delivery": "200 application/json object{account:object, current-round:number=66132281}"
+      "tx": "EEMFPB26AR2MVMDRWXWQBPAPOZETI4W3UQKKW5JETSKPWX6G2TWA",
+      "delivery": "200 application/json object{account:object, current-round:number=66162847}"
     },
     {
-      "at": "2026-10-19T12:05:55.551Z",
+      "at": "2026-10-20T11:33:59.584Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -106,7 +106,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:05:58.112Z",
+      "at": "2026-10-20T11:34:01.059Z",
       "url": "https://algo.netintel.dev/email/verify?email=user%40github.com",
       "host": "algo.netintel.dev",
       "method": "GET",
@@ -124,7 +124,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:13.163Z",
+      "at": "2026-10-20T11:34:03.265Z",
       "url": "https://algorand-api.pxke.me/api/v1/x402/news/search?q=tinyman+volume&limit=10",
       "host": "algorand-api.pxke.me",
       "method": "GET",
@@ -142,7 +142,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:16.263Z",
+      "at": "2026-10-20T11:34:05.478Z",
       "url": "https://algorand.ottoai.services/base-ecosystem-news",
       "host": "algorand.ottoai.services",
       "method": "GET",
@@ -163,7 +163,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:17.971Z",
+      "at": "2026-10-20T11:34:09.736Z",
       "url": "https://api.agentkeep.online/v1/memory",
       "host": "api.agentkeep.online",
       "method": "GET",
@@ -181,7 +181,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:25.524Z",
+      "at": "2026-10-20T11:34:11.485Z",
       "url": "https://api.algofile.io/api/v3/x402/bazaar/asset-storage-info",
       "host": "api.algofile.io",
       "method": "GET",
@@ -199,7 +199,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:31.702Z",
+      "at": "2026-10-20T11:34:14.261Z",
       "url": "https://api.iomarkets.ai/v1/signal/vwap?pair=BTC-USDC",
       "host": "api.iomarkets.ai",
       "method": "GET",
@@ -217,7 +217,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:38.302Z",
+      "at": "2026-10-20T11:34:16.679Z",
       "url": "https://api.kocalgo.io/v1/events/changes?since=2026-10-03T21%3A00%3A00Z&sport=football&limit=100",
       "host": "api.kocalgo.io",
       "method": "GET",
@@ -239,7 +239,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:38.499Z",
+      "at": "2026-10-20T11:34:16.870Z",
       "url": "https://api.pqattest.com/attest-block",
       "host": "api.pqattest.com",
       "method": "POST",
@@ -255,25 +255,23 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:39.785Z",
+      "at": "2026-10-20T11:34:28.947Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
       "input": "?from=WST&to=USD&amount=100",
       "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
-      "priceUsdc": "0.100000",
+      "priceUsdc": "0.001000",
       "declared": {
-        "description": "Pacific FX Registry: all 8 Pacific island currencies (WST, FJD, PGK, TOP, VUV, SBD, XPF, KHR) plus 10 major sender currencies (USD, AUD, NZD, EUR, GBP, JPY, CNY, SGD, CAD, HKD), ALGO, and USDC. Optio…",
-        "mimeType": "",
-        "expectedKeys": []
+        "description": "Pacific FX Registry: all 8 Pacific island currencies (WST, FJD, PGK, TOP, VUV, SBD, XPF, KHR) plus 10 major sender currencies (USD, AUD, NZD, EUR, GBP, JPY, CNY, SGD, CAD, HKD), ALGO, and USDC. Optio…"
       },
       "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
+      "reason": "not_x402",
+      "detail": "expected 402, got 503",
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:41.540Z",
+      "at": "2026-10-20T11:34:29.632Z",
       "url": "https://arbsignal-production.up.railway.app/arb/pair?base=386192725&quote=31566704",
       "host": "arbsignal-production.up.railway.app",
       "method": "GET",
@@ -291,7 +289,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:06:50.329Z",
+      "at": "2026-10-20T11:34:31.517Z",
       "url": "https://blocksigner.org/commission/tick",
       "host": "blocksigner.org",
       "method": "GET",
@@ -311,7 +309,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:14.815Z",
+      "at": "2026-10-20T11:34:52.507Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -329,7 +327,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:16.423Z",
+      "at": "2026-10-20T11:34:55.026Z",
       "url": "https://coil.trade/api/crypto/gate",
       "host": "coil.trade",
       "method": "GET",
@@ -347,7 +345,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:18.911Z",
+      "at": "2026-10-20T11:34:56.745Z",
       "url": "https://gateway-x402.vercel.app/discover?q=best+yield+on+algorand&limit=5",
       "host": "gateway-x402.vercel.app",
       "method": "GET",
@@ -365,7 +363,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:24.242Z",
+      "at": "2026-10-20T11:34:58.407Z",
       "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
       "host": "growtrack.pro",
       "method": "GET",
@@ -383,7 +381,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:26.423Z",
+      "at": "2026-10-20T11:35:00.968Z",
       "url": "https://noahs-mac-mini.tail571e99.ts.net/v1/henry-hub",
       "host": "noahs-mac-mini.tail571e99.ts.net",
       "method": "GET",
@@ -401,13 +399,13 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:28.325Z",
+      "at": "2026-10-20T11:35:03.162Z",
       "url": "https://whaletape.xyz/algo/coverage",
       "host": "whaletape.xyz",
       "method": "GET",
       "input": "(none)",
       "payTo": "EOSKWEY2TDFWI5W65HMSONG57RJXPRSTQ2AG5NOULB7FOTR6XVITF2NTIM",
-      "priceUsdc": "0.001000",
+      "priceUsdc": "0.010000",
       "declared": {
         "description": "Hyperliquid perps (perpetual futures). What history exists before you pay for it: how many markets we track, which asset classes, and the range covered. The cheap probe that tells an agent whether th…",
         "mimeType": "application/json",
@@ -419,7 +417,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:30.332Z",
+      "at": "2026-10-20T11:35:04.952Z",
       "url": "https://x402-doctor.fizzl.eu/api/v1/preflight?url=https%3A%2F%2Fichimoku-signal.fizzl.eu%2Fsignal%2FBTC-USDT&max_usd=0.05",
       "host": "x402-doctor.fizzl.eu",
       "method": "GET",
@@ -444,7 +442,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:31.967Z",
+      "at": "2026-10-20T11:35:06.715Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -462,7 +460,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:32.738Z",
+      "at": "2026-10-20T11:35:07.555Z",
       "url": "https://algorand-indexer.xyz/api/v1/queries/results/v4NtiyeYzlkup4-TWXo63zTJa_pzafNd/unlock",
       "host": "algorand-indexer.xyz",
       "method": "POST",
@@ -480,7 +478,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:33.762Z",
+      "at": "2026-10-20T11:35:08.267Z",
       "url": "https://legit.gonna.bond/v1/compare?addresses=ADDRESS_A%2CADDRESS_B",
       "host": "legit.gonna.bond",
       "method": "GET",
@@ -503,7 +501,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:34.680Z",
+      "at": "2026-10-20T11:35:12.013Z",
       "url": "https://agentpay.agentpay-apis.workers.dev/lookup/v1/dns?name=example.com&type=MX",
       "host": "agentpay.agentpay-apis.workers.dev",
       "method": "GET",
@@ -521,7 +519,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:47.850Z",
+      "at": "2026-10-20T11:35:21.592Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -539,7 +537,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:48.660Z",
+      "at": "2026-10-20T11:35:22.211Z",
       "url": "https://api-algo.stelardigital.com/pricecheck?asset=SOL",
       "host": "api-algo.stelardigital.com",
       "method": "GET",
@@ -557,7 +555,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:54.808Z",
+      "at": "2026-10-20T11:35:23.775Z",
       "url": "https://api.agentwork.run/v1/web/changes",
       "host": "api.agentwork.run",
       "method": "POST",
@@ -575,7 +573,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:07:56.332Z",
+      "at": "2026-10-20T11:35:24.914Z",
       "url": "https://api.bottrunk.com/s/scrape-markdown",
       "host": "api.bottrunk.com",
       "method": "POST",
@@ -593,7 +591,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:00.811Z",
+      "at": "2026-10-20T11:35:25.516Z",
       "url": "https://api.predge.io/v1/whales/latest?limit=50",
       "host": "api.predge.io",
       "method": "GET",
@@ -611,7 +609,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:10.647Z",
+      "at": "2026-10-20T11:35:27.952Z",
       "url": "https://fry.farm/x402/rewards",
       "host": "fry.farm",
       "method": "GET",
@@ -629,11 +627,11 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:13.424Z",
+      "at": "2026-10-20T11:35:30.739Z",
       "url": "https://hashlock.pronodealgo.xyz/hashlock-algo-mainnet/api/timestamp",
       "host": "hashlock.pronodealgo.xyz",
       "method": "POST",
-      "input": "body {\"hash\":\"41c3162b95913036da7e85c32d5b7abdacdc491e65e6518f0e90d6969e4b58c6\",\"filename\":\"document.pdf\",\"source\":\"agent\"}",
+      "input": "body {\"hash\":\"39df5f75f833f64fff2fc9e858b4a3f7dfa62b84cefc7517d86ac32bd4fd1d4c\",\"filename\":\"document.pdf\",\"source\":\"agent\"}",
       "filled": [
         "hash"
       ],
@@ -650,7 +648,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:13.516Z",
+      "at": "2026-10-20T11:35:32.353Z",
       "url": "https://algo.borisinc.com/trust?url=https%3A%2F%2Fapi.example.com%2Fdata",
       "host": "algo.borisinc.com",
       "method": "GET",
@@ -658,15 +656,17 @@
       "payTo": "GN4JOLIWJMIY2DEFBUJGMTN2XODXQSETXOKFT2X7ZUCZLEYPDNFZ47SUDE",
       "priceUsdc": "0.010000",
       "declared": {
-        "description": "Aegis delivery-verified trust check for an x402 service — is it safe to pay?"
+        "description": "Aegis delivery-verified trust check for an x402 service — is it safe to pay?",
+        "mimeType": "application/json",
+        "expectedKeys": []
       },
       "verdict": "REFUSE",
-      "reason": "not_x402",
-      "detail": "expected 402, got 530",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:23.383Z",
+      "at": "2026-10-20T11:35:34.585Z",
       "url": "https://api.algometrics.org/v1/metrics/microstructure",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -684,7 +684,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:25.237Z",
+      "at": "2026-10-20T11:35:36.596Z",
       "url": "https://api.callrack.xyz/v1/academic/search",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -705,7 +705,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:25.946Z",
+      "at": "2026-10-20T11:35:37.405Z",
       "url": "https://api.celloforigin.com/enter",
       "host": "api.celloforigin.com",
       "method": "POST",
@@ -723,7 +723,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:28.508Z",
+      "at": "2026-10-20T11:35:40.941Z",
       "url": "https://api.d0xeddev.com/algorand-x402/trading-signals?pair=ETH%2FUSDC&timeframe=1h",
       "host": "api.d0xeddev.com",
       "method": "GET",
@@ -741,7 +741,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:30.756Z",
+      "at": "2026-10-20T11:35:41.643Z",
       "url": "https://api.depth402.workers.dev/dati/pool-onchain",
       "host": "api.depth402.workers.dev",
       "method": "GET",
@@ -766,7 +766,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:31.584Z",
+      "at": "2026-10-20T11:35:42.713Z",
       "url": "https://api.micropay.website/api/v1/chat/completions",
       "host": "api.micropay.website",
       "method": "POST",
@@ -784,7 +784,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:41.267Z",
+      "at": "2026-10-20T11:35:45.048Z",
       "url": "https://api.proptech.watch/hot-zones?country=FR&department=69&commune=Lyon&propertyType=Appartement&nature=Vente&from=2024-08-11&minN=20&topN=30",
       "host": "api.proptech.watch",
       "method": "GET",
@@ -802,7 +802,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:46.982Z",
+      "at": "2026-10-20T11:35:45.280Z",
       "url": "https://api.ripar.io/api/payee-check",
       "host": "api.ripar.io",
       "method": "POST",
@@ -810,17 +810,15 @@
       "payTo": "3QAJXJVG2Z4IPEKC53SYVHL7P5ILE3CT2T3BW6VPJ5WCOY7M7QDJHELWNY",
       "priceUsdc": "0.010000",
       "declared": {
-        "description": "Before an agent pays an Algorand address: does it exist, can it receive USDC, how much has it really been paid over x402, is it Bazaar-listed, is it registered. Facts from chain, no invented score.",
-        "mimeType": "application/json",
-        "expectedKeys": []
+        "description": "Before an agent pays an Algorand address: does it exist, can it receive USDC, how much has it really been paid over x402, is it Bazaar-listed, is it registered. Facts from chain, no invented score."
       },
       "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
+      "reason": "not_x402",
+      "detail": "expected 402, got 404",
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:47.806Z",
+      "at": "2026-10-20T11:35:47.228Z",
       "url": "https://api.x402node.dev/algorand/chain/honeypot?token=0x4200000000000000000000000000000000000006&chain=base",
       "host": "api.x402node.dev",
       "method": "GET",
@@ -838,7 +836,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:50.196Z",
+      "at": "2026-10-20T11:35:49.888Z",
       "url": "https://cacho402.vercel.app/roll",
       "host": "cacho402.vercel.app",
       "method": "GET",
@@ -856,7 +854,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:51.028Z",
+      "at": "2026-10-20T11:35:50.536Z",
       "url": "https://consensa-endpoint-production.up.railway.app/v1/clearance",
       "host": "consensa-endpoint-production.up.railway.app",
       "method": "POST",
@@ -874,7 +872,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:51.997Z",
+      "at": "2026-10-20T11:35:52.569Z",
       "url": "https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
       "host": "eth-avm-light-client.vercel.app",
       "method": "GET",
@@ -897,7 +895,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:52.857Z",
+      "at": "2026-10-20T11:35:53.227Z",
       "url": "https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
       "host": "fluent-x402-algorand-production.up.railway.app",
       "method": "GET",
@@ -915,7 +913,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:54.550Z",
+      "at": "2026-10-20T11:35:54.559Z",
       "url": "https://microvern-x402-mainnet.onrender.com/v1/inspect-transaction",
       "host": "microvern-x402-mainnet.onrender.com",
       "method": "POST",
@@ -945,41 +943,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:08:56.934Z",
-      "url": "https://moltworld.xyz/v1/models/gemini-lite/chat/completions",
-      "host": "moltworld.xyz",
-      "method": "POST",
-      "input": "body {\"messages\":[{\"role\":\"user\",\"content\":\"Explain Algorand in simple terms.\"}],\"temperature\":0.7,\"max_tokens\":500}",
-      "payTo": "NAPHTASVPDGRYORRYM237OSPA26R2TRRG4XFRRFK7K5H64H6HIIIZZIIXY",
-      "priceUsdc": "0.001000",
-      "declared": {
-        "description": "Send chat messages to Gemini 2.5 Flash Lite and receive a JSON assistant reply with completion choices.",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-10-19T12:08:57.454Z",
-      "url": "https://onestepchess.xyz/api/v1/moves",
-      "host": "onestepchess.xyz",
-      "method": "POST",
-      "input": "body {\"move\":\"e2e4\",\"claimId\":\"clm_example\"}",
-      "payTo": "JTN2G23WP3GBIK7CZYABI4NWMKCN2YVSXDYHY4IMIQB7TPXPELRFGMYP64",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "Submit one legal move to an active shared One Step Chess game and receive the committed move and Algorand settlement receipt."
-      },
-      "verdict": "REFUSE",
-      "reason": "not_x402",
-      "detail": "expected 402, got 401",
-      "paid": false
-    },
-    {
-      "at": "2026-10-19T12:09:00.867Z",
+      "at": "2026-10-20T11:35:55.127Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -997,7 +961,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:02.550Z",
+      "at": "2026-10-20T11:35:56.563Z",
       "url": "https://pq-verifiable-archive.vercel.app/api/anchor",
       "host": "pq-verifiable-archive.vercel.app",
       "method": "POST",
@@ -1015,7 +979,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:03.635Z",
+      "at": "2026-10-20T11:35:57.553Z",
       "url": "https://presign-guard.fizzl.eu/v1/check",
       "host": "presign-guard.fizzl.eu",
       "method": "POST",
@@ -1036,7 +1000,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:04.429Z",
+      "at": "2026-10-20T11:35:58.185Z",
       "url": "https://privacybuddy.up.railway.app/v1/chat/completions",
       "host": "privacybuddy.up.railway.app",
       "method": "POST",
@@ -1054,7 +1018,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:06.125Z",
+      "at": "2026-10-20T11:36:00.051Z",
       "url": "https://thetrench.fun/api/pulse",
       "host": "thetrench.fun",
       "method": "GET",
@@ -1072,7 +1036,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:08.132Z",
+      "at": "2026-10-20T11:36:02.624Z",
       "url": "https://www.qwibi.xyz/api/x402/verify",
       "host": "www.qwibi.xyz",
       "method": "POST",
@@ -1090,7 +1054,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:10.529Z",
+      "at": "2026-10-20T11:36:04.323Z",
       "url": "https://x402-echo-service.vercel.app/api/echo/test",
       "host": "x402-echo-service.vercel.app",
       "method": "GET",
@@ -1108,7 +1072,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:13.847Z",
+      "at": "2026-10-20T11:36:09.004Z",
       "url": "https://x402.diiisco.com/v1/chat/completions",
       "host": "x402.diiisco.com",
       "method": "POST",
@@ -1126,7 +1090,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:18.667Z",
+      "at": "2026-10-20T11:36:10.943Z",
       "url": "https://x402.frostylabs.ai/asa-intel/a2a",
       "host": "x402.frostylabs.ai",
       "method": "POST",
@@ -1144,7 +1108,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:20.286Z",
+      "at": "2026-10-20T11:36:12.699Z",
       "url": "https://xenodice.rngoddess.com/roll?sides=20&count=2&backend=moonlab",
       "host": "xenodice.rngoddess.com",
       "method": "GET",
@@ -1162,7 +1126,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:21.056Z",
+      "at": "2026-10-20T11:36:13.292Z",
       "url": "https://agenthub-production-8c75.up.railway.app/api/explain-tx/U6RNSGSAWJ3AINV4WGKGELVJC5SGHN2MS3HGJEQTOBOHKHMX7HYA?txid=ALGORAND_TRANSACTION_ID_52_CHARS",
       "host": "agenthub-production-8c75.up.railway.app",
       "method": "GET",
@@ -1180,7 +1144,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:22.593Z",
+      "at": "2026-10-20T11:36:14.340Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -1198,7 +1162,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:24.395Z",
+      "at": "2026-10-20T11:36:17.510Z",
       "url": "https://algo.ochinimus.app/v1/liquidations/window?symbol=SOL&hours=24",
       "host": "algo.ochinimus.app",
       "method": "GET",
@@ -1216,7 +1180,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:25.174Z",
+      "at": "2026-10-20T11:36:18.464Z",
       "url": "https://algocheckmain.vercel.app/api/v1/analyze/31566704?asset_id=31566704",
       "host": "algocheckmain.vercel.app",
       "method": "GET",
@@ -1234,7 +1198,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:26.529Z",
+      "at": "2026-10-20T11:36:19.889Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -1252,7 +1216,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:27.706Z",
+      "at": "2026-10-20T11:36:20.890Z",
       "url": "https://ichimoku-signal.fizzl.eu/signal/BTC-USDT?interval=1h",
       "host": "ichimoku-signal.fizzl.eu",
       "method": "GET",
@@ -1278,7 +1242,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:29.525Z",
+      "at": "2026-10-20T11:36:22.789Z",
       "url": "https://kepaix.com/api/x402-atlas.php",
       "host": "kepaix.com",
       "method": "GET",
@@ -1296,7 +1260,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:42.355Z",
+      "at": "2026-10-20T11:36:24.951Z",
       "url": "https://x402.pipeforge.tech/api/v1/inspect",
       "host": "x402.pipeforge.tech",
       "method": "POST",
@@ -1314,7 +1278,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:44.034Z",
+      "at": "2026-10-20T11:36:26.523Z",
       "url": "https://prism-99h2.onrender.com/code-review-accurate",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -1332,7 +1296,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:44.935Z",
+      "at": "2026-10-20T11:36:27.383Z",
       "url": "https://brandforge-cyan.vercel.app/v1/brand-kit?name=Northwind&industry=fintech&vibe=modern%2Cbold",
       "host": "brandforge-cyan.vercel.app",
       "method": "GET",
@@ -1350,7 +1314,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:45.985Z",
+      "at": "2026-10-20T11:36:28.244Z",
       "url": "https://midax402.com/midas-ops/basic",
       "host": "midax402.com",
       "method": "POST",
@@ -1368,7 +1332,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:46.356Z",
+      "at": "2026-10-20T11:36:28.468Z",
       "url": "https://plaintext.fizzl.eu/api/explain",
       "host": "plaintext.fizzl.eu",
       "method": "POST",
@@ -1384,7 +1348,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:47.160Z",
+      "at": "2026-10-20T11:36:29.458Z",
       "url": "https://43.162.105.66.sslip.io/v1/scan/signature",
       "host": "43.162.105.66.sslip.io",
       "method": "POST",
@@ -1402,7 +1366,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:48.121Z",
+      "at": "2026-10-20T11:36:30.262Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -1419,7 +1383,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:53.618Z",
+      "at": "2026-10-20T11:36:35.305Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -1437,7 +1401,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:54.480Z",
+      "at": "2026-10-20T11:36:36.129Z",
       "url": "https://x402-algo.pkgproof.net/v1/verify",
       "host": "x402-algo.pkgproof.net",
       "method": "POST",
@@ -1462,7 +1426,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:57.022Z",
+      "at": "2026-10-20T11:36:37.368Z",
       "url": "https://x402.darkhold.dev/v1/brief",
       "host": "x402.darkhold.dev",
       "method": "POST",
@@ -1480,7 +1444,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:57.463Z",
+      "at": "2026-10-20T11:36:37.599Z",
       "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
       "host": "www.agent-mesh.app",
       "method": "GET",
@@ -1496,7 +1460,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:09:59.380Z",
+      "at": "2026-10-20T11:36:38.831Z",
       "url": "https://abr.kloudle.dev/v1/verifier-manifest?checks=aws-sts-identity%3A1",
       "host": "abr.kloudle.dev",
       "method": "GET",
@@ -1514,15 +1478,15 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:10:00.470Z",
-      "url": "https://api.playclock.xyz/v1/trending?lookback_hours=24",
+      "at": "2026-10-20T11:36:40.155Z",
+      "url": "https://api.playclock.xyz/v1/player",
       "host": "api.playclock.xyz",
-      "method": "GET",
-      "input": "?lookback_hours=24",
+      "method": "POST",
+      "input": "body {\"name\":\"Bijan Robinson\",\"week\":5}",
       "payTo": "MDBJMM6RJ4TM7W5FITZ3MWJTGTHMC4SKQJWRWI2JCQUKIR5LA7BPIUTMMM",
       "priceUsdc": "0.100000",
       "declared": {
-        "description": "Top 25 Sleeper trending adds and drops, each with the usage numbers behind the move and an add/fade/hold verdict. **Use when** an agent needs to know who fantasy managers are picking up right now and…",
+        "description": "One player in depth: four weeks of usage, schedule difficulty, current injury and beat-writer news, and a start/sit verdict. **Use when** an agent is asked about a specific player by name. Cheapest p…",
         "mimeType": "application/json",
         "expectedKeys": []
       },
@@ -1532,23 +1496,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:10:00.530Z",
-      "url": "https://arcade.goplausible.xyz/api/coins",
-      "host": "arcade.goplausible.xyz",
-      "method": "POST",
-      "input": "(none)",
-      "payTo": "UTI7PAASILRDA3ISHY5M7J7LNRX2AIVQJWI7ZKCCGKVLMFD3VPR5PWSZ4I",
-      "priceUsdc": "0.100000",
-      "declared": {
-        "description": "A 0.1 USDC coin for Arcade Bazaar: 10 plays, on any cabinet."
-      },
-      "verdict": "REFUSE",
-      "reason": "invalid_target",
-      "detail": "host does not resolve",
-      "paid": false
-    },
-    {
-      "at": "2026-10-19T12:10:01.536Z",
+      "at": "2026-10-20T11:36:43.793Z",
       "url": "https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
       "host": "finality-x402-backend.onrender.com",
       "method": "GET",
@@ -1566,7 +1514,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:10:05.368Z",
+      "at": "2026-10-20T11:36:47.906Z",
       "url": "https://intyr.timjosh507.workers.dev/v1/trips/check",
       "host": "intyr.timjosh507.workers.dev",
       "method": "POST",
@@ -1584,32 +1532,7 @@
       "paid": false
     },
     {
-      "at": "2026-10-19T12:10:06.954Z",
-      "url": "https://roundwatch-api.onrender.com/v1/watch",
-      "host": "roundwatch-api.onrender.com",
-      "method": "POST",
-      "input": "body {\"idempotencyKey\":\"replace-with-unique-idempotency-key\",\"expectedSender\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBAKQ4C4\",\"expe…",
-      "payTo": "EQPLN32HPLPGBCNPOZUL6BL34CTNQGT3VAAMNAJWSIZGQ5CUNXOHB634XY",
-      "priceUsdc": "0.100000",
-      "declared": {
-        "description": "Monitor one exact future Algorand USDC payment on mainnet when no transaction ID exists yet. RoundWatch persists scan progress across restarts and returns a watch ID for later verified on-chain evide…",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "watchId",
-          "workUnitBudget",
-          "eligibilityTtlMs",
-          "eligibility",
-          "expiresAt",
-          "message"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 400, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-10-19T12:10:10.412Z",
+      "at": "2026-10-20T11:36:52.011Z",
       "url": "https://x402-quant-signals.onrender.com/api/v1/market-signal/ALGO",
       "host": "x402-quant-signals.onrender.com",
       "method": "GET",
@@ -1675,8 +1598,6 @@
     "GET https://eth-avm-light-client.vercel.app/verify-receipt/25691209/0/0",
     "GET https://fluent-x402-algorand-production.up.railway.app/v1/receipt?txid=BL53UR5MYRZ2XPMN5YATA55YZORMZXYEZI4NNIZTSZ2ERJERBMEQ",
     "POST https://microvern-x402-mainnet.onrender.com/v1/inspect-transaction",
-    "POST https://moltworld.xyz/v1/models/gemini-lite/chat/completions",
-    "POST https://onestepchess.xyz/api/v1/moves",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "POST https://pq-verifiable-archive.vercel.app/api/anchor",
     "POST https://presign-guard.fizzl.eu/v1/check",
@@ -1706,11 +1627,9 @@
     "POST https://x402.darkhold.dev/v1/brief",
     "GET https://www.agent-mesh.app/api/x402/relay/run-total",
     "GET https://abr.kloudle.dev/v1/verifier-manifest?checks=aws-sts-identity%3A1",
-    "GET https://api.playclock.xyz/v1/trending?lookback_hours=24",
-    "POST https://arcade.goplausible.xyz/api/coins",
+    "POST https://api.playclock.xyz/v1/player",
     "GET https://finality-x402-backend.onrender.com/v1/onchain/algod/params",
     "POST https://intyr.timjosh507.workers.dev/v1/trips/check",
-    "POST https://roundwatch-api.onrender.com/v1/watch",
     "GET https://x402-quant-signals.onrender.com/api/v1/market-signal/ALGO"
   ]
 }
