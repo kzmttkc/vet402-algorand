@@ -34,16 +34,17 @@
   },
   "completedAt": "2026-10-20T11:36:52.012Z",
   "reconcile": {
-    "checkedAt": "2026-10-20T11:37:07.358Z",
+    "checkedAt": "2026-10-21T11:46:19.816Z",
     "status": "ok",
     "window": {
       "from": "2026-10-20T11:31:41.990Z",
-      "to": "2026-10-20T11:37:07.068Z"
+      "to": "2026-10-20T13:37:07.358Z"
     },
     "transfers": 1,
     "onRows": 1,
     "recorded": [],
-    "unmatched": []
+    "unmatched": [],
+    "nextDayCheckedAt": "2026-10-21T11:46:19.816Z"
   },
   "rows": [
     {
