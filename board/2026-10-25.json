@@ -1,0 +1,450 @@
+{
+  "version": 1,
+  "mode": "daily",
+  "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+  "networkName": "mainnet",
+  "date": "2026-10-25",
+  "startedAt": "2026-10-25T11:24:18.072Z",
+  "finishedAt": "2026-10-25T11:25:49.246Z",
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "caps": {
+    "perCallUsdc": "0.100000",
+    "perDayUsdc": "3.000000"
+  },
+  "selection": {
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2686 items)",
+    "candidates": 21,
+    "excluded": {
+      "other_network_or_asset": 288,
+      "price_over_cap": 298,
+      "path_params": 1,
+      "stale": 1851,
+      "own_address": 1,
+      "bad_url": 1,
+      "not_cheapest_on_host": 225
+    }
+  },
+  "totals": {
+    "rows": 21,
+    "allow": 0,
+    "refuse": 21,
+    "skipped": 0,
+    "unclear": 0,
+    "paidUsdc": "0.000100"
+  },
+  "completedAt": "2026-10-25T11:25:33.955Z",
+  "reconcile": {
+    "checkedAt": "2026-10-25T11:25:49.246Z",
+    "status": "ok",
+    "window": {
+      "from": "2026-10-25T11:22:18.072Z",
+      "to": "2026-10-25T11:25:48.993Z"
+    },
+    "transfers": 1,
+    "onRows": 1,
+    "recorded": [],
+    "unmatched": []
+  },
+  "rows": [
+    {
+      "at": "2026-10-25T11:24:29.735Z",
+      "url": "https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "host": "api.algorand-indexer.xyz",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "payTo": "X4O2W7XDNXAMPWAURGGL4VDJMZTCO2EDOH7NPWBKFBKOTJQVPUYR5FRAMI",
+      "priceUsdc": "0.000100",
+      "declared": {
+        "description": "Algorand account lookup: balance, status, participation, and auth-addr for a single address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "delivery_missing_keys",
+      "paid": true,
+      "tx": "H2ZURNXLEKOTODMZSX5YRLWTVUMKEE3OYNHWM5TDFWVR3ZTBIS5Q",
+      "delivery": "200 application/json object{account:object, current-round:number=66319252}"
+    },
+    {
+      "at": "2026-10-25T11:24:30.884Z",
+      "url": "https://agent402.tools/api/hash",
+      "host": "agent402.tools",
+      "method": "POST",
+      "input": "body {\"text\":\"hello world\",\"algo\":\"sha256\"}",
+      "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Cryptographic hash of a text string - sha256 (default), sha512, sha1 or md5 - returned as hex and base64. Use it for content fingerprints, integrity checks and deterministic ids; pure computation, in…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "algo",
+          "hex",
+          "base64"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:31.147Z",
+      "url": "https://api.pqattest.com/attest-block",
+      "host": "api.pqattest.com",
+      "method": "POST",
+      "input": "body {\"txid\":\"OZ24DXUP6W3YIKK2KZ642WG2EAAIYJZE2IDGHCKMWOUERNL4UKWA\",\"chain\":\"algorand\"}",
+      "payTo": "YL63PQ3U4SHJXPBXJZJPNWKLUZ2DYQSJZ36OLWXGF7FOHWPYN4BELUOUPM",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "pq-attest proof bundle for a confirmed transaction, recorded on Algorand MainNet"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 400",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:33.031Z",
+      "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?from=WST&to=USD&amount=100",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Pacific FX Registry: all 8 Pacific island currencies (WST, FJD, PGK, TOP, VUV, SBD, XPF, KHR) plus 10 major sender currencies (USD, AUD, NZD, EUR, GBP, JPY, CNY, SGD, CAD, HKD), plus 11 crypto assets…",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:53.781Z",
+      "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "host": "canix402-api.compx.io",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "canix402 claimable DeFi rewards endpoint",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "The operation was aborted due to timeout",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:55.540Z",
+      "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+      "host": "growtrack.pro",
+      "method": "GET",
+      "input": "?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+      "payTo": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Full multichain portfolio report for one or more wallet addresses: per-chain and per-wallet breakdowns, total portfolio value in USD, every holding with its raw amount, USD value and percentage share…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:57.241Z",
+      "url": "https://algo.netintel.dev/email-auth",
+      "host": "algo.netintel.dev",
+      "method": "POST",
+      "input": "body {\"domain\":\"example.com\"}",
+      "payTo": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "Email deliverability & domain security check — validates SPF, DKIM (multi-selector), and DMARC, detects spoofing and misconfigurations, and returns an A–F email security grade with transparent deduct…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:24:57.973Z",
+      "url": "https://api.sitelenz.online/v1/analyze/technology",
+      "host": "api.sitelenz.online",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\"}",
+      "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "SiteLenz technology analysis",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:09.037Z",
+      "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "host": "amarok-api.compx.io",
+      "method": "GET",
+      "input": "?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Amarok portfolio by address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 502, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:09.786Z",
+      "url": "https://api.callrack.xyz/v1/academic/search",
+      "host": "api.callrack.xyz",
+      "method": "POST",
+      "input": "body {\"query\":\"large language models healthcare\",\"limit\":5}",
+      "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+      "priceUsdc": "0.080000",
+      "declared": {
+        "description": "Search scholarly literature via OpenAlex (falling back to Crossref) and return normalized works with titles, authors, publication years, DOIs, journals, citation counts, and open-access status.",
+        "mimeType": "",
+        "expectedKeys": [
+          "data",
+          "meta"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:10.286Z",
+      "url": "https://onestepchess.xyz/api/v1/moves",
+      "host": "onestepchess.xyz",
+      "method": "POST",
+      "input": "body {\"move\":\"e2e4\",\"claimId\":\"clm_example\"}",
+      "payTo": "JTN2G23WP3GBIK7CZYABI4NWMKCN2YVSXDYHY4IMIQB7TPXPELRFGMYP64",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Submit one legal move to an active shared One Step Chess game and receive the committed move and Algorand settlement receipt."
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 401",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:14.539Z",
+      "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+      "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Key findings summary for Pacific Tuna Stock Assessment — PDC Demo (Synthetic). Returns stock status by species, coverage statistics, and 3 key findings. SYNTHETIC DEMO DATA.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:16.735Z",
+      "url": "https://agriintellect.site/weather-risk",
+      "host": "agriintellect.site",
+      "method": "POST",
+      "input": "body {\"lat\":18.35,\"lon\":77.31,\"crop\":\"soybean\"}",
+      "payTo": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Advanced agrometeorological intelligence API. Delivers multi-horizon agronomic data: (1) 16-day forecast with derived biological & operational risk signals (GDD, spray windows); (2) ECMWF sub-seasona…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:18.627Z",
+      "url": "https://algorandtracker.com/x402/asa/0/activity",
+      "host": "algorandtracker.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "ASA or ALGO (asaId=0) activity metrics. Wallet/Foundation/supply/Nodes compare two snapshots; Active User stays on averages (vs 7d avg / week avg / month avg). Daily returns the latest completed comp…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:19.528Z",
+      "url": "https://api.algofile.io/api/v3/purchases/x402-verify",
+      "host": "api.algofile.io",
+      "method": "POST",
+      "input": "body {\"planType\":\"10gb\",\"durationMonths\":6,\"capacityGb\":10}",
+      "payTo": "6L4N4U43DXFDGAAPCSFDJQHBIRQO37W3EX7MHKIHX5DQOAQOME6QWXD57M",
+      "priceUsdc": "1.000000",
+      "declared": {
+        "description": "AlgoFile Integrated IPFS Storage Network & x402 Micro-payment Protocol",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "price_over_cap",
+      "detail": "price 1000000 > per-call cap 100000 (atomic USDC)",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:21.158Z",
+      "url": "https://prism-99h2.onrender.com/code-review-accurate",
+      "host": "prism-99h2.onrender.com",
+      "method": "POST",
+      "input": "body {\"file_path\":\"src/index.ts\",\"raw_url\":\"https://raw.githubusercontent.com/example/repo/main/src/index.ts\",\"task_description\":\"Security audit…",
+      "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
+      "priceUsdc": "0.012000",
+      "declared": {
+        "description": "Performs comprehensive senior-engineer code review and security auditing on a single code file using high-precision LLM reasoning.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:21.948Z",
+      "url": "https://aupm.fyi/v1/attest/lockfile",
+      "host": "aupm.fyi",
+      "method": "POST",
+      "input": "body {\"lockfileVersion\":3,\"packages\":{\"node_modules/ms\":{\"version\":\"2.1.3\"}}}",
+      "payTo": "ILGQLGQEFAKO5UPJEFTZXPKV7NLI6OJHG5NOLYPAOQHGUEG3EUMO6P6WKU",
+      "priceUsdc": "0.030000",
+      "declared": {
+        "description": "Signed in-toto attestation for every package in a package-lock.json: human review tier, reviewer, tarball integrity match, and the Algorand txid anchoring each review. $0.001 per reviewed package; fr…"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 200",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:23.829Z",
+      "url": "https://api.validex.space/v1/validate/trust",
+      "host": "api.validex.space",
+      "method": "POST",
+      "input": "body {\"target\":\"stripe.com\"}",
+      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:29.185Z",
+      "url": "https://tendrilhq.com/x402/rent",
+      "host": "tendrilhq.com",
+      "method": "POST",
+      "input": "body {\"nodeId\":\"wbVu3T-ru3\",\"sshPubKey\":\"ssh-ed25519 AAAA…\"}",
+      "payTo": "ZIK7QQE7ZX446TW3PN7PQ5UDZNTY7JI5RYNTIU3LPEYBOSTVWI6PTNSWKI",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Open a metered SSH session. Pass nodeId as ?nodeId= (from GET /nodes) or in the JSON body. Gate fee 0.01 USDC; time then bills from credit.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:29.575Z",
+      "url": "https://www.agent-mesh.app/api/x402/relay/run-total",
+      "host": "www.agent-mesh.app",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "M6JQNJVX32HEN2LS5W2WX2PMSXPDHHKADVUATIQ5KQIVVVHSVILQNOS62A",
+      "priceUsdc": "0.060000",
+      "declared": {
+        "description": "AgentMesh workflow run total — lump-sum settlement of this run's platform-billed work"
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 200",
+      "paid": false
+    },
+    {
+      "at": "2026-10-25T11:25:33.954Z",
+      "url": "https://x402-quant-signals.onrender.com/api/v1/market-signal/BTC",
+      "host": "x402-quant-signals.onrender.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "SGLTUPAC7TKGKNNXKNPQ2QZCC7NJSLAKYZ7O7NOGGAPXWBFZTOLTPMSPPI",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Quant Trading Signals — 5-minute market signal; news optional on the web",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    }
+  ],
+  "attempts": [
+    "GET https://api.algorand-indexer.xyz/v2/accounts/JRG3CUVOFK3YJK3QDD4IOWKMHHRCWVTEMUSYKDN7U73FQO5ZYTCC7CEBRQ?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "POST https://agent402.tools/api/hash",
+    "POST https://api.pqattest.com/attest-block",
+    "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
+    "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "GET https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
+    "POST https://algo.netintel.dev/email-auth",
+    "POST https://api.sitelenz.online/v1/analyze/technology",
+    "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "POST https://api.callrack.xyz/v1/academic/search",
+    "POST https://onestepchess.xyz/api/v1/moves",
+    "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "POST https://agriintellect.site/weather-risk",
+    "GET https://algorandtracker.com/x402/asa/0/activity",
+    "POST https://api.algofile.io/api/v3/purchases/x402-verify",
+    "POST https://prism-99h2.onrender.com/code-review-accurate",
+    "POST https://aupm.fyi/v1/attest/lockfile",
+    "POST https://api.validex.space/v1/validate/trust",
+    "POST https://tendrilhq.com/x402/rent",
+    "GET https://www.agent-mesh.app/api/x402/relay/run-total",
+    "GET https://x402-quant-signals.onrender.com/api/v1/market-signal/BTC"
+  ]
+}
