@@ -3,44 +3,43 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-02",
-  "startedAt": "2026-11-02T10:05:24.013Z",
-  "finishedAt": "2026-11-02T10:06:54.835Z",
+  "date": "2026-11-03",
+  "startedAt": "2026-11-03T00:55:19.048Z",
+  "finishedAt": "2026-11-03T00:57:01.984Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2747 items)",
-    "candidates": 21,
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2749 items)",
+    "candidates": 20,
     "excluded": {
       "other_network_or_asset": 292,
+      "price_over_cap": 285,
       "body_not_json": 1,
-      "not_https": 8,
-      "price_over_cap": 313,
-      "path_params": 5,
-      "stale": 1944,
+      "not_https": 7,
+      "stale": 1946,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 161
+      "not_cheapest_on_host": 196
     }
   },
   "totals": {
-    "rows": 21,
+    "rows": 20,
     "allow": 0,
-    "refuse": 21,
+    "refuse": 20,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-02T10:06:39.667Z",
+  "completedAt": "2026-11-03T00:56:46.779Z",
   "reconcile": {
-    "checkedAt": "2026-11-02T10:06:54.835Z",
+    "checkedAt": "2026-11-03T00:57:01.984Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-02T10:03:24.013Z",
-      "to": "2026-11-02T10:06:54.699Z"
+      "from": "2026-11-03T00:53:19.048Z",
+      "to": "2026-11-03T00:57:01.830Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -49,7 +48,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-02T10:05:35.737Z",
+      "at": "2026-11-03T00:55:34.213Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -71,7 +70,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:05:37.631Z",
+      "at": "2026-11-03T00:55:36.012Z",
       "url": "https://api.iomarkets.tech/v1/signal/vwap?pair=BTC-USDC",
       "host": "api.iomarkets.tech",
       "method": "GET",
@@ -89,7 +88,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:05:40.920Z",
+      "at": "2026-11-03T00:55:38.361Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -107,7 +106,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:01.434Z",
+      "at": "2026-11-03T00:55:59.047Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -125,7 +124,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:03.039Z",
+      "at": "2026-11-03T00:55:59.613Z",
       "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
       "host": "growtrack.pro",
       "method": "GET",
@@ -143,7 +142,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:05.514Z",
+      "at": "2026-11-03T00:56:00.735Z",
       "url": "https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
       "host": "x402.api.nodely.io",
       "method": "GET",
@@ -161,7 +160,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:06.552Z",
+      "at": "2026-11-03T00:56:01.491Z",
       "url": "https://algo.netintel.dev/email-auth",
       "host": "algo.netintel.dev",
       "method": "POST",
@@ -179,7 +178,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:07.784Z",
+      "at": "2026-11-03T00:56:02.398Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -197,7 +196,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:07.929Z",
+      "at": "2026-11-03T00:56:02.442Z",
       "url": "https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
       "host": "chair-baffling-barbed.ngrok-free.dev",
       "method": "GET",
@@ -213,7 +212,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:17.032Z",
+      "at": "2026-11-03T00:56:10.342Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -231,7 +230,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:18.445Z",
+      "at": "2026-11-03T00:56:11.244Z",
       "url": "https://api.algometrics.org/v1/metrics/market-depth",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -249,7 +248,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:19.246Z",
+      "at": "2026-11-03T00:56:12.206Z",
       "url": "https://api.callrack.xyz/v1/academic/search",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -270,29 +269,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:21.478Z",
-      "url": "https://demo.useselo.xyz/v1/orders",
-      "host": "demo.useselo.xyz",
-      "method": "POST",
-      "input": "body {\"sku\":\"demo-widget\",\"quantity\":1}",
-      "payTo": "3FSPH6NJS7PUZM7PZVQOZJ5ZQGAFBJRYGRK3YZSMKMFKPMOEKLAR5BFABE",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "Selo's demo merchant: places one demo order for 0.01 USDC and returns its receipt. Owned by the Selo team for controlled release-gate demonstrations.",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "orderId",
-          "receiptId",
-          "fulfilled"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-02T10:06:27.046Z",
+      "at": "2026-11-03T00:56:16.662Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -310,7 +287,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:27.999Z",
+      "at": "2026-11-03T00:56:16.935Z",
       "url": "https://selo-pilot-merchant.vercel.app/v1/orders",
       "host": "selo-pilot-merchant.vercel.app",
       "method": "POST",
@@ -318,21 +295,15 @@
       "payTo": "GOHTMFW27ZN3QB3K5HMG4ZUZKOGUYWWXYGBTXUUDDSGOL5CGZWQXYWWZQU",
       "priceUsdc": "0.010000",
       "declared": {
-        "description": "Demo merchant: places one demo order for 0.01 USDC and returns its receipt.",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "orderId",
-          "receiptId",
-          "fulfilled"
-        ]
+        "description": "Demo merchant: places one demo order for 0.01 USDC and returns its receipt."
       },
       "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
+      "reason": "not_x402",
+      "detail": "expected 402, got 500",
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:29.689Z",
+      "at": "2026-11-03T00:56:36.944Z",
       "url": "https://x402-analyse.onrender.com/v1/analyse",
       "host": "x402-analyse.onrender.com",
       "method": "POST",
@@ -340,23 +311,15 @@
       "payTo": "5XP4DFSLT76Y6JBWTMAZU6SVNYFE2CT5UF3DZ2F3CN6UNB4BPXXJ3XTLJE",
       "priceUsdc": "0.010000",
       "declared": {
-        "description": "Deterministic text analysis: word count, unique words, characters and reading time, with a stable id derived from the payment.",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "id",
-          "words",
-          "uniqueWords",
-          "characters",
-          "readingSeconds"
-        ]
+        "description": "Deterministic text analysis: word count, unique words, characters and reading time, with a stable id derived from the payment."
       },
       "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
+      "reason": "probe_error",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:31.500Z",
+      "at": "2026-11-03T00:56:38.891Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -374,7 +337,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:32.931Z",
+      "at": "2026-11-03T00:56:39.786Z",
       "url": "https://prism-99h2.onrender.com/code-review-accurate",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -392,7 +355,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:33.489Z",
+      "at": "2026-11-03T00:56:41.637Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -409,7 +372,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:39.024Z",
+      "at": "2026-11-03T00:56:45.683Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -427,7 +390,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-02T10:06:39.667Z",
+      "at": "2026-11-03T00:56:46.778Z",
       "url": "https://x402-algo.pkgproof.net/v1/verify",
       "host": "x402-algo.pkgproof.net",
       "method": "POST",
@@ -465,7 +428,6 @@
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
     "GET https://api.algometrics.org/v1/metrics/market-depth",
     "POST https://api.callrack.xyz/v1/academic/search",
-    "POST https://demo.useselo.xyz/v1/orders",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "POST https://selo-pilot-merchant.vercel.app/v1/orders",
     "POST https://x402-analyse.onrender.com/v1/analyse",
