@@ -3,26 +3,26 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-03",
-  "startedAt": "2026-11-03T00:55:19.048Z",
-  "finishedAt": "2026-11-03T00:57:01.984Z",
+  "date": "2026-11-04",
+  "startedAt": "2026-11-04T14:29:12.716Z",
+  "finishedAt": "2026-11-04T14:31:00.392Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2749 items)",
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2750 items)",
     "candidates": 20,
     "excluded": {
       "other_network_or_asset": 292,
-      "price_over_cap": 285,
+      "price_over_cap": 286,
       "body_not_json": 1,
       "not_https": 7,
-      "stale": 1946,
+      "stale": 1948,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 196
+      "not_cheapest_on_host": 194
     }
   },
   "totals": {
@@ -33,13 +33,13 @@
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-03T00:56:46.779Z",
+  "completedAt": "2026-11-04T14:30:45.052Z",
   "reconcile": {
-    "checkedAt": "2026-11-03T00:57:01.984Z",
+    "checkedAt": "2026-11-04T14:31:00.392Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-03T00:53:19.048Z",
-      "to": "2026-11-03T00:57:01.830Z"
+      "from": "2026-11-04T14:27:12.716Z",
+      "to": "2026-11-04T14:31:00.121Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -48,7 +48,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-03T00:55:34.213Z",
+      "at": "2026-11-04T14:29:24.818Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -70,7 +70,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:55:36.012Z",
+      "at": "2026-11-04T14:29:27.067Z",
       "url": "https://api.iomarkets.tech/v1/signal/vwap?pair=BTC-USDC",
       "host": "api.iomarkets.tech",
       "method": "GET",
@@ -88,7 +88,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:55:38.361Z",
+      "at": "2026-11-04T14:29:28.649Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -106,7 +106,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:55:59.047Z",
+      "at": "2026-11-04T14:29:49.137Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -124,25 +124,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:55:59.613Z",
-      "url": "https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
-      "host": "growtrack.pro",
-      "method": "GET",
-      "input": "?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
-      "payTo": "BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "Full multichain portfolio report for one or more wallet addresses: per-chain and per-wallet breakdowns, total portfolio value in USD, every holding with its raw amount, USD value and percentage share…",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-03T00:56:00.735Z",
+      "at": "2026-11-04T14:29:50.406Z",
       "url": "https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
       "host": "x402.api.nodely.io",
       "method": "GET",
@@ -160,7 +142,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:01.491Z",
+      "at": "2026-11-04T14:29:51.888Z",
       "url": "https://algo.netintel.dev/email-auth",
       "host": "algo.netintel.dev",
       "method": "POST",
@@ -178,7 +160,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:02.398Z",
+      "at": "2026-11-04T14:29:52.878Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -196,7 +178,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:02.442Z",
+      "at": "2026-11-04T14:29:53.010Z",
       "url": "https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
       "host": "chair-baffling-barbed.ngrok-free.dev",
       "method": "GET",
@@ -212,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:10.342Z",
+      "at": "2026-11-04T14:30:00.177Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -226,11 +208,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 502, no settlement receipt",
+      "detail": "status 500, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:11.244Z",
+      "at": "2026-11-04T14:30:01.550Z",
       "url": "https://api.algometrics.org/v1/metrics/market-depth",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -248,7 +230,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:12.206Z",
+      "at": "2026-11-04T14:30:02.776Z",
       "url": "https://api.callrack.xyz/v1/academic/search",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -269,7 +251,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:16.662Z",
+      "at": "2026-11-04T14:30:11.018Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -287,7 +269,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:16.935Z",
+      "at": "2026-11-04T14:30:11.355Z",
       "url": "https://selo-pilot-merchant.vercel.app/v1/orders",
       "host": "selo-pilot-merchant.vercel.app",
       "method": "POST",
@@ -299,11 +281,11 @@
       },
       "verdict": "REFUSE",
       "reason": "not_x402",
-      "detail": "expected 402, got 500",
+      "detail": "expected 402, got 502",
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:36.944Z",
+      "at": "2026-11-04T14:30:31.414Z",
       "url": "https://x402-analyse.onrender.com/v1/analyse",
       "host": "x402-analyse.onrender.com",
       "method": "POST",
@@ -319,7 +301,25 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:38.891Z",
+      "at": "2026-11-04T14:30:33.884Z",
+      "url": "https://agriintellect.site/weather-risk",
+      "host": "agriintellect.site",
+      "method": "POST",
+      "input": "body {\"lat\":18.35,\"lon\":77.31,\"crop\":\"soybean\"}",
+      "payTo": "BRSMWTNWFRW26LU7FQ7CG2KY65P5HTCBXX6QAOIEM35NESQFGWM4KWEYDU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Advanced agrometeorological intelligence API. Delivers multi-horizon agronomic data: (1) 16-day forecast with derived biological & operational risk signals (GDD, spray windows); (2) ECMWF sub-seasona…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-04T14:30:36.415Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -337,7 +337,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:39.786Z",
+      "at": "2026-11-04T14:30:37.616Z",
       "url": "https://prism-99h2.onrender.com/code-review-accurate",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -355,24 +355,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:41.637Z",
-      "url": "https://api.validex.space/v1/validate/trust",
-      "host": "api.validex.space",
-      "method": "POST",
-      "input": "body {\"target\":\"stripe.com\"}",
-      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
-      "priceUsdc": "0.050000",
-      "declared": {
-        "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-03T00:56:45.683Z",
+      "at": "2026-11-04T14:30:42.847Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -390,7 +373,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-03T00:56:46.778Z",
+      "at": "2026-11-04T14:30:43.923Z",
       "url": "https://x402-algo.pkgproof.net/v1/verify",
       "host": "x402-algo.pkgproof.net",
       "method": "POST",
@@ -413,6 +396,23 @@
       "reason": "payment_failed",
       "detail": "status 402, no settlement receipt",
       "paid": false
+    },
+    {
+      "at": "2026-11-04T14:30:45.051Z",
+      "url": "https://api.validex.space/v1/validate/web",
+      "host": "api.validex.space",
+      "method": "POST",
+      "input": "body {\"target\":\"stripe.com\"}",
+      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+      "priceUsdc": "0.060000",
+      "declared": {
+        "description": "Inspects online presence including pricing transparency, developer documentation, engineering blog, careers page, and contact channels.",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     }
   ],
   "attempts": [
@@ -420,7 +420,6 @@
     "GET https://api.iomarkets.tech/v1/signal/vwap?pair=BTC-USDC",
     "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
-    "GET https://growtrack.pro/v1/portfolio/report?addresses=solana%3AGJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE%2Cethereum%3A0xd8dA680F17485f5fE14a58674455179eBBfC1F40",
     "GET https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
     "POST https://algo.netintel.dev/email-auth",
     "POST https://api.sitelenz.online/v1/analyze/technology",
@@ -431,10 +430,11 @@
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "POST https://selo-pilot-merchant.vercel.app/v1/orders",
     "POST https://x402-analyse.onrender.com/v1/analyse",
+    "POST https://agriintellect.site/weather-risk",
     "GET https://algorandtracker.com/x402/asa/0/activity",
     "POST https://prism-99h2.onrender.com/code-review-accurate",
-    "POST https://api.validex.space/v1/validate/trust",
     "POST https://tendrilhq.com/x402/rent",
-    "POST https://x402-algo.pkgproof.net/v1/verify"
+    "POST https://x402-algo.pkgproof.net/v1/verify",
+    "POST https://api.validex.space/v1/validate/web"
   ]
 }
