@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-05",
-  "startedAt": "2026-11-05T14:37:05.790Z",
-  "finishedAt": "2026-11-05T14:38:25.258Z",
+  "date": "2026-11-06",
+  "startedAt": "2026-11-06T14:14:29.193Z",
+  "finishedAt": "2026-11-06T14:15:50.842Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,33 +13,33 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2750 items)",
-    "candidates": 19,
+    "candidates": 13,
     "excluded": {
-      "price_over_cap": 286,
       "other_network_or_asset": 292,
+      "price_over_cap": 286,
       "body_not_json": 1,
       "not_https": 1,
-      "stale": 1958,
+      "stale": 1968,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 191
+      "not_cheapest_on_host": 187
     }
   },
   "totals": {
-    "rows": 19,
+    "rows": 13,
     "allow": 0,
-    "refuse": 19,
+    "refuse": 13,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-05T14:38:10.063Z",
+  "completedAt": "2026-11-06T14:15:35.590Z",
   "reconcile": {
-    "checkedAt": "2026-11-05T14:38:25.258Z",
+    "checkedAt": "2026-11-06T14:15:50.842Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-05T14:35:05.790Z",
-      "to": "2026-11-05T14:38:25.120Z"
+      "from": "2026-11-06T14:12:29.193Z",
+      "to": "2026-11-06T14:15:50.623Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -48,7 +48,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-05T14:37:15.440Z",
+      "at": "2026-11-06T14:14:42.835Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -70,7 +70,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:17.329Z",
+      "at": "2026-11-06T14:14:46.347Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -88,7 +88,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:42.793Z",
+      "at": "2026-11-06T14:15:07.118Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -102,11 +102,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 500, no settlement receipt",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:43.918Z",
+      "at": "2026-11-06T14:15:08.555Z",
       "url": "https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
       "host": "x402.api.nodely.io",
       "method": "GET",
@@ -124,25 +124,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:45.437Z",
-      "url": "https://algo.netintel.dev/email-auth",
-      "host": "algo.netintel.dev",
-      "method": "POST",
-      "input": "body {\"domain\":\"example.com\"}",
-      "payTo": "KGIEWEWNIZWZB4DVGVFW4FAPL3DON6HT5WFHWMDH42SNAYWVPRQ7YBP6EM",
-      "priceUsdc": "0.002000",
-      "declared": {
-        "description": "Email deliverability & domain security check — validates SPF, DKIM (multi-selector), and DMARC, detects spoofing and misconfigurations, and returns an A–F email security grade with transparent deduct…",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:37:45.985Z",
+      "at": "2026-11-06T14:15:09.643Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -160,7 +142,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:46.103Z",
+      "at": "2026-11-06T14:15:09.757Z",
       "url": "https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
       "host": "chair-baffling-barbed.ngrok-free.dev",
       "method": "GET",
@@ -176,7 +158,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:53.993Z",
+      "at": "2026-11-06T14:15:19.672Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -194,46 +176,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:55.662Z",
-      "url": "https://api.algometrics.org/v1/metrics/market-depth",
-      "host": "api.algometrics.org",
-      "method": "GET",
-      "input": "(none)",
-      "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "ALGO-USD market depth from Coinbase trade data: Kyle lambda and estimated USD notional for a $0.01 or one-basis-point price move",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:37:56.106Z",
-      "url": "https://api.callrack.xyz/v1/academic/search",
-      "host": "api.callrack.xyz",
-      "method": "POST",
-      "input": "body {\"query\":\"large language models healthcare\",\"limit\":5}",
-      "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
-      "priceUsdc": "0.080000",
-      "declared": {
-        "description": "Search scholarly literature via OpenAlex (falling back to Crossref) and return normalized works with titles, authors, publication years, DOIs, journals, citation counts, and open-access status.",
-        "mimeType": "",
-        "expectedKeys": [
-          "data",
-          "meta"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:37:56.702Z",
+      "at": "2026-11-06T14:15:25.272Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -251,53 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:37:58.301Z",
-      "url": "https://selo-pilot-merchant.vercel.app/v1/orders",
-      "host": "selo-pilot-merchant.vercel.app",
-      "method": "POST",
-      "input": "body {\"sku\":\"demo-widget\",\"quantity\":1}",
-      "payTo": "GOHTMFW27ZN3QB3K5HMG4ZUZKOGUYWWXYGBTXUUDDSGOL5CGZWQXYWWZQU",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "Demo merchant: places one demo order for 0.01 USDC and returns its receipt.",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "orderId",
-          "receiptId",
-          "fulfilled"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:37:59.993Z",
-      "url": "https://x402-analyse.onrender.com/v1/analyse",
-      "host": "x402-analyse.onrender.com",
-      "method": "POST",
-      "input": "body {\"text\":\"Selo pays your endpoint the way a real customer would, before your users do.\"}",
-      "payTo": "5XP4DFSLT76Y6JBWTMAZU6SVNYFE2CT5UF3DZ2F3CN6UNB4BPXXJ3XTLJE",
-      "priceUsdc": "0.010000",
-      "declared": {
-        "description": "Deterministic text analysis: word count, unique words, characters and reading time, with a stable id derived from the payment.",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "id",
-          "words",
-          "uniqueWords",
-          "characters",
-          "readingSeconds"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:38:01.259Z",
+      "at": "2026-11-06T14:15:27.262Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -315,7 +212,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:38:03.450Z",
+      "at": "2026-11-06T14:15:29.723Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -333,7 +230,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:38:04.399Z",
+      "at": "2026-11-06T14:15:30.721Z",
       "url": "https://prism-99h2.onrender.com/code-review-fast",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -351,7 +248,28 @@
       "paid": false
     },
     {
-      "at": "2026-11-05T14:38:09.029Z",
+      "at": "2026-11-06T14:15:31.539Z",
+      "url": "https://api.callrack.xyz/v1/holidays",
+      "host": "api.callrack.xyz",
+      "method": "POST",
+      "input": "body {\"country\":\"NG\",\"year\":2026}",
+      "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+      "priceUsdc": "0.040000",
+      "declared": {
+        "description": "Retrieve public holiday dates and names for a specified country and year via Nager.Date, including whether each holiday is observed nationwide.",
+        "mimeType": "",
+        "expectedKeys": [
+          "data",
+          "meta"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-06T14:15:35.589Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -367,48 +285,6 @@
       "reason": "payment_failed",
       "detail": "status 402, no settlement receipt",
       "paid": false
-    },
-    {
-      "at": "2026-11-05T14:38:09.647Z",
-      "url": "https://x402-algo.pkgproof.net/v1/verify",
-      "host": "x402-algo.pkgproof.net",
-      "method": "POST",
-      "input": "body {\"ecosystem\":\"npm\",\"name\":\"left-pad\",\"version\":\"1.3.0\"}",
-      "payTo": "NE3HBSH4MZLCJ3G5UPYBTIHGRCQ5M7K5N2ROWCBK6EQFR62FEROLBVQTTQ",
-      "priceUsdc": "0.050000",
-      "declared": {
-        "description": "Call before an agent runs npm install or pip install. Checks one npm or PyPI package against the registry, OSV advisories, install scripts, typosquat and combosquat names and repository provenance, a…",
-        "mimeType": "application/json",
-        "expectedKeys": [
-          "ecosystem",
-          "name",
-          "verdict",
-          "reasons",
-          "sources",
-          "checked_at"
-        ]
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-05T14:38:10.062Z",
-      "url": "https://api.validex.space/v1/validate/web",
-      "host": "api.validex.space",
-      "method": "POST",
-      "input": "body {\"target\":\"stripe.com\"}",
-      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
-      "priceUsdc": "0.060000",
-      "declared": {
-        "description": "Inspects online presence including pricing transparency, developer documentation, engineering blog, careers page, and contact channels.",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
     }
   ],
   "attempts": [
@@ -416,20 +292,14 @@
     "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "GET https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
-    "POST https://algo.netintel.dev/email-auth",
     "POST https://api.sitelenz.online/v1/analyze/technology",
     "GET https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
-    "GET https://api.algometrics.org/v1/metrics/market-depth",
-    "POST https://api.callrack.xyz/v1/academic/search",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
-    "POST https://selo-pilot-merchant.vercel.app/v1/orders",
-    "POST https://x402-analyse.onrender.com/v1/analyse",
     "POST https://agriintellect.site/weather-risk",
     "GET https://algorandtracker.com/x402/asa/0/activity",
     "POST https://prism-99h2.onrender.com/code-review-fast",
-    "POST https://tendrilhq.com/x402/rent",
-    "POST https://x402-algo.pkgproof.net/v1/verify",
-    "POST https://api.validex.space/v1/validate/web"
+    "POST https://api.callrack.xyz/v1/holidays",
+    "POST https://tendrilhq.com/x402/rent"
   ]
 }
