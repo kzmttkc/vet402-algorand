@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-07",
-  "startedAt": "2026-11-07T12:57:42.070Z",
-  "finishedAt": "2026-11-07T12:58:57.385Z",
+  "date": "2026-11-08",
+  "startedAt": "2026-11-08T13:21:13.873Z",
+  "finishedAt": "2026-11-08T13:22:36.541Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,33 +13,31 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2750 items)",
-    "candidates": 13,
+    "candidates": 12,
     "excluded": {
       "other_network_or_asset": 292,
       "price_over_cap": 286,
-      "body_not_json": 1,
-      "not_https": 1,
-      "stale": 1967,
+      "stale": 1977,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 188
+      "not_cheapest_on_host": 181
     }
   },
   "totals": {
-    "rows": 13,
+    "rows": 12,
     "allow": 0,
-    "refuse": 13,
+    "refuse": 12,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-07T12:58:42.248Z",
+  "completedAt": "2026-11-08T13:22:21.372Z",
   "reconcile": {
-    "checkedAt": "2026-11-07T12:58:57.385Z",
+    "checkedAt": "2026-11-08T13:22:36.541Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-07T12:55:42.070Z",
-      "to": "2026-11-07T12:58:57.302Z"
+      "from": "2026-11-08T13:19:13.873Z",
+      "to": "2026-11-08T13:22:36.427Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -48,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-07T12:57:50.473Z",
+      "at": "2026-11-08T13:21:21.946Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -70,7 +68,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:57:51.461Z",
+      "at": "2026-11-08T13:21:22.998Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -88,7 +86,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:16.214Z",
+      "at": "2026-11-08T13:21:51.164Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -106,25 +104,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:17.206Z",
-      "url": "https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
-      "host": "x402.api.nodely.io",
-      "method": "GET",
-      "input": "?asset=386192725&round=65000000",
-      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
-      "priceUsdc": "0.001000",
-      "declared": {
-        "description": "Price of an Algorand ASA at a round or time (USDC, ALGO and any quote asset), exact to the round, from on-chain DEX state over 12 venues with a liquidity-weighted route search.",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-07T12:58:17.596Z",
+      "at": "2026-11-08T13:21:51.575Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -142,23 +122,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:17.723Z",
-      "url": "https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
-      "host": "chair-baffling-barbed.ngrok-free.dev",
-      "method": "GET",
-      "input": "?address=ALGORAND_ADDRESS",
-      "payTo": "I7MMCO3ZNDNPILO5IMYPTBCHT2CVNWOHUNLKLF4W7BVEZZZWP6VWTGQGHA",
-      "priceUsdc": "0.003000",
-      "declared": {
-        "description": "Trust check for an Algorand address or x402 service: balance, USDC opt-in, age, activity, NFD, catalog history"
-      },
-      "verdict": "REFUSE",
-      "reason": "not_x402",
-      "detail": "expected 402, got 404",
-      "paid": false
-    },
-    {
-      "at": "2026-11-07T12:58:26.690Z",
+      "at": "2026-11-08T13:22:02.528Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -176,7 +140,25 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:33.423Z",
+      "at": "2026-11-08T13:22:03.337Z",
+      "url": "https://x402.api.nodely.io/v1/images/search?k=10&q=a+pixel+art+frog+wearing+a+crown",
+      "host": "x402.api.nodely.io",
+      "method": "GET",
+      "input": "?k=10&q=a+pixel+art+frog+wearing+a+crown",
+      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Semantic search over the images of every Algorand NFT cached by Nodely's IPFS cache: a text query (any language) is embedded with Qwen3-VL-Embedding-2B and answered with the nearest images, their IPF…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-08T13:22:13.744Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -194,7 +176,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:35.199Z",
+      "at": "2026-11-08T13:22:15.499Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -212,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:36.637Z",
+      "at": "2026-11-08T13:22:16.333Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -230,7 +212,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:37.083Z",
+      "at": "2026-11-08T13:22:16.972Z",
       "url": "https://prism-99h2.onrender.com/code-review-fast",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -248,7 +230,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:37.542Z",
+      "at": "2026-11-08T13:22:17.336Z",
       "url": "https://api.callrack.xyz/v1/holidays",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -269,7 +251,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-07T12:58:42.247Z",
+      "at": "2026-11-08T13:22:21.371Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -291,10 +273,9 @@
     "POST https://agent402.tools/api/hash",
     "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
-    "GET https://x402.api.nodely.io/v1/prices/price?asset=386192725&round=65000000",
     "POST https://api.sitelenz.online/v1/analyze/technology",
-    "GET https://chair-baffling-barbed.ngrok-free.dev/trust?address=ALGORAND_ADDRESS",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://x402.api.nodely.io/v1/images/search?k=10&q=a+pixel+art+frog+wearing+a+crown",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "POST https://agriintellect.site/weather-risk",
     "GET https://algorandtracker.com/x402/asa/0/activity",
