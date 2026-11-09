@@ -3,41 +3,41 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-08",
-  "startedAt": "2026-11-08T13:21:13.873Z",
-  "finishedAt": "2026-11-08T13:22:36.541Z",
+  "date": "2026-11-09",
+  "startedAt": "2026-11-09T16:14:19.933Z",
+  "finishedAt": "2026-11-09T16:16:06.751Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2750 items)",
-    "candidates": 12,
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2751 items)",
+    "candidates": 13,
     "excluded": {
       "other_network_or_asset": 292,
       "price_over_cap": 286,
-      "stale": 1977,
+      "stale": 1976,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 181
+      "not_cheapest_on_host": 182
     }
   },
   "totals": {
-    "rows": 12,
+    "rows": 13,
     "allow": 0,
     "refuse": 12,
     "skipped": 0,
-    "unclear": 0,
+    "unclear": 1,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-08T13:22:21.372Z",
+  "completedAt": "2026-11-09T16:15:51.532Z",
   "reconcile": {
-    "checkedAt": "2026-11-08T13:22:36.541Z",
+    "checkedAt": "2026-11-09T16:16:06.751Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-08T13:19:13.873Z",
-      "to": "2026-11-08T13:22:36.427Z"
+      "from": "2026-11-09T16:12:19.933Z",
+      "to": "2026-11-09T16:16:06.567Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,26 @@
   },
   "rows": [
     {
-      "at": "2026-11-08T13:21:21.946Z",
+      "at": "2026-11-09T16:14:30.943Z",
+      "url": "https://authen.hvym.link/api/v1/notarize",
+      "host": "authen.hvym.link",
+      "method": "POST",
+      "input": "body {\"content_base64\":\"<standard base64 of the bytes to notarize>\",\"media_type\":\"application/pdf\"}",
+      "payTo": "E64BQIOXKTT4BVMIFY2S5WX337FT6MLF66UPZEUPDYAKT4QIFOXXQCR24Q",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Notarize any bytes. POST the content and receive a signed, timestamped attestation that this node observed data with that SHA-256 digest at that moment. Ed25519 detached signature in b64url(sig).b64u…"
+      },
+      "verdict": "REFUSE",
+      "reason": "placeholder_unfillable",
+      "detail": "the seller's example input has a placeholder vet402 does not make up (content_base64): not sent, not paid",
+      "unfillable": [
+        "content_base64"
+      ],
+      "paid": false
+    },
+    {
+      "at": "2026-11-09T16:14:32.713Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -68,7 +87,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:21:22.998Z",
+      "at": "2026-11-09T16:14:34.913Z",
       "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -86,7 +105,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:21:51.164Z",
+      "at": "2026-11-09T16:15:03.260Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -104,7 +123,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:21:51.575Z",
+      "at": "2026-11-09T16:15:07.094Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -122,7 +141,25 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:02.528Z",
+      "at": "2026-11-09T16:15:08.451Z",
+      "url": "https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
+      "host": "x402.api.nodely.io",
+      "method": "GET",
+      "input": "?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
+      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "Total USD value of an Algorand account at the chain tip: ALGO and ASA balances, LP tokens looked through to pool reserves (Tinyman, Pact, Humble, LiquiHog, Algofi, NanoSwap), lending deposits, collat…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-09T16:15:29.009Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -136,29 +173,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 502, no settlement receipt",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:03.337Z",
-      "url": "https://x402.api.nodely.io/v1/images/search?k=10&q=a+pixel+art+frog+wearing+a+crown",
-      "host": "x402.api.nodely.io",
-      "method": "GET",
-      "input": "?k=10&q=a+pixel+art+frog+wearing+a+crown",
-      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
-      "priceUsdc": "0.005000",
-      "declared": {
-        "description": "Semantic search over the images of every Algorand NFT cached by Nodely's IPFS cache: a text query (any language) is embedded with Qwen3-VL-Embedding-2B and answered with the nearest images, their IPF…",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-08T13:22:13.744Z",
+      "at": "2026-11-09T16:15:34.358Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -176,7 +195,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:15.499Z",
+      "at": "2026-11-09T16:15:35.908Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -194,7 +213,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:16.333Z",
+      "at": "2026-11-09T16:15:38.836Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -212,7 +231,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:16.972Z",
+      "at": "2026-11-09T16:15:43.269Z",
       "url": "https://prism-99h2.onrender.com/code-review-fast",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -230,7 +249,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:17.336Z",
+      "at": "2026-11-09T16:15:45.780Z",
       "url": "https://api.callrack.xyz/v1/holidays",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -251,7 +270,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-08T13:22:21.371Z",
+      "at": "2026-11-09T16:15:51.531Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -274,8 +293,8 @@
     "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "POST https://api.sitelenz.online/v1/analyze/technology",
+    "GET https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
-    "GET https://x402.api.nodely.io/v1/images/search?k=10&q=a+pixel+art+frog+wearing+a+crown",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "POST https://agriintellect.site/weather-risk",
     "GET https://algorandtracker.com/x402/asa/0/activity",
