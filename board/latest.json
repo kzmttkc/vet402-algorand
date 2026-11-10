@@ -3,24 +3,24 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-09",
-  "startedAt": "2026-11-09T16:14:19.933Z",
-  "finishedAt": "2026-11-09T16:16:06.751Z",
+  "date": "2026-11-10",
+  "startedAt": "2026-11-10T01:29:14.195Z",
+  "finishedAt": "2026-11-10T01:30:28.045Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2751 items)",
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2752 items)",
     "candidates": 13,
     "excluded": {
-      "other_network_or_asset": 292,
-      "price_over_cap": 286,
-      "stale": 1976,
+      "price_over_cap": 290,
+      "other_network_or_asset": 293,
+      "stale": 1981,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 182
+      "not_cheapest_on_host": 173
     }
   },
   "totals": {
@@ -31,13 +31,13 @@
     "unclear": 1,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-09T16:15:51.532Z",
+  "completedAt": "2026-11-10T01:30:12.841Z",
   "reconcile": {
-    "checkedAt": "2026-11-09T16:16:06.751Z",
+    "checkedAt": "2026-11-10T01:30:28.044Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-09T16:12:19.933Z",
-      "to": "2026-11-09T16:16:06.567Z"
+      "from": "2026-11-10T01:27:14.195Z",
+      "to": "2026-11-10T01:30:27.873Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-09T16:14:30.943Z",
+      "at": "2026-11-10T01:29:24.478Z",
       "url": "https://authen.hvym.link/api/v1/notarize",
       "host": "authen.hvym.link",
       "method": "POST",
@@ -65,7 +65,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:14:32.713Z",
+      "at": "2026-11-10T01:29:25.573Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -87,25 +87,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:14:34.913Z",
-      "url": "https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
-      "host": "api.synergybcpacific.com",
-      "method": "GET",
-      "input": "?from=WST&to=USD&amount=100",
-      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
-      "priceUsdc": "0.100000",
-      "declared": {
-        "description": "Pacific FX Registry: all 8 Pacific island currencies (WST, FJD, PGK, TOP, VUV, SBD, XPF, KHR) plus 10 major sender currencies (USD, AUD, NZD, EUR, GBP, JPY, CNY, SGD, CAD, HKD), plus 11 crypto assets…",
-        "mimeType": "",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-09T16:15:03.260Z",
+      "at": "2026-11-10T01:29:49.764Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -123,7 +105,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:07.094Z",
+      "at": "2026-11-10T01:29:51.656Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -141,7 +123,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:08.451Z",
+      "at": "2026-11-10T01:29:52.752Z",
       "url": "https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
       "host": "x402.api.nodely.io",
       "method": "GET",
@@ -159,7 +141,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:29.009Z",
+      "at": "2026-11-10T01:29:59.216Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -173,11 +155,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "The operation was aborted due to timeout",
+      "detail": "status 502, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:34.358Z",
+      "at": "2026-11-10T01:29:59.845Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -195,7 +177,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:35.908Z",
+      "at": "2026-11-10T01:30:01.745Z",
       "url": "https://agriintellect.site/weather-risk",
       "host": "agriintellect.site",
       "method": "POST",
@@ -213,7 +195,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:38.836Z",
+      "at": "2026-11-10T01:30:03.249Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -231,7 +213,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:43.269Z",
+      "at": "2026-11-10T01:30:05.057Z",
       "url": "https://prism-99h2.onrender.com/code-review-fast",
       "host": "prism-99h2.onrender.com",
       "method": "POST",
@@ -249,7 +231,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:45.780Z",
+      "at": "2026-11-10T01:30:06.765Z",
       "url": "https://api.callrack.xyz/v1/holidays",
       "host": "api.callrack.xyz",
       "method": "POST",
@@ -270,7 +252,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-09T16:15:51.531Z",
+      "at": "2026-11-10T01:30:12.225Z",
       "url": "https://tendrilhq.com/x402/rent",
       "host": "tendrilhq.com",
       "method": "POST",
@@ -286,11 +268,28 @@
       "reason": "payment_failed",
       "detail": "status 402, no settlement receipt",
       "paid": false
+    },
+    {
+      "at": "2026-11-10T01:30:12.840Z",
+      "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "Search Pacific data endpoints by category, country, price, keywords",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
     }
   ],
   "attempts": [
     "POST https://agent402.tools/api/hash",
-    "GET https://api.synergybcpacific.com/finance/fx?from=WST&to=USD&amount=100",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "POST https://api.sitelenz.online/v1/analyze/technology",
     "GET https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
@@ -300,6 +299,7 @@
     "GET https://algorandtracker.com/x402/asa/0/activity",
     "POST https://prism-99h2.onrender.com/code-review-fast",
     "POST https://api.callrack.xyz/v1/holidays",
-    "POST https://tendrilhq.com/x402/rent"
+    "POST https://tendrilhq.com/x402/rent",
+    "GET https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20"
   ]
 }
