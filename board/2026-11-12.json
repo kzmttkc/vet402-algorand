@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "mode": "daily",
+  "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+  "networkName": "mainnet",
+  "date": "2026-11-12",
+  "startedAt": "2026-11-12T00:37:43.510Z",
+  "finishedAt": "2026-11-12T00:39:51.655Z",
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "caps": {
+    "perCallUsdc": "0.100000",
+    "perDayUsdc": "3.000000"
+  },
+  "selection": {
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2755 items)",
+    "candidates": 12,
+    "excluded": {
+      "other_network_or_asset": 296,
+      "price_over_cap": 290,
+      "stale": 1982,
+      "own_address": 1,
+      "bad_url": 1,
+      "not_cheapest_on_host": 173
+    }
+  },
+  "totals": {
+    "rows": 12,
+    "allow": 0,
+    "refuse": 11,
+    "skipped": 0,
+    "unclear": 1,
+    "paidUsdc": "0.000000"
+  },
+  "completedAt": "2026-11-12T00:39:36.423Z",
+  "reconcile": {
+    "checkedAt": "2026-11-12T00:39:51.655Z",
+    "status": "ok",
+    "window": {
+      "from": "2026-11-12T00:35:43.510Z",
+      "to": "2026-11-12T00:39:51.483Z"
+    },
+    "transfers": 0,
+    "onRows": 0,
+    "recorded": [],
+    "unmatched": []
+  },
+  "rows": [
+    {
+      "at": "2026-11-12T00:37:53.363Z",
+      "url": "https://authen.hvym.link/api/v1/notarize",
+      "host": "authen.hvym.link",
+      "method": "POST",
+      "input": "body {\"content_base64\":\"<standard base64 of the bytes to notarize>\",\"media_type\":\"application/pdf\"}",
+      "payTo": "E64BQIOXKTT4BVMIFY2S5WX337FT6MLF66UPZEUPDYAKT4QIFOXXQCR24Q",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Notarize any bytes. POST the content and receive a signed, timestamped attestation that this node observed data with that SHA-256 digest at that moment. Ed25519 detached signature in b64url(sig).b64u…"
+      },
+      "verdict": "REFUSE",
+      "reason": "placeholder_unfillable",
+      "detail": "the seller's example input has a placeholder vet402 does not make up (content_base64): not sent, not paid",
+      "unfillable": [
+        "content_base64"
+      ],
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:37:54.407Z",
+      "url": "https://agent402.tools/api/hash",
+      "host": "agent402.tools",
+      "method": "POST",
+      "input": "body {\"text\":\"hello world\",\"algo\":\"sha256\"}",
+      "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Cryptographic hash of a text string - sha256 (default), sha512, sha1 or md5 - returned as hex and base64. Use it for content fingerprints, integrity checks and deterministic ids; pure computation, in…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "algo",
+          "hex",
+          "base64"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:07.734Z",
+      "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "host": "canix402-api.compx.io",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "canix402 claimable DeFi rewards endpoint",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 500, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:08.954Z",
+      "url": "https://api.sitelenz.online/v1/analyze/technology",
+      "host": "api.sitelenz.online",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\"}",
+      "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "SiteLenz technology analysis",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:10.460Z",
+      "url": "https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
+      "host": "x402.api.nodely.io",
+      "method": "GET",
+      "input": "?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
+      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "Total USD value of an Algorand account at the chain tip: ALGO and ASA balances, LP tokens looked through to pool reserves (Tinyman, Pact, Humble, LiquiHog, Algofi, NanoSwap), lending deposits, collat…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:17.380Z",
+      "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "host": "amarok-api.compx.io",
+      "method": "GET",
+      "input": "?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Amarok portfolio by address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 502, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:21.835Z",
+      "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+      "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Key findings summary for Pacific Tuna Stock Assessment — PDC Demo (Synthetic). Returns stock status by species, coverage statistics, and 3 key findings. SYNTHETIC DEMO DATA.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:23.708Z",
+      "url": "https://algorandtracker.com/x402/asa/0/activity",
+      "host": "algorandtracker.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "ASA or ALGO (asaId=0) activity metrics. Wallet/Foundation/supply/Nodes compare two snapshots; Active User stays on averages (vs 7d avg / week avg / month avg). Daily returns the latest completed comp…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:26.117Z",
+      "url": "https://prism-99h2.onrender.com/code-review-fast",
+      "host": "prism-99h2.onrender.com",
+      "method": "POST",
+      "input": "body {\"file_path\":\"src/index.ts\",\"raw_url\":\"https://raw.githubusercontent.com/example/repo/main/src/index.ts\",\"task_description\":\"Analyze code q…",
+      "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
+      "priceUsdc": "0.012000",
+      "declared": {
+        "description": "Reviews a single code file for bugs, security issues, syntax errors, and code quality problems with fast LLM turnarounds.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:27.723Z",
+      "url": "https://api.callrack.xyz/v1/holidays",
+      "host": "api.callrack.xyz",
+      "method": "POST",
+      "input": "body {\"country\":\"NG\",\"year\":2026}",
+      "payTo": "6CAXBY2AHBOSZ5ODKPGPRLG444OZG2OG7CYJ7MWFNA3GYNTNWW6K5R346A",
+      "priceUsdc": "0.040000",
+      "declared": {
+        "description": "Retrieve public holiday dates and names for a specified country and year via Nager.Date, including whether each holiday is observed nationwide.",
+        "mimeType": "",
+        "expectedKeys": [
+          "data",
+          "meta"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:32.673Z",
+      "url": "https://tendrilhq.com/x402/rent",
+      "host": "tendrilhq.com",
+      "method": "POST",
+      "input": "body {\"nodeId\":\"wbVu3T-ru3\",\"sshPubKey\":\"ssh-ed25519 AAAA…\"}",
+      "payTo": "ZIK7QQE7ZX446TW3PN7PQ5UDZNTY7JI5RYNTIU3LPEYBOSTVWI6PTNSWKI",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Open a metered SSH session. Pass nodeId as ?nodeId= (from GET /nodes) or in the JSON body. Gate fee 0.01 USDC; time then bills from credit.",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-12T00:39:36.423Z",
+      "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Search Pacific data endpoints by category, country, price, keywords",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    }
+  ],
+  "attempts": [
+    "POST https://agent402.tools/api/hash",
+    "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "POST https://api.sitelenz.online/v1/analyze/technology",
+    "GET https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
+    "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "GET https://algorandtracker.com/x402/asa/0/activity",
+    "POST https://prism-99h2.onrender.com/code-review-fast",
+    "POST https://api.callrack.xyz/v1/holidays",
+    "POST https://tendrilhq.com/x402/rent",
+    "GET https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20"
+  ]
+}
