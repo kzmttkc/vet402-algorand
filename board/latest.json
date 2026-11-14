@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-13",
-  "startedAt": "2026-11-13T14:32:11.972Z",
-  "finishedAt": "2026-11-13T14:35:05.509Z",
+  "date": "2026-11-14",
+  "startedAt": "2026-11-14T13:28:46.940Z",
+  "finishedAt": "2026-11-14T13:29:55.701Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -31,13 +31,13 @@
     "unclear": 1,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-13T14:34:50.325Z",
+  "completedAt": "2026-11-14T13:29:40.456Z",
   "reconcile": {
-    "checkedAt": "2026-11-13T14:35:05.509Z",
+    "checkedAt": "2026-11-14T13:29:55.701Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-13T14:30:11.972Z",
-      "to": "2026-11-13T14:35:05.360Z"
+      "from": "2026-11-14T13:26:46.940Z",
+      "to": "2026-11-14T13:29:55.523Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-13T14:32:22.069Z",
+      "at": "2026-11-14T13:28:58.136Z",
       "url": "https://authen.hvym.link/api/v1/notarize",
       "host": "authen.hvym.link",
       "method": "POST",
@@ -65,7 +65,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:32:23.137Z",
+      "at": "2026-11-14T13:28:59.864Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -87,7 +87,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:29.392Z",
+      "at": "2026-11-14T13:29:20.516Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -101,11 +101,29 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 524, no settlement receipt",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:30.542Z",
+      "at": "2026-11-14T13:29:21.347Z",
+      "url": "https://api.sitelenz.online/v1/analyze/technology",
+      "host": "api.sitelenz.online",
+      "method": "POST",
+      "input": "body {\"url\":\"https://example.com\"}",
+      "payTo": "2URXEDGOHVIZYKUPRQGTCFOXJMVRZYUZLLOVX3KWYMB76CAZNOUBYSRM2Q",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "SiteLenz technology analysis",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-14T13:29:22.576Z",
       "url": "https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
       "host": "x402.api.nodely.io",
       "method": "GET",
@@ -123,7 +141,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:38.503Z",
+      "at": "2026-11-14T13:29:31.639Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -141,7 +159,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:45.247Z",
+      "at": "2026-11-14T13:29:36.134Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -159,7 +177,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:48.079Z",
+      "at": "2026-11-14T13:29:38.837Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -177,25 +195,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:49.081Z",
-      "url": "https://prism-99h2.onrender.com/code-review-fast",
-      "host": "prism-99h2.onrender.com",
-      "method": "POST",
-      "input": "body {\"file_path\":\"src/index.ts\",\"raw_url\":\"https://raw.githubusercontent.com/example/repo/main/src/index.ts\",\"task_description\":\"Analyze code q…",
-      "payTo": "FL7U7GHUZB2R6RACPGY5UFD2K47CP2IL4RQWX7LKYE5QSFGXVJCDGPRLBE",
-      "priceUsdc": "0.012000",
-      "declared": {
-        "description": "Reviews a single code file for bugs, security issues, syntax errors, and code quality problems with fast LLM turnarounds.",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-13T14:34:49.711Z",
+      "at": "2026-11-14T13:29:39.508Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -212,7 +212,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-13T14:34:50.324Z",
+      "at": "2026-11-14T13:29:40.456Z",
       "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -233,11 +233,11 @@
   "attempts": [
     "POST https://agent402.tools/api/hash",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "POST https://api.sitelenz.online/v1/analyze/technology",
     "GET https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "GET https://algorandtracker.com/x402/asa/0/activity",
-    "POST https://prism-99h2.onrender.com/code-review-fast",
     "POST https://api.validex.space/v1/validate/trust",
     "GET https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20"
   ]
