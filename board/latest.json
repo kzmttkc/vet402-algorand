@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-15",
-  "startedAt": "2026-11-15T13:54:26.848Z",
-  "finishedAt": "2026-11-15T13:57:14.801Z",
+  "date": "2026-11-16",
+  "startedAt": "2026-11-16T15:42:02.120Z",
+  "finishedAt": "2026-11-16T15:43:17.027Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,31 +13,31 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2758 items)",
-    "candidates": 10,
+    "candidates": 9,
     "excluded": {
-      "other_network_or_asset": 299,
       "price_over_cap": 290,
-      "stale": 1990,
+      "other_network_or_asset": 299,
+      "stale": 1984,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 167
+      "not_cheapest_on_host": 174
     }
   },
   "totals": {
-    "rows": 10,
+    "rows": 9,
     "allow": 0,
-    "refuse": 9,
+    "refuse": 8,
     "skipped": 0,
     "unclear": 1,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-15T13:56:59.651Z",
+  "completedAt": "2026-11-16T15:43:01.821Z",
   "reconcile": {
-    "checkedAt": "2026-11-15T13:57:14.801Z",
+    "checkedAt": "2026-11-16T15:43:17.027Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-15T13:52:26.848Z",
-      "to": "2026-11-15T13:57:14.705Z"
+      "from": "2026-11-16T15:40:02.120Z",
+      "to": "2026-11-16T15:43:16.873Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-15T13:54:33.215Z",
+      "at": "2026-11-16T15:42:19.352Z",
       "url": "https://authen.hvym.link/api/v1/notarize",
       "host": "authen.hvym.link",
       "method": "POST",
@@ -65,7 +65,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:54:33.990Z",
+      "at": "2026-11-16T15:42:20.822Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -87,7 +87,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:39.708Z",
+      "at": "2026-11-16T15:42:41.495Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -101,11 +101,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 524, no settlement receipt",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:40.107Z",
+      "at": "2026-11-16T15:42:42.526Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -123,25 +123,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:40.896Z",
-      "url": "https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
-      "host": "x402.api.nodely.io",
-      "method": "GET",
-      "input": "?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
-      "payTo": "X4O2COYWOFR7XS3EOYEF6MG42Y4Q743SKZMULC776NODRTMMRIVTCOBANQ",
-      "priceUsdc": "0.002000",
-      "declared": {
-        "description": "Total USD value of an Algorand account at the chain tip: ALGO and ASA balances, LP tokens looked through to pool reserves (Tinyman, Pact, Humble, LiquiHog, Algofi, NanoSwap), lending deposits, collat…",
-        "mimeType": "application/json",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-15T13:56:49.207Z",
+      "at": "2026-11-16T15:42:50.893Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -159,7 +141,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:54.617Z",
+      "at": "2026-11-16T15:42:54.885Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -177,7 +159,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:56.592Z",
+      "at": "2026-11-16T15:42:56.866Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -195,7 +177,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:58.180Z",
+      "at": "2026-11-16T15:42:58.540Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -212,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-15T13:56:59.650Z",
+      "at": "2026-11-16T15:43:01.820Z",
       "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -234,7 +216,6 @@
     "POST https://agent402.tools/api/hash",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "POST https://api.sitelenz.online/v1/analyze/technology",
-    "GET https://x402.api.nodely.io/v1/prices/account?address=P6WX7A6NFBAVFIU6PDSUIELV6NTO5GBGW72G2QIRZZFOCPPTEQJQ3GYXMI",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "GET https://algorandtracker.com/x402/asa/0/activity",
