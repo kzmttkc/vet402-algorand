@@ -3,24 +3,24 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-16",
-  "startedAt": "2026-11-16T15:42:02.120Z",
-  "finishedAt": "2026-11-16T15:43:17.027Z",
+  "date": "2026-11-17",
+  "startedAt": "2026-11-17T01:51:15.907Z",
+  "finishedAt": "2026-11-17T01:52:25.558Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2758 items)",
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2765 items)",
     "candidates": 9,
     "excluded": {
-      "price_over_cap": 290,
       "other_network_or_asset": 299,
-      "stale": 1984,
+      "price_over_cap": 290,
+      "stale": 1990,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 174
+      "not_cheapest_on_host": 175
     }
   },
   "totals": {
@@ -31,13 +31,13 @@
     "unclear": 1,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-16T15:43:01.821Z",
+  "completedAt": "2026-11-17T01:52:10.328Z",
   "reconcile": {
-    "checkedAt": "2026-11-16T15:43:17.027Z",
+    "checkedAt": "2026-11-17T01:52:25.558Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-16T15:40:02.120Z",
-      "to": "2026-11-16T15:43:16.873Z"
+      "from": "2026-11-17T01:49:15.907Z",
+      "to": "2026-11-17T01:52:25.386Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-16T15:42:19.352Z",
+      "at": "2026-11-17T01:51:25.442Z",
       "url": "https://authen.hvym.link/api/v1/notarize",
       "host": "authen.hvym.link",
       "method": "POST",
@@ -65,7 +65,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:20.822Z",
+      "at": "2026-11-17T01:51:26.536Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -87,7 +87,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:41.495Z",
+      "at": "2026-11-17T01:51:47.242Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -105,7 +105,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:42.526Z",
+      "at": "2026-11-17T01:51:47.978Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -123,7 +123,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:50.893Z",
+      "at": "2026-11-17T01:51:54.834Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -137,11 +137,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 502, no settlement receipt",
+      "detail": "status 500, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:54.885Z",
+      "at": "2026-11-17T01:52:01.354Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -159,7 +159,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:56.866Z",
+      "at": "2026-11-17T01:52:03.493Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -177,7 +177,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:42:58.540Z",
+      "at": "2026-11-17T01:52:04.834Z",
       "url": "https://api.validex.space/v1/validate/trust",
       "host": "api.validex.space",
       "method": "POST",
@@ -194,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-16T15:43:01.820Z",
+      "at": "2026-11-17T01:52:10.327Z",
       "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
       "host": "api.synergybcpacific.com",
       "method": "GET",
