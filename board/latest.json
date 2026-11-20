@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-19",
-  "startedAt": "2026-11-19T00:19:09.421Z",
-  "finishedAt": "2026-11-19T00:22:19.264Z",
+  "date": "2026-11-20",
+  "startedAt": "2026-11-20T00:35:27.172Z",
+  "finishedAt": "2026-11-20T00:36:58.434Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,31 +13,31 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2770 items)",
-    "candidates": 9,
+    "candidates": 8,
     "excluded": {
       "other_network_or_asset": 300,
       "price_over_cap": 290,
-      "stale": 1989,
+      "stale": 1996,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 180
+      "not_cheapest_on_host": 174
     }
   },
   "totals": {
-    "rows": 9,
+    "rows": 8,
     "allow": 0,
-    "refuse": 9,
+    "refuse": 8,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-19T00:22:04.089Z",
+  "completedAt": "2026-11-20T00:36:43.199Z",
   "reconcile": {
-    "checkedAt": "2026-11-19T00:22:19.264Z",
+    "checkedAt": "2026-11-20T00:36:58.434Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-19T00:17:09.421Z",
-      "to": "2026-11-19T00:22:19.154Z"
+      "from": "2026-11-20T00:33:27.172Z",
+      "to": "2026-11-20T00:36:58.255Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-19T00:19:17.569Z",
+      "at": "2026-11-20T00:35:38.843Z",
       "url": "https://algorand-indexer.xyz/api/v1/queries/results/iZG0TFWfTHP5butmjHOHUcxsVlDKvZ3l/unlock",
       "host": "algorand-indexer.xyz",
       "method": "POST",
@@ -64,7 +64,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-19T00:19:18.738Z",
+      "at": "2026-11-20T00:35:40.458Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -86,7 +86,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-19T00:21:24.667Z",
+      "at": "2026-11-20T00:36:13.587Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -100,11 +100,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 524, no settlement receipt",
+      "detail": "status 500, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-19T00:21:25.219Z",
+      "at": "2026-11-20T00:36:14.923Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -122,7 +122,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-19T00:21:31.847Z",
+      "at": "2026-11-20T00:36:22.450Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -136,11 +136,29 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 502, no settlement receipt",
+      "detail": "status 500, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-19T00:21:42.606Z",
+      "at": "2026-11-20T00:36:25.396Z",
+      "url": "https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?years=15",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Samoa Consumer Price Index and annual inflation rate — unique World Bank-sourced CPI time series for Samoa, not available via any other x402 endpoint. Returns index values and inflation percentage pe…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-20T00:36:42.021Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -158,7 +176,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-19T00:21:43.582Z",
+      "at": "2026-11-20T00:36:43.198Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -174,39 +192,6 @@
       "reason": "payment_failed",
       "detail": "status 402, no settlement receipt",
       "paid": false
-    },
-    {
-      "at": "2026-11-19T00:21:44.048Z",
-      "url": "https://api.validex.space/v1/validate/trust",
-      "host": "api.validex.space",
-      "method": "POST",
-      "input": "body {\"target\":\"stripe.com\"}",
-      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
-      "priceUsdc": "0.050000",
-      "declared": {
-        "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
-        "expectedKeys": []
-      },
-      "verdict": "REFUSE",
-      "reason": "payment_failed",
-      "detail": "status 402, no settlement receipt",
-      "paid": false
-    },
-    {
-      "at": "2026-11-19T00:22:04.088Z",
-      "url": "https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
-      "host": "api.synergybcpacific.com",
-      "method": "GET",
-      "input": "?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20",
-      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
-      "priceUsdc": "0.100000",
-      "declared": {
-        "description": "Search Pacific data endpoints by category, country, price, keywords"
-      },
-      "verdict": "REFUSE",
-      "reason": "probe_error",
-      "detail": "The operation was aborted due to timeout",
-      "paid": false
     }
   ],
   "attempts": [
@@ -215,9 +200,8 @@
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "POST https://api.sitelenz.online/v1/analyze/technology",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
-    "GET https://algorandtracker.com/x402/asa/0/activity",
-    "POST https://api.validex.space/v1/validate/trust",
-    "GET https://api.synergybcpacific.com/search?category=fisheries&keywords=tuna+stock&country=WS&trust_tier=bronze&price_max=1&time_period_start=2020&page=1&limit=20"
+    "GET https://algorandtracker.com/x402/asa/0/activity"
   ]
 }
