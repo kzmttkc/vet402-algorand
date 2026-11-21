@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-20",
-  "startedAt": "2026-11-20T00:35:27.172Z",
-  "finishedAt": "2026-11-20T00:36:58.434Z",
+  "date": "2026-11-21",
+  "startedAt": "2026-11-21T14:37:44.440Z",
+  "finishedAt": "2026-11-21T14:39:00.557Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,31 +13,31 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2770 items)",
-    "candidates": 8,
+    "candidates": 9,
     "excluded": {
       "other_network_or_asset": 300,
       "price_over_cap": 290,
-      "stale": 1996,
+      "stale": 1992,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 174
+      "not_cheapest_on_host": 177
     }
   },
   "totals": {
-    "rows": 8,
+    "rows": 9,
     "allow": 0,
-    "refuse": 8,
+    "refuse": 9,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-20T00:36:43.199Z",
+  "completedAt": "2026-11-21T14:38:45.296Z",
   "reconcile": {
-    "checkedAt": "2026-11-20T00:36:58.434Z",
+    "checkedAt": "2026-11-21T14:39:00.557Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-20T00:33:27.172Z",
-      "to": "2026-11-20T00:36:58.255Z"
+      "from": "2026-11-21T14:35:44.440Z",
+      "to": "2026-11-21T14:39:00.355Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-20T00:35:38.843Z",
+      "at": "2026-11-21T14:37:59.166Z",
       "url": "https://algorand-indexer.xyz/api/v1/queries/results/iZG0TFWfTHP5butmjHOHUcxsVlDKvZ3l/unlock",
       "host": "algorand-indexer.xyz",
       "method": "POST",
@@ -64,7 +64,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-20T00:35:40.458Z",
+      "at": "2026-11-21T14:38:01.175Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -86,7 +86,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:13.587Z",
+      "at": "2026-11-21T14:38:21.907Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -100,11 +100,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 500, no settlement receipt",
+      "detail": "The operation was aborted due to timeout",
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:14.923Z",
+      "at": "2026-11-21T14:38:23.091Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -122,7 +122,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:22.450Z",
+      "at": "2026-11-21T14:38:35.045Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -136,11 +136,29 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "status 500, no settlement receipt",
+      "detail": "status 502, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:25.396Z",
+      "at": "2026-11-21T14:38:36.917Z",
+      "url": "https://api.algometrics.org/v1/metrics/market-depth",
+      "host": "api.algometrics.org",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "ALGO-USD market depth from Coinbase trade data: Kyle lambda and estimated USD notional for a $0.01 or one-basis-point price move",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-21T14:38:39.583Z",
       "url": "https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -158,7 +176,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:42.021Z",
+      "at": "2026-11-21T14:38:43.878Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -176,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-20T00:36:43.198Z",
+      "at": "2026-11-21T14:38:45.295Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -200,6 +218,7 @@
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
     "POST https://api.sitelenz.online/v1/analyze/technology",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://api.algometrics.org/v1/metrics/market-depth",
     "GET https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
     "GET https://algorandtracker.com/x402/asa/0/activity"
