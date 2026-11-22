@@ -3,9 +3,9 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-21",
-  "startedAt": "2026-11-21T14:37:44.440Z",
-  "finishedAt": "2026-11-21T14:39:00.557Z",
+  "date": "2026-11-22",
+  "startedAt": "2026-11-22T14:31:54.695Z",
+  "finishedAt": "2026-11-22T14:33:06.848Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
@@ -13,9 +13,9 @@
   },
   "selection": {
     "source": "https://facilitator.goplausible.xyz/discovery/resources (2770 items)",
-    "candidates": 9,
+    "candidates": 10,
     "excluded": {
-      "other_network_or_asset": 300,
+      "other_network_or_asset": 299,
       "price_over_cap": 290,
       "stale": 1992,
       "own_address": 1,
@@ -24,20 +24,20 @@
     }
   },
   "totals": {
-    "rows": 9,
+    "rows": 10,
     "allow": 0,
-    "refuse": 9,
+    "refuse": 10,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-21T14:38:45.296Z",
+  "completedAt": "2026-11-22T14:32:51.600Z",
   "reconcile": {
-    "checkedAt": "2026-11-21T14:39:00.557Z",
+    "checkedAt": "2026-11-22T14:33:06.848Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-21T14:35:44.440Z",
-      "to": "2026-11-21T14:39:00.355Z"
+      "from": "2026-11-22T14:29:54.695Z",
+      "to": "2026-11-22T14:33:06.663Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-21T14:37:59.166Z",
+      "at": "2026-11-22T14:32:06.399Z",
       "url": "https://algorand-indexer.xyz/api/v1/queries/results/iZG0TFWfTHP5butmjHOHUcxsVlDKvZ3l/unlock",
       "host": "algorand-indexer.xyz",
       "method": "POST",
@@ -64,7 +64,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:01.175Z",
+      "at": "2026-11-22T14:32:07.316Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -86,7 +86,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:21.907Z",
+      "at": "2026-11-22T14:32:27.956Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -104,7 +104,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:23.091Z",
+      "at": "2026-11-22T14:32:28.832Z",
       "url": "https://api.sitelenz.online/v1/analyze/technology",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -122,7 +122,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:35.045Z",
+      "at": "2026-11-22T14:32:40.644Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -140,7 +140,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:36.917Z",
+      "at": "2026-11-22T14:32:42.526Z",
       "url": "https://api.algometrics.org/v1/metrics/market-depth",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -158,7 +158,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:39.583Z",
+      "at": "2026-11-22T14:32:45.415Z",
       "url": "https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -176,7 +176,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:43.878Z",
+      "at": "2026-11-22T14:32:49.988Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -194,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-21T14:38:45.295Z",
+      "at": "2026-11-22T14:32:51.223Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -210,6 +210,22 @@
       "reason": "payment_failed",
       "detail": "status 402, no settlement receipt",
       "paid": false
+    },
+    {
+      "at": "2026-11-22T14:32:51.600Z",
+      "url": "https://ab.goplausible.xyz/api/coins",
+      "host": "ab.goplausible.xyz",
+      "method": "POST",
+      "input": "(none)",
+      "payTo": "UTI7PAASILRDA3ISHY5M7J7LNRX2AIVQJWI7ZKCCGKVLMFD3VPR5PWSZ4I",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "A 0.1 USDC coin for Arcade Bazaar: 10 plays, on any cabinet."
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 401",
+      "paid": false
     }
   ],
   "attempts": [
@@ -221,6 +237,7 @@
     "GET https://api.algometrics.org/v1/metrics/market-depth",
     "GET https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
     "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
-    "GET https://algorandtracker.com/x402/asa/0/activity"
+    "GET https://algorandtracker.com/x402/asa/0/activity",
+    "POST https://ab.goplausible.xyz/api/coins"
   ]
 }
