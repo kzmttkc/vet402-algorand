@@ -3,41 +3,41 @@
   "mode": "daily",
   "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
   "networkName": "mainnet",
-  "date": "2026-11-23",
-  "startedAt": "2026-11-23T18:03:17.358Z",
-  "finishedAt": "2026-11-23T18:04:51.551Z",
+  "date": "2026-11-24",
+  "startedAt": "2026-11-24T03:56:59.337Z",
+  "finishedAt": "2026-11-24T03:58:19.575Z",
   "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
   "caps": {
     "perCallUsdc": "0.100000",
     "perDayUsdc": "3.000000"
   },
   "selection": {
-    "source": "https://facilitator.goplausible.xyz/discovery/resources (2778 items)",
-    "candidates": 11,
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2805 items)",
+    "candidates": 12,
     "excluded": {
-      "price_over_cap": 291,
       "other_network_or_asset": 302,
-      "stale": 2155,
+      "price_over_cap": 293,
+      "stale": 2033,
       "own_address": 1,
       "bad_url": 1,
-      "not_cheapest_on_host": 17
+      "not_cheapest_on_host": 163
     }
   },
   "totals": {
-    "rows": 11,
+    "rows": 12,
     "allow": 0,
-    "refuse": 11,
+    "refuse": 12,
     "skipped": 0,
     "unclear": 0,
     "paidUsdc": "0.000000"
   },
-  "completedAt": "2026-11-23T18:04:36.209Z",
+  "completedAt": "2026-11-24T03:58:04.346Z",
   "reconcile": {
-    "checkedAt": "2026-11-23T18:04:51.551Z",
+    "checkedAt": "2026-11-24T03:58:19.575Z",
     "status": "ok",
     "window": {
-      "from": "2026-11-23T18:01:17.358Z",
-      "to": "2026-11-23T18:04:51.269Z"
+      "from": "2026-11-24T03:54:59.337Z",
+      "to": "2026-11-24T03:58:19.387Z"
     },
     "transfers": 0,
     "onRows": 0,
@@ -46,7 +46,7 @@
   },
   "rows": [
     {
-      "at": "2026-11-23T18:03:32.067Z",
+      "at": "2026-11-24T03:57:15.596Z",
       "url": "https://algorand-indexer.xyz/api/v1/queries/results/iZG0TFWfTHP5butmjHOHUcxsVlDKvZ3l/unlock",
       "host": "algorand-indexer.xyz",
       "method": "POST",
@@ -64,7 +64,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:03:33.442Z",
+      "at": "2026-11-24T03:57:17.240Z",
       "url": "https://agent402.tools/api/hash",
       "host": "agent402.tools",
       "method": "POST",
@@ -86,7 +86,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:03:36.332Z",
+      "at": "2026-11-24T03:57:19.443Z",
       "url": "https://api.iomarkets.pro/v1/signal/vwap?pair=BTC-USDC",
       "host": "api.iomarkets.pro",
       "method": "GET",
@@ -104,7 +104,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:03:57.486Z",
+      "at": "2026-11-24T03:57:40.193Z",
       "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       "host": "canix402-api.compx.io",
       "method": "GET",
@@ -122,7 +122,25 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:10.305Z",
+      "at": "2026-11-24T03:57:42.482Z",
+      "url": "https://api.agentwork.run/v1/pdf/info",
+      "host": "api.agentwork.run",
+      "method": "POST",
+      "input": "body {\"url\":\"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf\"}",
+      "payTo": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "PDF pre-check: is this URL a readable digital PDF? $0.001. Checks a public PDF before you pay for extraction: PDF version, page count, size, encryption, fonts (text vs scanned) and whether pdf/read w…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-24T03:57:49.525Z",
       "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
       "host": "amarok-api.compx.io",
       "method": "GET",
@@ -140,7 +158,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:11.256Z",
+      "at": "2026-11-24T03:57:51.351Z",
       "url": "https://api.algometrics.org/v1/metrics/market-depth",
       "host": "api.algometrics.org",
       "method": "GET",
@@ -154,11 +172,11 @@
       },
       "verdict": "REFUSE",
       "reason": "payment_failed",
-      "detail": "fetch failed",
+      "detail": "status 402, no settlement receipt",
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:12.240Z",
+      "at": "2026-11-24T03:57:52.221Z",
       "url": "https://api.sitelenz.online/v1/analyze/screenshots",
       "host": "api.sitelenz.online",
       "method": "POST",
@@ -176,7 +194,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:24.014Z",
+      "at": "2026-11-24T03:57:55.082Z",
       "url": "https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
       "host": "api.synergybcpacific.com",
       "method": "GET",
@@ -194,7 +212,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:34.225Z",
+      "at": "2026-11-24T03:58:02.410Z",
       "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
       "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
       "method": "GET",
@@ -212,7 +230,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:36.101Z",
+      "at": "2026-11-24T03:58:04.224Z",
       "url": "https://algorandtracker.com/x402/asa/0/activity",
       "host": "algorandtracker.com",
       "method": "GET",
@@ -230,7 +248,7 @@
       "paid": false
     },
     {
-      "at": "2026-11-23T18:04:36.208Z",
+      "at": "2026-11-24T03:58:04.345Z",
       "url": "https://ab.goplausible.xyz/api/coins",
       "host": "ab.goplausible.xyz",
       "method": "POST",
@@ -251,6 +269,7 @@
     "POST https://agent402.tools/api/hash",
     "GET https://api.iomarkets.pro/v1/signal/vwap?pair=BTC-USDC",
     "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "POST https://api.agentwork.run/v1/pdf/info",
     "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
     "GET https://api.algometrics.org/v1/metrics/market-depth",
     "POST https://api.sitelenz.online/v1/analyze/screenshots",
