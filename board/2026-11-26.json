@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "mode": "daily",
+  "network": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+  "networkName": "mainnet",
+  "date": "2026-11-26",
+  "startedAt": "2026-11-26T01:46:13.238Z",
+  "finishedAt": "2026-11-26T01:47:30.148Z",
+  "payer": "HVRJUKO2QDZW6UKADE7LYWQFMTT75537OPMYEWOTYIUFO4BB25TFL5IQMQ",
+  "caps": {
+    "perCallUsdc": "0.100000",
+    "perDayUsdc": "3.000000"
+  },
+  "selection": {
+    "source": "https://facilitator.goplausible.xyz/discovery/resources (2807 items)",
+    "candidates": 11,
+    "excluded": {
+      "other_network_or_asset": 302,
+      "price_over_cap": 294,
+      "stale": 2030,
+      "own_address": 1,
+      "bad_url": 1,
+      "not_cheapest_on_host": 168
+    }
+  },
+  "totals": {
+    "rows": 11,
+    "allow": 0,
+    "refuse": 11,
+    "skipped": 0,
+    "unclear": 0,
+    "paidUsdc": "0.000000"
+  },
+  "completedAt": "2026-11-26T01:47:14.965Z",
+  "reconcile": {
+    "checkedAt": "2026-11-26T01:47:30.148Z",
+    "status": "ok",
+    "window": {
+      "from": "2026-11-26T01:44:13.238Z",
+      "to": "2026-11-26T01:47:30.002Z"
+    },
+    "transfers": 0,
+    "onRows": 0,
+    "recorded": [],
+    "unmatched": []
+  },
+  "rows": [
+    {
+      "at": "2026-11-26T01:46:27.535Z",
+      "url": "https://agent402.tools/api/hash",
+      "host": "agent402.tools",
+      "method": "POST",
+      "input": "body {\"text\":\"hello world\",\"algo\":\"sha256\"}",
+      "payTo": "C7IIHG7SPLPZ5H7ZT6HW3UV2OQMQQE6Y2HBNGZXSLRJULE42BEE2OY2XIE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Cryptographic hash of a text string - sha256 (default), sha512, sha1 or md5 - returned as hex and base64. Use it for content fingerprints, integrity checks and deterministic ids; pure computation, in…",
+        "mimeType": "application/json",
+        "expectedKeys": [
+          "algo",
+          "hex",
+          "base64"
+        ]
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:46:29.555Z",
+      "url": "https://api.iomarkets.pro/v1/signal/vwap?pair=BTC-USDC",
+      "host": "api.iomarkets.pro",
+      "method": "GET",
+      "input": "?pair=BTC-USDC",
+      "payTo": "DZUL7JAPQUVT2YDXG4KTOCOS2BAY33MMYSUWWKJPGFWDS3SGR5TUIUDYNE",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "Rolling VWAP over a trailing window (pairs: BTC-USDC, ETH-USDC, SOL-USDC)",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:46:50.083Z",
+      "url": "https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "host": "canix402-api.compx.io",
+      "method": "GET",
+      "input": "?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+      "payTo": "3Y2V6ODUVUGM4TXOEXY65YLMKMVLG4PB3GSOXDCJDE4X5YQA5JA3P2FHAQ",
+      "priceUsdc": "0.001000",
+      "declared": {
+        "description": "canix402 claimable DeFi rewards endpoint",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "The operation was aborted due to timeout",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:46:51.323Z",
+      "url": "https://api.agentwork.run/v1/pdf/info",
+      "host": "api.agentwork.run",
+      "method": "POST",
+      "input": "body {\"url\":\"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf\"}",
+      "payTo": "PFHYLVHX77ANNQVF67LK6EVYB34D5VDIUOWLOL5SX367M366DBLOQQAOCA",
+      "priceUsdc": "0.002000",
+      "declared": {
+        "description": "PDF pre-check: is this URL a readable digital PDF? $0.001. Checks a public PDF before you pay for extraction: PDF version, page count, size, encryption, fonts (text vs scanned) and whether pdf/read w…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:00.859Z",
+      "url": "https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "host": "amarok-api.compx.io",
+      "method": "GET",
+      "input": "?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+      "payTo": "R3CUFK5EMFJSHV5TEXMBJOCASYHORZ2F7QCPPVCRWRWVDL5WNLSDOIEHBU",
+      "priceUsdc": "0.005000",
+      "declared": {
+        "description": "Amarok portfolio by address",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 500, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:02.390Z",
+      "url": "https://api.algometrics.org/v1/metrics/microstructure",
+      "host": "api.algometrics.org",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "UWC5Y6N5YWP3MKE2ABBZ42HQGJGRBOOVBUL4WCJFCKSBT5FY4CREDTDKZY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "ALGO-USD market microstructure metrics from Coinbase trade data: VPIN (adverse selection risk) and order-flow imbalance",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:06.039Z",
+      "url": "https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
+      "host": "api.synergybcpacific.com",
+      "method": "GET",
+      "input": "?years=15",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Samoa Consumer Price Index and annual inflation rate — unique World Bank-sourced CPI time series for Samoa, not available via any other x402 endpoint. Returns index values and inflation percentage pe…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:11.830Z",
+      "url": "https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+      "host": "pdc-pilot-endpoint.synergyblockchaintf.workers.dev",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "LN745UCDQNFIBDY6JFW7FNK333MADQZQVQFMCVR3GXXUTB52O2NYPZN3YY",
+      "priceUsdc": "0.010000",
+      "declared": {
+        "description": "Key findings summary for Pacific Tuna Stock Assessment — PDC Demo (Synthetic). Returns stock status by species, coverage statistics, and 3 key findings. SYNTHETIC DEMO DATA.",
+        "mimeType": "",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:14.176Z",
+      "url": "https://algorandtracker.com/x402/asa/0/activity",
+      "host": "algorandtracker.com",
+      "method": "GET",
+      "input": "(none)",
+      "payTo": "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
+      "priceUsdc": "0.020000",
+      "declared": {
+        "description": "ASA or ALGO (asaId=0) activity metrics. Wallet/Foundation/supply/Nodes compare two snapshots; Active User stays on averages (vs 7d avg / week avg / month avg). Daily returns the latest completed comp…",
+        "mimeType": "application/json",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:14.807Z",
+      "url": "https://api.validex.space/v1/validate/trust",
+      "host": "api.validex.space",
+      "method": "POST",
+      "input": "body {\"target\":\"stripe.com\"}",
+      "payTo": "GGQONOVC3OCAFO3ROR5TPFUKWDPXIN5TDKRT7QPUVGZWEMLIYBWHBPMZGU",
+      "priceUsdc": "0.050000",
+      "declared": {
+        "description": "Evaluates HTTPS enforcement, domain registration age, WHOIS records, privacy policy, and terms of service documentation.",
+        "expectedKeys": []
+      },
+      "verdict": "REFUSE",
+      "reason": "payment_failed",
+      "detail": "status 402, no settlement receipt",
+      "paid": false
+    },
+    {
+      "at": "2026-11-26T01:47:14.964Z",
+      "url": "https://ab.goplausible.xyz/api/coins",
+      "host": "ab.goplausible.xyz",
+      "method": "POST",
+      "input": "(none)",
+      "payTo": "UTI7PAASILRDA3ISHY5M7J7LNRX2AIVQJWI7ZKCCGKVLMFD3VPR5PWSZ4I",
+      "priceUsdc": "0.100000",
+      "declared": {
+        "description": "A 0.1 USDC coin for Arcade Bazaar: 10 plays, on any cabinet."
+      },
+      "verdict": "REFUSE",
+      "reason": "not_x402",
+      "detail": "expected 402, got 401",
+      "paid": false
+    }
+  ],
+  "attempts": [
+    "POST https://agent402.tools/api/hash",
+    "GET https://api.iomarkets.pro/v1/signal/vwap?pair=BTC-USDC",
+    "GET https://canix402-api.compx.io/positions/claimable?address=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
+    "POST https://api.agentwork.run/v1/pdf/info",
+    "GET https://amarok-api.compx.io/v1/alpha/portfolio/65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ?address=65GJKPMEYLR2C2GHFIAUKF2CFDE6IXDB3LUTOVJ424LBMMEWJ6UXCHCBZQ",
+    "GET https://api.algometrics.org/v1/metrics/microstructure",
+    "GET https://api.synergybcpacific.com/finance/samoa-cpi?years=15",
+    "GET https://pdc-pilot-endpoint.synergyblockchaintf.workers.dev/summary",
+    "GET https://algorandtracker.com/x402/asa/0/activity",
+    "POST https://api.validex.space/v1/validate/trust",
+    "POST https://ab.goplausible.xyz/api/coins"
+  ]
+}
